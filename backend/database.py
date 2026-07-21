@@ -201,7 +201,7 @@ def seed_default_labels(user_id: int):
         cursor = conn.cursor()
 
         cursor.execute("SELECT COUNT(*) FROM custom_labels WHERE user_id = %s", (user_id,))
-        count = cursor.fetchone()[0]
+        count = cursor.fetchone()['count']
 
         if count == 0:
             defaults = [
@@ -248,7 +248,7 @@ def upsert_user(gmail_address: str, access_token: str) -> int:
         conn.commit()
 
         cursor.execute("SELECT user_id FROM users WHERE gmail_address = %s", (gmail_address,))
-        user_id = cursor.fetchone()[0]
+        user_id = cursor.fetchone()['user_id']
 
         print(f"[DB] Upserted user '{gmail_address}' -> user_id={user_id}")
         return user_id
@@ -269,7 +269,7 @@ def get_user_id(gmail_address: str) -> int:
 
         if row is None:
             raise ValueError(f"User not found: {gmail_address}")
-        return row[0]
+        return row['user_id']
     except Exception:
         conn.rollback()
         raise
@@ -314,7 +314,7 @@ def get_label_id_by_name(user_id: int, label_name: str) -> int:
         )
         row = cursor.fetchone()
         if row:
-            return row[0]
+            return row['label_id']
 
         # 2. Case-insensitive match (AI may return "work" instead of "Work")
         cursor.execute(
@@ -323,7 +323,7 @@ def get_label_id_by_name(user_id: int, label_name: str) -> int:
         )
         ci_row = cursor.fetchone()
         if ci_row:
-            return ci_row[0]
+            return ci_row['label_id']
 
         # 3. Fallback — first available label for this user
         cursor.execute(
@@ -511,14 +511,14 @@ def get_emails_by_status(user_id: int, status: str, limit: int = None) -> list[d
         # Convert to dict format expected by _analyze_one
         return [
             {
-                "id": row[0],
-                "user_id": row[1],
-                "snippet": row[2] or "",
-                "sender": row[3] or "",
-                "subject": row[4] or "",
-                "body": row[5] or "",
-                "analyzed_at": row[6],
-                "from": row[3] or "",  # Map sender to "from" for compatibility
+                "id": row['email_id'],
+                "user_id": row['user_id'],
+                "snippet": row['snippet'] or "",
+                "sender": row['sender'] or "",
+                "subject": row['subject'] or "",
+                "body": row['body'] or "",
+                "analyzed_at": row['analyzed_at'],
+                "from": row['sender'] or "",  # Map sender to "from" for compatibility
             }
             for row in rows
         ]
@@ -667,7 +667,7 @@ def add_to_retry_queue(email_id: str, error_reason: str) -> None:
         row = cursor.fetchone()
 
         if row is not None:
-            if row[0] >= 3:
+            if row['retry_count'] >= 3:
                 print(f"[DB] Retry limit reached for {email_id[:12]}..., not re-adding")
                 return
             cursor.execute(
@@ -744,7 +744,7 @@ def get_scan_cursor(user_id: int) -> str | None:
         cursor = conn.cursor()
         cursor.execute("SELECT last_page_token FROM scan_cursor WHERE user_id = %s", (user_id,))
         row = cursor.fetchone()
-        return row[0] if row else None
+        return row['last_page_token'] if row else None
     except Exception:
         conn.rollback()
         raise
@@ -853,7 +853,7 @@ def get_delete_mode(user_id: int) -> str:
         cursor = conn.cursor()
         cursor.execute("SELECT delete_mode FROM users WHERE user_id = %s", (user_id,))
         row = cursor.fetchone()
-        return row[0] if row and row[0] else "trash"
+        return row['delete_mode'] if row and row['delete_mode'] else "trash"
     except Exception:
         conn.rollback()
         raise
