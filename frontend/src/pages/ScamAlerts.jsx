@@ -11,7 +11,7 @@ import EmailCard from '../components/EmailCard';
 import ScamBadge from '../components/ScamBadge';
 import { useToast } from '../components/ToastNotification';
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 
 const RISK_FILTERS = [
   { label: 'All Alerts', value: 'all', minScore: 30 },

@@ -10,7 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import ConfirmModal from '../components/ConfirmModal';
 import { useToast } from '../components/ToastNotification';
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 
 function Quarantine() {
   const navigate = useNavigate();

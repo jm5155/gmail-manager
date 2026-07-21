@@ -14,7 +14,7 @@ function EmailDetailPanel({ email, isOpen, onClose, onLabelChange }) {
   const [savedLabel, setSavedLabel] = useState(email?.label_name || '');
   const [isUpdating, setIsUpdating] = useState(false);
   const [labels, setLabels] = useState([]);
-  const API_BASE = 'http://localhost:8000';
+  const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 
   // Fetch available labels
   useEffect(() => {

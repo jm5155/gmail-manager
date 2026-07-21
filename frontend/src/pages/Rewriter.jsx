@@ -8,7 +8,7 @@
 import React, { useState } from 'react';
 import { useToast } from '../components/ToastNotification';
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 
 // Preset rewrite commands
 const COMMANDS = [

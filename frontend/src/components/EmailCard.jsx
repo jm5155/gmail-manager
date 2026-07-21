@@ -21,7 +21,7 @@ const AVATAR_COLORS = [
 function EmailCard({ email, showScamBadge = true, actions = null, onLabelUpdate = null, onLabelChange = null, pendingLabel = null, availableLabels = [] }) {
   const [expanded, setExpanded] = useState(false);
   const [isUpdatingLabel, setIsUpdatingLabel] = useState(false);
-  const API_BASE = 'http://localhost:8000';
+  const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 
   // Get the label display name from new API field
   const labelName = email.label_name || email.label || 'Uncategorized';

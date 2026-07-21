@@ -7,7 +7,7 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 
 // Navigation items with icons and paths
 const NAV_ITEMS = [
