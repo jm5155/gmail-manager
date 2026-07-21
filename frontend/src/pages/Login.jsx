@@ -16,15 +16,10 @@ function Login() {
   const [isLoading, setIsLoading] = useState(false);       // Shows spinner during login
   const [error, setError] = useState('');                   // Error message display
   const [checkingAuth, setCheckingAuth] = useState(true);   // Initial auth check
-  const pollingRef = useRef(null);                          // Polling interval reference
 
   // ---------- CHECK IF ALREADY LOGGED IN ON MOUNT ----------
   useEffect(() => {
     checkExistingAuth();
-    // Cleanup polling interval on unmount
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
-    };
   }, []);
 
   async function checkExistingAuth() {
@@ -48,7 +43,7 @@ function Login() {
     setError('');
 
     try {
-      // Call the backend to get the Google OAuth URL (it also opens the browser)
+      // Fetch the Google OAuth URL from backend
       const res = await fetch(`${API_BASE}/auth/login`, { credentials: 'include' });
       const data = await res.json();
 
@@ -56,27 +51,13 @@ function Login() {
         throw new Error(data.error || 'Failed to start login');
       }
 
-      // Start polling /auth/status every 2 seconds to detect successful login
-      pollingRef.current = setInterval(async () => {
-        try {
-          const statusRes = await fetch(`${API_BASE}/auth/status`, { credentials: 'include' });
-          const statusData = await statusRes.json();
-
-          if (statusData.logged_in) {
-            // Login successful! Stop polling and navigate to inbox
-            clearInterval(pollingRef.current);
-            pollingRef.current = null;
-            setIsLoading(false);
-            navigate('/inbox');
-          }
-        } catch (err) {
-          // Backend temporarily unreachable — keep trying
-          console.log('[LOGIN] Polling status failed, retrying...');
-        }
-      }, 2000);
+      // Redirect entire page to Google OAuth consent screen
+      // After user approves, Google redirects to backend /auth/callback
+      // Backend /auth/callback sets session and redirects to /inbox
+      window.location.href = data.auth_url;
 
     } catch (err) {
-      setError('Could not connect to the backend. Make sure the server is running on port 8000.');
+      setError('Could not connect to the backend. Make sure the server is running.');
       setIsLoading(false);
     }
   }
