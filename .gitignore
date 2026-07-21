@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+
+# Build output
+dist/
+build/
+frontend/dist/
+electron/resources/gmail-manager-backend*
+*.spec.bak
+
+# PyInstaller
+*.manifest
+*.spec.bak
+
+# Environment & secrets
+backend/.env
+backend/token.json
+backend/gmail_manager.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+node_modules/
