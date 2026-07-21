@@ -180,63 +180,6 @@ def init_db():
 
         conn.commit()
         db_type = "Postgres" if USE_POSTGRES else "SQLite"
-        print(f"[DB] Database initialized ({db_type})")
-    except Exception:
-        conn.rollback()
-        raise
-    finally:
-        conn.close()
-
-        # TABLE 4: analyzed_emails
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS analyzed_emails (
-                email_id TEXT PRIMARY KEY,
-                user_id INTEGER NOT NULL,
-                label_id INTEGER NOT NULL,
-                scam_score INTEGER DEFAULT 0,
-                scam_indicators TEXT DEFAULT '[]',
-                is_quarantined INTEGER DEFAULT 0,
-                snippet TEXT,
-                sender TEXT,
-                subject TEXT,
-                analyzed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
-                FOREIGN KEY (label_id) REFERENCES custom_labels(label_id) ON DELETE RESTRICT
-            )
-        """)
-
-        # TABLE 5: url_cache
-        cursor.execute(f"""
-            CREATE TABLE IF NOT EXISTS url_cache (
-                url_id {pk_syntax},
-                email_id TEXT NOT NULL,
-                url TEXT NOT NULL,
-                is_safe INTEGER DEFAULT 1,
-                threat_type TEXT,
-                checked_at TIMESTAMP {timestamp_default},
-                FOREIGN KEY (email_id) REFERENCES analyzed_emails(email_id) ON DELETE CASCADE
-            )
-        """)
-
-        # TABLE 6: retry_queue
-        cursor.execute(f"""
-            CREATE TABLE IF NOT EXISTS retry_queue (
-                retry_id {pk_syntax},
-                email_id TEXT NOT NULL UNIQUE,
-                retry_count INTEGER DEFAULT 0,
-                last_attempted TIMESTAMP,
-                error_reason TEXT,
-                FOREIGN KEY (email_id) REFERENCES analyzed_emails(email_id) ON DELETE CASCADE
-            )
-        """)
-
-        # Migration: add applied_to_gmail and last_applied_label_id columns if not exist (Phase 38)
-        # This was already handled in the init_db() function above (lines 155-174)
-        # Keeping this section commented out to avoid duplication
-        # The column checks are done earlier using the if USE_POSTGRES block
-
-        conn.commit()
-        db_type = "Postgres" if USE_POSTGRES else "SQLite"
         db_location = DATABASE_URL[:50] + "..." if USE_POSTGRES else str(DB_PATH)
         print(f"[DB] Database initialized ({db_type}): {db_location}")
     except Exception:
