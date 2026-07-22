@@ -367,7 +367,7 @@ function Inbox() {
 
   // ---------- RENDER ----------
   return (
-    <div className="h-screen overflow-hidden" style={{ paddingLeft: '240px' }}>
+    <div className="h-screen overflow-hidden pl-0 md:pl-[240px]">
       <style>{`
         @keyframes indeterminate {
           0%   { transform: translateX(-100%); width: 40%; }

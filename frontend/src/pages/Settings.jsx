@@ -197,14 +197,14 @@ function Settings() {
 
   if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center" style={{ paddingLeft: '240px' }}>
+      <div className="h-screen flex items-center justify-center pl-0 md:pl-[240px]">
         <div className="w-10 h-10 border-3 border-primary border-t-transparent rounded-full animate-spin" style={{ borderWidth: '3px' }}></div>
       </div>
     );
   }
 
   return (
-    <div className="h-screen overflow-y-auto" style={{ paddingLeft: '240px' }}>
+    <div className="h-screen overflow-y-auto pl-0 md:pl-[240px]">
       {/* Header */}
       <div className="px-6 py-4" style={{ borderBottom: '1px solid #1E293B' }}>
         <h1 className="text-xl font-bold text-text-primary">Settings</h1>

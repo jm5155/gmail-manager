@@ -94,7 +94,7 @@ function Rewriter() {
   }
 
   return (
-    <div className="h-screen overflow-hidden" style={{ paddingLeft: '240px' }}>
+    <div className="h-screen overflow-hidden pl-0 md:pl-[240px]">
       {/* Header */}
       <div className="px-6 py-4" style={{ borderBottom: '1px solid #1E293B' }}>
         <h1 className="text-xl font-bold text-text-primary mb-1">AI Email Rewriter</h1>

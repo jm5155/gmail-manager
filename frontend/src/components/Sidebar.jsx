@@ -1,6 +1,7 @@
 /**
- * Sidebar.jsx — Fixed Left Navigation Sidebar (Phase 9)
- * 240px wide fixed sidebar with app logo, navigation links, and user info.
+ * Sidebar.jsx — Responsive Navigation Sidebar
+ * Desktop: 240px fixed sidebar
+ * Mobile: Slide-out drawer with hamburger menu
  * Active link highlighted with primary color left border.
  */
 
@@ -34,13 +35,13 @@ const NAV_ITEMS = [
     label: 'Quarantine',
     icon: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
       </svg>
     ),
   },
   {
     path: '/rewriter',
-    label: 'AI Rewriter',
+    label: 'Email Rewriter',
     icon: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
@@ -59,7 +60,7 @@ const NAV_ITEMS = [
   },
 ];
 
-function Sidebar({ userEmail }) {
+function Sidebar({ userEmail, mobileMenuOpen = false, onCloseMobileMenu = () => {} }) {
   const navigate = useNavigate();
 
   async function handleLogout() {
@@ -74,17 +75,9 @@ function Sidebar({ userEmail }) {
     ? userEmail.split('@')[0].slice(0, 2).toUpperCase()
     : 'GM';
 
-  return (
-    <div
-      className="fixed left-0 top-0 h-screen flex flex-col"
-      style={{
-        width: '240px',
-        background: 'rgba(15, 23, 42, 0.95)',
-        borderRight: '1px solid #1E293B',
-        backdropFilter: 'blur(20px)',
-        zIndex: 50,
-      }}
-    >
+  // Sidebar content (shared between desktop and mobile)
+  const SidebarContent = () => (
+    <>
       {/* App Logo + Name */}
       <div className="p-5 flex items-center gap-3">
         <div
@@ -100,64 +93,105 @@ function Sidebar({ userEmail }) {
         </div>
         <div>
           <h1 className="text-sm font-bold text-text-primary leading-tight">Gmail Manager</h1>
-          <p className="text-xs text-text-secondary leading-tight">AI-Powered</p>
+          <p className="text-xs text-text-secondary leading-tight">Intelligence</p>
         </div>
       </div>
 
-      {/* Divider */}
-      <div className="mx-4 h-px" style={{ background: '#1E293B' }}></div>
-
       {/* Navigation Links */}
-      <nav className="flex-1 py-4 px-3 space-y-1">
+      <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
         {NAV_ITEMS.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
+            onClick={onCloseMobileMenu}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
-               ${isActive
-                 ? 'text-white'
-                 : 'text-text-secondary hover:text-text-primary hover:bg-surface'
-               }`
-            }
-            style={({ isActive }) =>
-              isActive
-                ? {
-                    background: 'rgba(37, 99, 235, 0.15)',
-                    borderLeft: '3px solid #2563EB',
-                    paddingLeft: '9px',
-                  }
-                : { borderLeft: '3px solid transparent', paddingLeft: '9px' }
+              `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 ${
+                isActive
+                  ? 'bg-primary/10 text-primary border-l-2 border-primary pl-[10px]'
+                  : 'text-text-secondary hover:text-text-primary hover:bg-bg-hover border-l-2 border-transparent'
+              }`
             }
           >
-            <span style={{ opacity: 0.85 }}>{item.icon}</span>
-            {item.label}
+            {item.icon}
+            <span className="text-sm font-medium">{item.label}</span>
           </NavLink>
         ))}
       </nav>
 
-      {/* Bottom — User Info + Logout */}
-      <div className="p-4" style={{ borderTop: '1px solid #1E293B' }}>
-        <div className="flex items-center gap-3">
-          {/* Avatar */}
+      {/* User Info + Logout */}
+      <div className="p-4 border-t border-border-subtle">
+        <div className="flex items-center gap-3 mb-3">
           <div
-            className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-            style={{ background: 'linear-gradient(135deg, #2563EB 0%, #7C3AED 100%)' }}
+            className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+            style={{
+              background: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)',
+              color: '#fff',
+            }}
           >
             {initials}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs text-text-primary truncate">{userEmail || 'user@gmail.com'}</p>
-            <button
-              onClick={handleLogout}
-              className="text-xs text-text-secondary hover:text-danger transition-colors duration-200"
-            >
-              Sign out
-            </button>
+            <p className="text-sm text-text-primary font-medium truncate">{userEmail || 'User'}</p>
+            <p className="text-xs text-text-secondary">Active</p>
           </div>
         </div>
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-bg-hover hover:bg-bg-card text-text-secondary hover:text-text-primary transition-colors text-sm font-medium"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+          </svg>
+          Logout
+        </button>
       </div>
-    </div>
+    </>
+  );
+
+  return (
+    <>
+      {/* Desktop Sidebar - always visible on md and above */}
+      <div
+        className="hidden md:flex fixed left-0 top-0 h-screen flex-col"
+        style={{
+          width: '240px',
+          background: 'rgba(15, 23, 42, 0.95)',
+          borderRight: '1px solid #1E293B',
+          backdropFilter: 'blur(20px)',
+          zIndex: 50,
+        }}
+      >
+        <SidebarContent />
+      </div>
+
+      {/* Mobile Drawer - slide-in from left on mobile */}
+      <div
+        className={`
+          md:hidden fixed left-0 top-0 h-screen flex flex-col z-50
+          transition-transform duration-300 ease-out
+          ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+        `}
+        style={{
+          width: '280px',
+          background: 'rgba(15, 23, 42, 0.98)',
+          borderRight: '1px solid #1E293B',
+          backdropFilter: 'blur(20px)',
+        }}
+      >
+        {/* Close button - mobile only */}
+        <button
+          onClick={onCloseMobileMenu}
+          className="absolute top-4 right-4 p-2 text-text-secondary hover:text-text-primary rounded-lg hover:bg-bg-hover transition-colors z-10"
+          aria-label="Close menu"
+        >
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        <SidebarContent />
+      </div>
+    </>
   );
 }
 

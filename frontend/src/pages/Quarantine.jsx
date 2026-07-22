@@ -75,7 +75,7 @@ function Quarantine() {
   }
 
   return (
-    <div className="h-screen overflow-hidden" style={{ paddingLeft: '240px' }}>
+    <div className="h-screen overflow-hidden pl-0 md:pl-[240px]">
       {/* Header */}
       <div className="px-6 py-4" style={{ borderBottom: '1px solid #1E293B' }}>
         <div className="flex items-center gap-3">

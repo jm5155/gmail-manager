@@ -25,6 +25,7 @@ const SIDEBAR_ROUTES = ['/inbox', '/scam-alerts', '/quarantine', '/rewriter', '/
 function AppContent() {
   const location = useLocation();
   const [userEmail, setUserEmail] = useState('');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const showSidebar = SIDEBAR_ROUTES.some((r) => location.pathname.startsWith(r));
 
   // Fetch user email on mount (for sidebar display)
@@ -33,6 +34,11 @@ function AppContent() {
       fetchUserEmail();
     }
   }, [showSidebar]);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
 
   async function fetchUserEmail() {
     try {
@@ -46,12 +52,41 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-bg-dark font-inter">
-      {/* Sidebar — only shown on authenticated pages */}
-      {showSidebar && <Sidebar userEmail={userEmail} />}
+      {/* Mobile Hamburger Button - only visible on mobile when sidebar pages are active */}
+      {showSidebar && (
+        <button
+          onClick={() => setMobileMenuOpen(true)}
+          className="fixed top-4 left-4 z-40 p-2.5 rounded-lg bg-bg-card border border-border-subtle md:hidden hover:bg-bg-hover transition-colors"
+          aria-label="Open menu"
+        >
+          <svg className="w-6 h-6 text-text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+      )}
 
-      {/* Page Content with fade transition */}
+      {/* Sidebar — responsive behavior */}
+      {showSidebar && (
+        <Sidebar
+          userEmail={userEmail}
+          mobileMenuOpen={mobileMenuOpen}
+          onCloseMobileMenu={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Mobile Overlay - dark backdrop when drawer is open */}
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Page Content with fade transition - responsive padding */}
       <div
         key={location.pathname}
+        className="md:pl-[240px]"
         style={{
           animation: 'fadeIn 0.2s ease-out',
         }}
