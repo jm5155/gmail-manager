@@ -206,7 +206,7 @@ function Settings() {
   return (
     <div className="h-screen overflow-y-auto pl-0 md:pl-[240px]">
       {/* Header */}
-      <div className="px-6 py-4" style={{ borderBottom: '1px solid #1E293B' }}>
+      <div className="px-6 py-4 pt-16 md:pt-4" style={{ borderBottom: '1px solid #1E293B' }}>
         <h1 className="text-xl font-bold text-text-primary">Settings</h1>
         <p className="text-sm text-text-secondary mt-0.5">
           Manage AI providers, security keys, and account settings.

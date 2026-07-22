@@ -376,7 +376,7 @@ function Inbox() {
         }
       `}</style>
       {/* Page Header */}
-      <div className="px-6 py-4" style={{ borderBottom: '1px solid #1E293B' }}>
+      <div className="px-6 py-4 pt-16 md:pt-4" style={{ borderBottom: '1px solid #1E293B' }}>
         <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-xl font-bold text-text-primary">Inbox</h1>

@@ -83,10 +83,9 @@ function AppContent() {
         />
       )}
 
-      {/* Page Content with fade transition - responsive padding */}
+      {/* Page Content with fade transition */}
       <div
         key={location.pathname}
-        className="md:pl-[240px]"
         style={{
           animation: 'fadeIn 0.2s ease-out',
         }}
