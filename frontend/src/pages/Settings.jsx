@@ -213,7 +213,7 @@ function Settings() {
         </p>
       </div>
 
-      <div className="p-4 md:p-6 max-w-3xl space-y-4 md:space-y-6">
+      <div className="p-4 md:p-6 space-y-4 md:space-y-6">
         {/* Account Section */}
         <section className="rounded-lg p-4 md:p-5 w-full" style={{ background: 'rgba(30, 41, 59, 0.6)', border: '1px solid #334155', maxWidth: '355px' }}>
           <h2 className="text-sm font-semibold text-text-primary mb-4 flex items-center gap-2">

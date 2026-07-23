@@ -95,7 +95,7 @@ function Quarantine() {
       </div>
 
       {/* Email List */}
-      <div className="p-6 overflow-y-auto" style={{ height: 'calc(100vh - 100px)' }}>
+      <div className="px-3 py-6 md:px-6 overflow-y-auto" style={{ height: 'calc(100vh - 100px)' }}>
         {loading && (
           <div className="flex flex-col items-center justify-center h-64 gap-4">
             <div className="w-10 h-10 border-3 border-danger border-t-transparent rounded-full animate-spin" style={{ borderWidth: '3px' }}></div>

@@ -103,9 +103,9 @@ function Rewriter() {
         </p>
       </div>
 
-      {/* Two-Column Layout */}
-      <div className="flex gap-4 p-6" style={{ height: 'calc(100vh - 90px)' }}>
-        {/* LEFT COLUMN — Original */}
+      {/* Two-Column Layout - Desktop Only */}
+      <div className="hidden md:flex gap-4 p-6" style={{ height: 'calc(100vh - 90px)' }}>
+        {/* LEFT COLUMN — Original (Desktop) */}
         <div className="flex-1 flex flex-col">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-sm font-semibold text-text-primary">Original</h2>
@@ -125,7 +125,7 @@ function Rewriter() {
             }}
           />
 
-          {/* Command Buttons */}
+          {/* Command Buttons - Desktop Only */}
           <div className="mt-4">
             <p className="text-xs text-text-secondary mb-2 font-semibold">Quick Commands:</p>
             <div className="flex flex-wrap gap-2">
@@ -147,7 +147,7 @@ function Rewriter() {
               ))}
             </div>
 
-            {/* Custom Instruction */}
+            {/* Custom Instruction - Desktop Only */}
             <div className="flex gap-2 mt-3">
               <input
                 type="text"
@@ -177,10 +177,10 @@ function Rewriter() {
           </div>
         </div>
 
-        {/* Divider */}
+        {/* Divider - Desktop Only */}
         <div className="w-px flex-shrink-0" style={{ background: '#1E293B' }}></div>
 
-        {/* RIGHT COLUMN — Rewritten */}
+        {/* RIGHT COLUMN — Rewritten (Desktop) */}
         <div className="flex-1 flex flex-col">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-sm font-semibold text-text-primary">Rewritten</h2>
@@ -235,6 +235,127 @@ function Rewriter() {
               </span>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* MOBILE LAYOUT — Chat-Style */}
+      <div className="md:hidden flex flex-col" style={{ height: 'calc(100vh - 90px)' }}>
+        {/* Output Area - Takes remaining space */}
+        <div className="flex-1 p-4 overflow-y-auto" style={{ paddingBottom: '100px' }}>
+          <div
+            className="h-full p-4 rounded-xl text-sm relative"
+            style={{
+              background: '#1E293B',
+              border: '1px solid #334155',
+              minHeight: '300px',
+            }}
+          >
+            {loading ? (
+              <div className="flex flex-col items-center justify-center h-full gap-3">
+                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-text-secondary text-sm">Rewriting...</p>
+              </div>
+            ) : rewrittenText ? (
+              <div className="text-text-primary whitespace-pre-wrap">{rewrittenText}</div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full gap-3 opacity-50">
+                <svg className="w-12 h-12 text-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+                </svg>
+                <p className="text-text-secondary text-sm">Rewritten text will appear here</p>
+              </div>
+            )}
+          </div>
+
+          {/* Copy button - floating when text exists */}
+          {rewrittenText && (
+            <div className="flex justify-end mt-3">
+              <button
+                onClick={handleCopy}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium text-white transition-all duration-200"
+                style={{
+                  background: 'linear-gradient(135deg, #2563EB 0%, #7C3AED 100%)',
+                }}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9.75a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
+                </svg>
+                Copy
+              </button>
+            </div>
+          )}
+
+          {/* Provider info - floating when available */}
+          {providerUsed && (
+            <div className="flex items-center justify-between mt-3 text-xs text-text-secondary">
+              <span>
+                Provider: <span className="text-primary font-medium">{providerUsed}</span>
+              </span>
+              <span>
+                {charCounts.original} → {charCounts.rewritten} chars
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Bottom Input Bar - Fixed */}
+        <div className="fixed bottom-0 left-0 right-0 p-4 md:hidden" style={{ background: '#0F172A' }}>
+          {/* Char Counter - Above input bar */}
+          <div className="text-center text-xs text-text-secondary mb-2">
+            {originalText.length} / 5000 chars
+          </div>
+
+          {/* Pill-shaped input bar */}
+          <div className="flex items-center gap-2 px-4 py-3 rounded-full" style={{ background: '#1E293B', border: '1px solid #334155' }}>
+            {/* Plus icon (left) */}
+            <button 
+              className="flex-shrink-0 text-text-secondary hover:text-primary transition-colors"
+              aria-label="Add attachment"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+            </button>
+
+            {/* Input field */}
+            <input
+              type="text"
+              value={originalText}
+              onChange={(e) => setOriginalText(e.target.value.slice(0, 5000))}
+              placeholder="Paste your email..."
+              className="flex-1 bg-transparent text-sm text-text-primary placeholder-text-secondary outline-none"
+            />
+
+            {/* Mic icon (decoration) */}
+            <button 
+              className="flex-shrink-0 text-text-secondary hover:text-primary transition-colors"
+              aria-label="Voice input"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
+              </svg>
+            </button>
+
+            {/* Submit button (up-arrow in circle) */}
+            <button
+              onClick={() => {
+                if (originalText.trim()) {
+                  // Trigger rewrite with default instruction (professional tone)
+                  setActiveCommand(COMMANDS[0].label);
+                  doRewrite(COMMANDS[0].instruction);
+                }
+              }}
+              disabled={loading || !originalText.trim()}
+              className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 disabled:opacity-50"
+              style={{
+                background: originalText.trim() && !loading ? 'linear-gradient(135deg, #2563EB 0%, #7C3AED 100%)' : '#475569',
+              }}
+            >
+              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </div>
