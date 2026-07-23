@@ -213,9 +213,9 @@ function Settings() {
         </p>
       </div>
 
-      <div className="p-6 max-w-3xl space-y-6">
+      <div className="p-4 md:p-6 max-w-3xl space-y-4 md:space-y-6">
         {/* Account Section */}
-        <section className="rounded-xl p-5" style={{ background: 'rgba(30, 41, 59, 0.6)', border: '1px solid #334155' }}>
+        <section className="rounded-lg p-4 md:p-5 w-full" style={{ background: 'rgba(30, 41, 59, 0.6)', border: '1px solid #334155', maxWidth: '355px' }}>
           <h2 className="text-sm font-semibold text-text-primary mb-4 flex items-center gap-2">
             <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
@@ -239,7 +239,7 @@ function Settings() {
         </section>
 
         {/* AI Providers Section */}
-        <section className="rounded-xl p-5" style={{ background: 'rgba(30, 41, 59, 0.6)', border: '1px solid #334155' }}>
+        <section className="rounded-lg p-4 md:p-5 w-full" style={{ background: 'rgba(30, 41, 59, 0.6)', border: '1px solid #334155', maxWidth: '355px' }}>
           <h2 className="text-sm font-semibold text-text-primary mb-4 flex items-center gap-2">
             <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
@@ -312,7 +312,7 @@ function Settings() {
         </section>
 
         {/* Cascade Info */}
-        <section className="rounded-xl p-5" style={{ background: 'rgba(30, 41, 59, 0.6)', border: '1px solid #334155' }}>
+        <section className="rounded-lg p-4 md:p-5 w-full" style={{ background: 'rgba(30, 41, 59, 0.6)', border: '1px solid #334155', maxWidth: '355px' }}>
           <h2 className="text-sm font-semibold text-text-primary mb-4 flex items-center gap-2">
             <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
@@ -347,7 +347,7 @@ function Settings() {
         </section>
 
         {/* Custom Labels Section */}
-        <section className="rounded-xl p-5" style={{ background: 'rgba(30, 41, 59, 0.6)', border: '1px solid #334155' }}>
+        <section className="rounded-lg p-4 md:p-5 w-full" style={{ background: 'rgba(30, 41, 59, 0.6)', border: '1px solid #334155', maxWidth: '355px' }}>
           <h2 className="text-sm font-semibold text-text-primary mb-4 flex items-center gap-2">
             <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
@@ -405,7 +405,7 @@ function Settings() {
         </section>
 
         {/* Email Deletion Behavior (Item 2) */}
-        <section className="rounded-xl p-5" style={{ background: 'rgba(30, 41, 59, 0.6)', border: '1px solid #334155' }}>
+        <section className="rounded-lg p-4 md:p-5 w-full" style={{ background: 'rgba(30, 41, 59, 0.6)', border: '1px solid #334155', maxWidth: '355px' }}>
           <h2 className="text-sm font-semibold text-text-primary mb-4 flex items-center gap-2">
             <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
@@ -519,7 +519,7 @@ function Settings() {
         </section>
 
         {/* Danger Zone Section */}
-        <section className="rounded-xl p-5" style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+        <section className="rounded-lg p-4 md:p-5 w-full" style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)', maxWidth: '355px' }}>
           <h2 className="text-sm font-semibold text-danger mb-3 flex items-center gap-2">
             <svg className="w-4 h-4 text-danger" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -541,7 +541,7 @@ function Settings() {
         </section>
 
         {/* About Section */}
-        <section className="rounded-xl p-5" style={{ background: 'rgba(30, 41, 59, 0.6)', border: '1px solid #334155' }}>
+        <section className="rounded-lg p-4 md:p-5 w-full" style={{ background: 'rgba(30, 41, 59, 0.6)', border: '1px solid #334155', maxWidth: '355px' }}>
           <h2 className="text-sm font-semibold text-text-primary mb-3 flex items-center gap-2">
             <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />

@@ -391,7 +391,7 @@ function Inbox() {
               value={analyzeLimit}
               onChange={(e) => setAnalyzeLimit(Number(e.target.value))}
               disabled={isAnalyzing}
-              className="px-3 py-2 rounded-lg text-sm text-text-primary outline-none transition-colors"
+              className="px-3 py-1.5 rounded-lg text-sm text-text-primary outline-none transition-colors min-w-[95px]"
               style={{ background: '#1E293B', border: '1px solid #334155' }}
             >
               {LIMIT_OPTIONS.map((n) => (
@@ -401,8 +401,9 @@ function Inbox() {
             <button
               onClick={handleAnalyze}
               disabled={isAnalyzing}
-              className="px-5 py-2 rounded-lg text-sm font-semibold text-white transition-all duration-200
-                         hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+              className="px-4 py-1.5 rounded-lg text-sm font-semibold text-white transition-all duration-200
+                         hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed
+                         min-w-[95px] flex items-center justify-center gap-2"
               style={{
                 background: isAnalyzing ? '#475569' : 'linear-gradient(135deg, #2563EB 0%, #7C3AED 100%)',
                 boxShadow: isAnalyzing ? 'none' : '0 4px 15px -3px rgba(37, 99, 235, 0.4)',
@@ -435,8 +436,9 @@ function Inbox() {
             <button
               onClick={handleBatchApply}
               disabled={pendingCount === 0 || isApplying}
-              className="px-5 py-2 rounded-lg text-sm font-semibold text-white transition-all duration-200
-                         hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-1.5 rounded-lg text-sm font-semibold text-white transition-all duration-200
+                         hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed
+                         min-w-[95px] flex items-center justify-center gap-2"
               style={{
                 background: (pendingCount > 0 && !isApplying) ? '#2563EB' : '#475569',
                 boxShadow: (pendingCount > 0 && !isApplying) ? '0 4px 15px -3px rgba(37, 99, 235, 0.4)' : 'none',
@@ -467,7 +469,7 @@ function Inbox() {
             <button
               onClick={() => setShowBatchDelete(prev => !prev)}
               disabled={isAnalyzing}
-              className="px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+              className="px-3 py-1.5 rounded-lg text-sm font-semibold transition-all min-w-[95px] flex items-center justify-center gap-1"
               style={{
                 background: showBatchDelete ? '#7F1D1D' : '#1E293B',
                 border: '1px solid #334155',
@@ -621,7 +623,7 @@ function Inbox() {
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
               className="w-full pl-10 pr-4 py-2 rounded-lg text-sm text-text-primary placeholder-text-secondary outline-none
-                         transition-all duration-200 focus:ring-2 focus:ring-primary"
+                         transition-all duration-200 focus:ring-2 focus:ring-primary min-h-[38px]"
               style={{ background: '#1E293B', border: '1px solid #334155' }}
             />
           </div>
@@ -630,7 +632,7 @@ function Inbox() {
           <select
             value={labelFilter}
             onChange={(e) => handleLabelChange(e.target.value)}
-            className="px-3 py-2 rounded-lg text-sm text-text-primary outline-none transition-colors cursor-pointer"
+            className="px-3 py-1.5 rounded-lg text-sm text-text-primary outline-none transition-colors cursor-pointer min-w-[168px] min-h-[32px]"
             style={{ background: '#1E293B', border: '1px solid #334155' }}
           >
             {availableLabels.map((l) => (
@@ -642,7 +644,7 @@ function Inbox() {
           <select
             value={sortBy}
             onChange={(e) => handleSortChange(e.target.value)}
-            className="px-3 py-2 rounded-lg text-sm text-text-primary outline-none transition-colors cursor-pointer"
+            className="px-3 py-1.5 rounded-lg text-sm text-text-primary outline-none transition-colors cursor-pointer min-w-[168px] min-h-[32px]"
             style={{ background: '#1E293B', border: '1px solid #334155' }}
           >
             {SORT_OPTIONS.map((o) => (
@@ -653,7 +655,7 @@ function Inbox() {
       </div>
 
       {/* Email List */}
-      <div className="p-6 overflow-y-auto" style={{ height: 'calc(100vh - 200px)' }}>
+      <div className="px-3 py-6 md:px-6 overflow-y-auto" style={{ height: 'calc(100vh - 200px)' }}>
         {/* Loading */}
         {loading && (
           <div className="flex flex-col items-center justify-center h-64 gap-4">

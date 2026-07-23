@@ -106,7 +106,7 @@ function ScamAlerts() {
             <button
               key={filter.value}
               onClick={() => setActiveFilter(filter.value)}
-              className="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+              className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 min-w-[85px] flex items-center justify-center gap-1"
               style={{
                 background: activeFilter === filter.value ? 'rgba(37, 99, 235, 0.15)' : 'transparent',
                 color: activeFilter === filter.value ? '#60A5FA' : '#94A3B8',
@@ -121,7 +121,7 @@ function ScamAlerts() {
       </div>
 
       {/* Alerts List */}
-      <div className="p-6 overflow-y-auto" style={{ height: 'calc(100vh - 160px)' }}>
+      <div className="px-3 py-6 md:px-6 overflow-y-auto" style={{ height: 'calc(100vh - 160px)' }}>
         {loading && (
           <div className="flex flex-col items-center justify-center h-64 gap-4">
             <div className="w-10 h-10 border-3 border-primary border-t-transparent rounded-full animate-spin" style={{ borderWidth: '3px' }}></div>
