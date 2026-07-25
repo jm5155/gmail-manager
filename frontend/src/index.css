@@ -38,17 +38,29 @@
     --gradient-warning: linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%);
     --gradient-page: linear-gradient(135deg, #1A1B2E 0%, #15162B 100%);
     
-    /* Neumorphic Shadows (soft elevation) */
+    /* Neumorphic Shadows (soft elevation) - Standard drop shadows for cards */
     --shadow-neumorphic-sm: 0 2px 12px rgba(0, 0, 0, 0.25);
     --shadow-neumorphic-md: 0 4px 20px rgba(0, 0, 0, 0.35);
     --shadow-neumorphic-lg: 0 8px 32px rgba(0, 0, 0, 0.45);
+    
+    /* TRUE NEUMORPHIC (SOFT UI) - Dual-direction shadows for interactive elements */
+    /* Raised state: light shadow top-left, dark shadow bottom-right */
+    --shadow-soft-raised: -4px -4px 8px rgba(255, 255, 255, 0.03), 4px 4px 8px rgba(0, 0, 0, 0.4);
+    --shadow-soft-raised-lg: -6px -6px 12px rgba(255, 255, 255, 0.05), 6px 6px 12px rgba(0, 0, 0, 0.5);
+    
+    /* Pressed state: inverted inset shadows */
+    --shadow-soft-pressed: inset 4px 4px 8px rgba(0, 0, 0, 0.4), inset -4px -4px 8px rgba(255, 255, 255, 0.03);
+    --shadow-soft-pressed-lg: inset 6px 6px 12px rgba(0, 0, 0, 0.5), inset -6px -6px 12px rgba(255, 255, 255, 0.05);
+    
+    /* Hover state: stronger extrusion */
+    --shadow-soft-hover: -6px -6px 12px rgba(255, 255, 255, 0.05), 6px 6px 12px rgba(0, 0, 0, 0.5);
     
     /* Glow Effects */
     --shadow-glow-teal: 0 0 16px rgba(45, 212, 191, 0.3);
     --shadow-glow-blue: 0 0 16px rgba(59, 130, 246, 0.3);
     --shadow-glow-danger: 0 0 16px rgba(239, 68, 68, 0.3);
     
-    /* Inset Shadows (pressed-in look for inputs) */
+    /* Inset Shadows (legacy - now replaced by soft-pressed for true neumorphism) */
     --shadow-inset-input: inset 0 2px 4px rgba(0, 0, 0, 0.2);
     --shadow-focus-teal: 0 0 0 3px rgba(45, 212, 191, 0.2), inset 0 2px 4px rgba(0, 0, 0, 0.2);
     
@@ -158,25 +170,28 @@
     background: var(--gradient-warning);
   }
   
-  /* Neumorphic Input Styles (pressed-in look) */
+  /* Neumorphic Input Styles (TRUE SOFT UI - pressed-in look) */
   .input-neumorphic {
-    @apply bg-navy-800 border border-white/10 rounded-input px-4 py-3;
+    @apply bg-navy-900 border-0 rounded-input px-4 py-3;
     @apply text-white placeholder-lavender-400;
     @apply transition-all duration-200;
     @apply outline-none;
-    box-shadow: var(--shadow-inset-input);
+    box-shadow: var(--shadow-soft-pressed);
+  }
+  
+  .input-neumorphic:hover {
+    box-shadow: var(--shadow-soft-pressed-lg);
   }
   
   .input-neumorphic:focus {
-    @apply border-teal-400;
-    box-shadow: var(--shadow-focus-teal);
+    box-shadow: var(--shadow-soft-pressed-lg), 0 0 0 2px rgba(45, 212, 191, 0.3);
   }
   
   .input-neumorphic:disabled {
     @apply opacity-50 cursor-not-allowed;
   }
   
-  /* Neumorphic Select Dropdown */
+  /* Neumorphic Select Dropdown (TRUE SOFT UI) */
   .select-neumorphic {
     @apply input-neumorphic;
     @apply cursor-pointer appearance-none;
@@ -195,36 +210,86 @@
     background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 6.5L6 1.5L1 6.5' stroke='%232DD4BF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   }
   
-  /* Neumorphic Button - Primary */
+  /* Neumorphic Button - Primary (TRUE SOFT UI with gradient) */
   .btn-neumorphic-primary {
     @apply bg-gradient-primary text-white font-semibold;
     @apply px-6 py-3 rounded-button;
     @apply transition-all duration-200;
-    @apply hover:shadow-glow-teal hover:-translate-y-0.5;
-    @apply active:scale-[0.98];
     @apply disabled:opacity-50 disabled:cursor-not-allowed;
+    box-shadow: var(--shadow-soft-raised);
   }
   
-  /* Neumorphic Button - Secondary */
+  .btn-neumorphic-primary:hover:not(:disabled) {
+    box-shadow: var(--shadow-soft-hover), var(--shadow-glow-teal);
+    @apply -translate-y-0.5;
+  }
+  
+  .btn-neumorphic-primary:active:not(:disabled) {
+    box-shadow: var(--shadow-soft-pressed);
+    @apply scale-[0.98] translate-y-0;
+  }
+  
+  /* Neumorphic Button - Secondary (TRUE SOFT UI) */
   .btn-neumorphic-secondary {
-    @apply bg-navy-800 text-lavender-400 font-semibold;
+    @apply bg-navy-900 text-lavender-400 font-semibold;
     @apply px-6 py-3 rounded-button;
-    @apply border border-white/10;
     @apply transition-all duration-200;
-    @apply hover:bg-navy-700 hover:border-white/20;
-    @apply active:scale-[0.98];
     @apply disabled:opacity-50 disabled:cursor-not-allowed;
+    box-shadow: var(--shadow-soft-raised);
   }
   
-  /* Neumorphic Button - Destructive */
+  .btn-neumorphic-secondary:hover:not(:disabled) {
+    @apply text-teal-400;
+    box-shadow: var(--shadow-soft-hover);
+  }
+  
+  .btn-neumorphic-secondary:active:not(:disabled) {
+    box-shadow: var(--shadow-soft-pressed);
+    @apply scale-[0.98];
+  }
+  
+  /* Neumorphic Button - Destructive (TRUE SOFT UI) */
   .btn-neumorphic-destructive {
-    @apply bg-transparent text-red-400 font-semibold;
+    @apply bg-navy-900 text-red-400 font-semibold;
     @apply px-6 py-3 rounded-button;
-    @apply border-2 border-red-400;
     @apply transition-all duration-200;
-    @apply hover:bg-gradient-danger hover:text-white hover:border-transparent;
-    @apply active:scale-[0.98];
     @apply disabled:opacity-50 disabled:cursor-not-allowed;
+    box-shadow: var(--shadow-soft-raised);
+  }
+  
+  .btn-neumorphic-destructive:hover:not(:disabled) {
+    @apply bg-gradient-danger text-white;
+    box-shadow: var(--shadow-soft-hover), var(--shadow-glow-danger);
+  }
+  
+  .btn-neumorphic-destructive:active:not(:disabled) {
+    box-shadow: var(--shadow-soft-pressed);
+    @apply scale-[0.98];
+  }
+  
+  /* Neumorphic Checkbox (TRUE SOFT UI) */
+  .checkbox-neumorphic {
+    @apply appearance-none w-5 h-5 rounded-md cursor-pointer;
+    @apply bg-navy-900 transition-all duration-200;
+    box-shadow: var(--shadow-soft-pressed);
+  }
+  
+  .checkbox-neumorphic:hover {
+    box-shadow: var(--shadow-soft-pressed-lg);
+  }
+  
+  .checkbox-neumorphic:checked {
+    @apply bg-gradient-primary;
+    box-shadow: var(--shadow-soft-raised), var(--shadow-glow-teal);
+  }
+  
+  .checkbox-neumorphic:checked::after {
+    content: '';
+    @apply block w-full h-full;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M13.5 3.5L6 11L2.5 7.5' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-size: 14px;
+    background-position: center;
+    background-repeat: no-repeat;
   }
   
   /* Neumorphic Card */
