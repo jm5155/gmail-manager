@@ -1,190 +1,306 @@
 /**
- * index.css — Global Design System Stylesheet (Phase 9)
- * All design tokens, base styles, and utility classes for the Gmail Manager app.
+ * index.css — Neumorphic Dark Gradient Design System (Updated 2026-07-25)
+ * All design tokens, Tailwind directives, base styles, and utility classes.
  * Imported in main.jsx as the single CSS entry point.
  */
 
+/* ---------- TAILWIND DIRECTIVES ---------- */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* ---------- CSS CUSTOM PROPERTIES (Design Tokens) ---------- */
-:root {
-  /* Brand Colors */
-  --color-primary: #2563EB;
-  --color-primary-hover: #1D4ED8;
-  --color-primary-light: rgba(37, 99, 235, 0.15);
-
-  /* Backgrounds */
-  --color-bg-dark: #0F172A;
-  --color-surface: #1E293B;
-  --color-surface-hover: #263548;
-
-  /* Borders */
-  --color-border: #334155;
-  --color-border-light: rgba(51, 65, 85, 0.5);
-
-  /* Text */
-  --color-text-primary: #F1F5F9;
-  --color-text-secondary: #94A3B8;
-  --color-text-muted: #64748B;
-
-  /* Status Colors */
-  --color-success: #22C55E;
-  --color-warning: #F59E0B;
-  --color-danger: #EF4444;
-
-  /* Shadows */
-  --shadow-sm: 0 2px 8px -2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 8px 24px -6px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
-  --shadow-primary: 0 4px 15px -3px rgba(37, 99, 235, 0.4);
-
-  /* Border Radius */
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-pill: 999px;
-
-  /* Transitions */
-  --transition-fast: 150ms ease-out;
-  --transition-normal: 200ms ease-out;
-  --transition-slow: 300ms ease-out;
-
-  /* Sidebar */
-  --sidebar-width: 240px;
+@layer base {
+  :root {
+    /* ========== NEW: NEUMORPHIC NAVY-PURPLE SYSTEM ========== */
+    
+    /* Navy-Purple Base Colors */
+    --bg-navy-950: #15162B;     /* Darkest (bg-primary-dark) */
+    --bg-navy-900: #1A1B2E;     /* Page background (bg-primary) */
+    --bg-navy-800: #22243D;     /* Cards (bg-secondary) */
+    --bg-navy-700: #262A47;     /* Elevated cards (bg-tertiary) */
+    --bg-navy-600: #2A2D4A;     /* Hover state */
+    
+    /* Teal-Blue Gradient Colors */
+    --brand-teal: #2DD4BF;      /* Gradient start */
+    --brand-blue: #3B82F6;      /* Gradient end */
+    --brand-purple: #8B5CF6;    /* Accent */
+    
+    /* Lavender-Gray Text (warmer than slate) */
+    --text-white: #ffffff;
+    --text-lavender-400: #9CA3C4;  /* Secondary text */
+    --text-lavender-500: #6B7094;  /* Muted text */
+    
+    /* Gradient System */
+    --gradient-primary: linear-gradient(135deg, #2DD4BF 0%, #3B82F6 100%);
+    --gradient-danger: linear-gradient(135deg, #F87171 0%, #EF4444 100%);
+    --gradient-success: linear-gradient(135deg, #34D399 0%, #10B981 100%);
+    --gradient-warning: linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%);
+    --gradient-page: linear-gradient(135deg, #1A1B2E 0%, #15162B 100%);
+    
+    /* Neumorphic Shadows (soft elevation) */
+    --shadow-neumorphic-sm: 0 2px 12px rgba(0, 0, 0, 0.25);
+    --shadow-neumorphic-md: 0 4px 20px rgba(0, 0, 0, 0.35);
+    --shadow-neumorphic-lg: 0 8px 32px rgba(0, 0, 0, 0.45);
+    
+    /* Glow Effects */
+    --shadow-glow-teal: 0 0 16px rgba(45, 212, 191, 0.3);
+    --shadow-glow-blue: 0 0 16px rgba(59, 130, 246, 0.3);
+    --shadow-glow-danger: 0 0 16px rgba(239, 68, 68, 0.3);
+    
+    /* Inset Shadows (pressed-in look for inputs) */
+    --shadow-inset-input: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+    --shadow-focus-teal: 0 0 0 3px rgba(45, 212, 191, 0.2), inset 0 2px 4px rgba(0, 0, 0, 0.2);
+    
+    /* Border Radius System */
+    --radius-card: 16px;
+    --radius-input: 12px;
+    --radius-button: 12px;
+    
+    /* Category Colors */
+    --color-work: #3B82F6;
+    --color-work-light: #60A5FA;
+    --color-finance: #10B981;
+    --color-finance-light: #34D399;
+    --color-newsletter: #A855F7;
+    --color-newsletter-light: #C084FC;
+    --color-promotional: #F97316;
+    --color-promotional-light: #FB923C;
+    --color-personal: #06B6D4;
+    --color-personal-light: #22D3EE;
+    --color-spam: #EF4444;
+    --color-spam-light: #F87171;
+    
+    /* Risk Colors */
+    --risk-low: #10B981;
+    --risk-moderate: #F59E0B;
+    --risk-high: #F97316;
+    --risk-danger: #EF4444;
+    
+    
+    /* ========== BACKWARD COMPATIBILITY ALIASES ========== */
+    /* Keep old variable names working for untouched components */
+    
+    /* Brand Colors (aliases) */
+    --color-primary: var(--brand-teal);           /* Was #2563EB, now #2DD4BF */
+    --color-primary-hover: #1fb4a0;               /* Darker teal */
+    --color-primary-light: rgba(45, 212, 191, 0.15);
+    
+    /* Backgrounds (aliases) */
+    --color-bg-dark: var(--bg-navy-900);          /* Was #0F172A, now #1A1B2E */
+    --color-surface: var(--bg-navy-800);          /* Was #1E293B, now #22243D */
+    --color-surface-hover: var(--bg-navy-700);    /* Was #263548, now #262A47 */
+    
+    /* Borders (keep existing) */
+    --color-border: #334155;
+    --color-border-light: rgba(255, 255, 255, 0.1);
+    
+    /* Text (aliases) */
+    --color-text-primary: var(--text-white);
+    --color-text-secondary: var(--text-lavender-400);  /* Was #94A3B8, now #9CA3C4 */
+    --color-text-muted: var(--text-lavender-500);      /* Was #64748B, now #6B7094 */
+    
+    /* Status Colors (keep existing) */
+    --color-success: #22C55E;
+    --color-warning: #F59E0B;
+    --color-danger: #EF4444;
+    
+    /* Shadows (aliases to neumorphic) */
+    --shadow-sm: var(--shadow-neumorphic-sm);
+    --shadow-md: var(--shadow-neumorphic-md);
+    --shadow-lg: var(--shadow-neumorphic-lg);
+    --shadow-primary: var(--shadow-glow-teal);
+    
+    /* Border Radius (keep existing) */
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --radius-pill: 999px;
+    
+    /* Transitions (keep existing) */
+    --transition-fast: 150ms ease-out;
+    --transition-normal: 200ms ease-out;
+    --transition-slow: 300ms ease-out;
+    
+    /* Sidebar */
+    --sidebar-width: 240px;
+  }
 }
 
-/* ---------- GLOBAL RESET ---------- */
-*,
-*::before,
-*::after {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+/* ---------- BASE STYLES ---------- */
+@layer base {
+  body {
+    @apply bg-gradient-to-br from-navy-900 to-navy-950;
+    @apply text-white;
+    @apply font-sans;
+    @apply antialiased;
+    @apply min-h-screen;
+  }
 }
 
-/* ---------- BODY ---------- */
-body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background-color: var(--color-bg-dark);
-  color: var(--color-text-primary);
-  overflow: hidden;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  line-height: 1.5;
+/* ---------- COMPONENT UTILITIES ---------- */
+@layer components {
+  /* Gradient Background Classes (for buttons, nav, etc.) */
+  .bg-gradient-primary {
+    background: var(--gradient-primary);
+  }
+  
+  .bg-gradient-danger {
+    background: var(--gradient-danger);
+  }
+  
+  .bg-gradient-success {
+    background: var(--gradient-success);
+  }
+  
+  .bg-gradient-warning {
+    background: var(--gradient-warning);
+  }
+  
+  /* Neumorphic Input Styles (pressed-in look) */
+  .input-neumorphic {
+    @apply bg-navy-800 border border-white/10 rounded-input px-4 py-3;
+    @apply text-white placeholder-lavender-400;
+    @apply transition-all duration-200;
+    @apply outline-none;
+    box-shadow: var(--shadow-inset-input);
+  }
+  
+  .input-neumorphic:focus {
+    @apply border-teal-400;
+    box-shadow: var(--shadow-focus-teal);
+  }
+  
+  .input-neumorphic:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+  
+  /* Neumorphic Select Dropdown */
+  .select-neumorphic {
+    @apply input-neumorphic;
+    @apply cursor-pointer appearance-none;
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%239CA3C4' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 12px;
+    padding-right: 2.75rem;
+  }
+  
+  .select-neumorphic:hover {
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%232DD4BF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  }
+  
+  .select-neumorphic:focus {
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 6.5L6 1.5L1 6.5' stroke='%232DD4BF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  }
+  
+  /* Neumorphic Button - Primary */
+  .btn-neumorphic-primary {
+    @apply bg-gradient-primary text-white font-semibold;
+    @apply px-6 py-3 rounded-button;
+    @apply transition-all duration-200;
+    @apply hover:shadow-glow-teal hover:-translate-y-0.5;
+    @apply active:scale-[0.98];
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  /* Neumorphic Button - Secondary */
+  .btn-neumorphic-secondary {
+    @apply bg-navy-800 text-lavender-400 font-semibold;
+    @apply px-6 py-3 rounded-button;
+    @apply border border-white/10;
+    @apply transition-all duration-200;
+    @apply hover:bg-navy-700 hover:border-white/20;
+    @apply active:scale-[0.98];
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  /* Neumorphic Button - Destructive */
+  .btn-neumorphic-destructive {
+    @apply bg-transparent text-red-400 font-semibold;
+    @apply px-6 py-3 rounded-button;
+    @apply border-2 border-red-400;
+    @apply transition-all duration-200;
+    @apply hover:bg-gradient-danger hover:text-white hover:border-transparent;
+    @apply active:scale-[0.98];
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  /* Neumorphic Card */
+  .card-neumorphic {
+    @apply bg-navy-800 rounded-card p-5;
+    @apply shadow-neumorphic-md;
+    @apply transition-all duration-200;
+    @apply hover:shadow-hover-lift hover:-translate-y-0.5;
+    @apply cursor-pointer;
+  }
+  
+  /* Status Badge (rounded pill) */
+  .badge-status {
+    @apply inline-flex items-center gap-1.5;
+    @apply px-3 py-1 rounded-full;
+    @apply text-xs font-medium;
+    @apply transition-all duration-200;
+  }
+  
+  /* Risk Badge Variants */
+  .badge-risk-low {
+    @apply badge-status;
+    @apply bg-green-500/15 text-green-400;
+  }
+  
+  .badge-risk-moderate {
+    @apply badge-status;
+    @apply bg-yellow-500/15 text-yellow-400;
+  }
+  
+  .badge-risk-high {
+    @apply badge-status;
+    @apply bg-orange-500/15 text-orange-400;
+  }
+  
+  .badge-risk-danger {
+    @apply badge-status;
+    @apply bg-red-500/15 text-red-400;
+  }
+  
+  /* Gradient Accent Bar (for cards) */
+  .accent-bar-primary {
+    @apply absolute left-0 top-0 w-1 h-full;
+    @apply bg-gradient-primary rounded-l-full;
+  }
+  
+  .accent-bar-danger {
+    @apply absolute left-0 top-0 w-1 h-full;
+    @apply bg-gradient-danger rounded-l-full;
+  }
 }
 
-/* ---------- SCROLLBAR ---------- */
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: var(--color-bg-dark);
-}
-::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #475569;
-}
-
-/* ---------- SELECTION ---------- */
-::selection {
-  background: rgba(37, 99, 235, 0.3);
-  color: var(--color-text-primary);
-}
-
-/* ---------- FOCUS RINGS ---------- */
-*:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
-/* ---------- LINKS ---------- */
-a {
-  color: var(--color-primary);
-  text-decoration: none;
-  transition: color var(--transition-fast);
-}
-a:hover {
-  color: var(--color-primary-hover);
-}
-
-/* ---------- GLOBAL ANIMATIONS ---------- */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideIn {
-  from { opacity: 0; transform: translateX(40px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
-
-@keyframes modalIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4); }
-  50% { box-shadow: 0 0 0 8px rgba(37, 99, 235, 0); }
-}
-
-/* ---------- UTILITY CLASSES ---------- */
-.animate-fade-in {
-  animation: fadeIn var(--transition-normal);
-}
-.animate-slide-up {
-  animation: slideUp var(--transition-slow);
-}
-
-/* Gradient text utility */
-.gradient-text {
-  background: linear-gradient(135deg, var(--color-primary) 0%, #7C3AED 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* Glass card utility */
-.glass-card {
-  background: rgba(30, 41, 59, 0.8);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--color-border-light);
-  border-radius: var(--radius-lg);
-}
-
-/* Primary gradient button */
-.btn-primary {
-  background: linear-gradient(135deg, var(--color-primary) 0%, #1D4ED8 100%);
-  color: white;
-  border: none;
-  border-radius: var(--radius-md);
-  font-weight: 600;
-  cursor: pointer;
-  transition: all var(--transition-normal);
-  box-shadow: var(--shadow-primary);
-}
-.btn-primary:hover {
-  transform: scale(1.02);
-  box-shadow: 0 6px 20px -4px rgba(37, 99, 235, 0.5);
-}
-.btn-primary:active {
-  transform: scale(0.98);
-}
-.btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
+/* ---------- UTILITY OVERRIDES ---------- */
+@layer utilities {
+  /* Custom scrollbar for dark theme */
+  .scrollbar-neumorphic::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .scrollbar-neumorphic::-webkit-scrollbar-track {
+    @apply bg-navy-900 rounded-full;
+  }
+  
+  .scrollbar-neumorphic::-webkit-scrollbar-thumb {
+    @apply bg-navy-600 rounded-full;
+    @apply hover:bg-navy-500;
+  }
+  
+  /* Body scroll lock (for mobile drawer) */
+  .drawer-open {
+    overflow: hidden;
+  }
+  
+  /* Tap highlight color for mobile */
+  * {
+    -webkit-tap-highlight-color: rgba(45, 212, 191, 0.2);
+  }
 }
