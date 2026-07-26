@@ -391,8 +391,7 @@ function Inbox() {
               value={analyzeLimit}
               onChange={(e) => setAnalyzeLimit(Number(e.target.value))}
               disabled={isAnalyzing}
-              className="px-3 py-1.5 rounded-lg text-sm text-text-primary outline-none transition-colors min-w-[95px]"
-              style={{ background: '#1E293B', border: '1px solid #334155' }}
+              className="select-neumorphic px-3 py-1.5 text-sm min-w-[95px]"
             >
               {LIMIT_OPTIONS.map((n) => (
                 <option key={n} value={n}>{n} emails</option>
@@ -434,12 +433,10 @@ function Inbox() {
             <button
               onClick={handleBatchApply}
               disabled={pendingCount === 0 || isApplying}
-              className="px-4 py-1.5 rounded-lg text-sm font-semibold text-white transition-all duration-200
-                         hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed
-                         min-w-[95px] flex items-center justify-center gap-2"
+              className="btn-neumorphic-secondary px-4 py-1.5 text-sm min-w-[95px] flex items-center justify-center gap-2"
               style={{
-                background: (pendingCount > 0 && !isApplying) ? '#2563EB' : '#475569',
-                boxShadow: (pendingCount > 0 && !isApplying) ? '0 4px 15px -3px rgba(37, 99, 235, 0.4)' : 'none',
+                background: (pendingCount > 0 && !isApplying) ? undefined : '#475569',
+                boxShadow: (pendingCount > 0 && !isApplying) ? undefined : 'none',
               }}
             >
               {isApplying ? (
@@ -620,9 +617,7 @@ function Inbox() {
               placeholder="Filter by sender or domain..."
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 rounded-lg text-sm text-text-primary placeholder-text-secondary outline-none
-                         transition-all duration-200 focus:ring-2 focus:ring-primary min-h-[38px]"
-              style={{ background: '#1E293B', border: '1px solid #334155' }}
+              className="input-neumorphic w-full pl-10 pr-4 py-2 text-sm min-h-[38px]"
             />
           </div>
 
@@ -630,8 +625,7 @@ function Inbox() {
           <select
             value={labelFilter}
             onChange={(e) => handleLabelChange(e.target.value)}
-            className="px-3 py-1.5 rounded-lg text-sm text-text-primary outline-none transition-colors cursor-pointer min-w-[168px] min-h-[32px]"
-            style={{ background: '#1E293B', border: '1px solid #334155' }}
+            className="select-neumorphic px-3 py-1.5 text-sm cursor-pointer min-w-[168px] min-h-[32px]"
           >
             {availableLabels.map((l) => (
               <option key={l} value={l}>{l}</option>
@@ -642,8 +636,7 @@ function Inbox() {
           <select
             value={sortBy}
             onChange={(e) => handleSortChange(e.target.value)}
-            className="px-3 py-1.5 rounded-lg text-sm text-text-primary outline-none transition-colors cursor-pointer min-w-[168px] min-h-[32px]"
-            style={{ background: '#1E293B', border: '1px solid #334155' }}
+            className="select-neumorphic px-3 py-1.5 text-sm cursor-pointer min-w-[168px] min-h-[32px]"
           >
             {SORT_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>{o.label}</option>

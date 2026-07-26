@@ -44,16 +44,16 @@
     --shadow-neumorphic-lg: 0 8px 32px rgba(0, 0, 0, 0.45);
     
     /* TRUE NEUMORPHIC (SOFT UI) - Dual-direction shadows for interactive elements */
-    /* Raised state: light shadow top-left, dark shadow bottom-right */
-    --shadow-soft-raised: -4px -4px 8px rgba(255, 255, 255, 0.03), 4px 4px 8px rgba(0, 0, 0, 0.4);
-    --shadow-soft-raised-lg: -6px -6px 12px rgba(255, 255, 255, 0.05), 6px 6px 12px rgba(0, 0, 0, 0.5);
+    /* Raised state: light shadow top-left, dark shadow bottom-right - STRENGTHENED */
+    --shadow-soft-raised: -6px -6px 16px rgba(255, 255, 255, 0.08), 6px 6px 16px rgba(0, 0, 0, 0.6);
+    --shadow-soft-raised-lg: -8px -8px 20px rgba(255, 255, 255, 0.1), 8px 8px 20px rgba(0, 0, 0, 0.7);
     
-    /* Pressed state: inverted inset shadows */
-    --shadow-soft-pressed: inset 4px 4px 8px rgba(0, 0, 0, 0.4), inset -4px -4px 8px rgba(255, 255, 255, 0.03);
-    --shadow-soft-pressed-lg: inset 6px 6px 12px rgba(0, 0, 0, 0.5), inset -6px -6px 12px rgba(255, 255, 255, 0.05);
+    /* Pressed state: inverted inset shadows - STRENGTHENED */
+    --shadow-soft-pressed: inset 6px 6px 12px rgba(0, 0, 0, 0.5), inset -6px -6px 12px rgba(255, 255, 255, 0.05);
+    --shadow-soft-pressed-lg: inset 8px 8px 16px rgba(0, 0, 0, 0.6), inset -8px -8px 16px rgba(255, 255, 255, 0.08);
     
-    /* Hover state: stronger extrusion */
-    --shadow-soft-hover: -6px -6px 12px rgba(255, 255, 255, 0.05), 6px 6px 12px rgba(0, 0, 0, 0.5);
+    /* Hover state: stronger extrusion - STRENGTHENED */
+    --shadow-soft-hover: -8px -8px 20px rgba(255, 255, 255, 0.1), 8px 8px 20px rgba(0, 0, 0, 0.7);
     
     /* Glow Effects */
     --shadow-glow-teal: 0 0 16px rgba(45, 212, 191, 0.3);
