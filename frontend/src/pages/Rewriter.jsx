@@ -116,11 +116,8 @@ function Rewriter() {
             value={originalText}
             onChange={(e) => setOriginalText(e.target.value.slice(0, 5000))}
             placeholder="Paste or type your email text here..."
-            className="flex-1 p-4 rounded-xl text-sm text-text-primary placeholder-text-secondary outline-none
-                       resize-none transition-all duration-200 focus:ring-2 focus:ring-primary"
+            className="input-neumorphic flex-1 p-4 text-sm resize-none"
             style={{
-              background: '#1E293B',
-              border: '1px solid #334155',
               minHeight: '200px',
             }}
           />
@@ -165,11 +162,7 @@ function Rewriter() {
               <button
                 onClick={handleCustomSubmit}
                 disabled={loading || !customInstruction.trim()}
-                className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all duration-200
-                           disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{
-                  background: 'linear-gradient(135deg, #2563EB 0%, #7C3AED 100%)',
-                }}
+                className="btn-neumorphic-primary px-4 py-2 text-sm"
               >
                 Rewrite
               </button>

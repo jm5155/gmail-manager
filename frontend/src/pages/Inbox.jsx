@@ -401,12 +401,10 @@ function Inbox() {
             <button
               onClick={handleAnalyze}
               disabled={isAnalyzing}
-              className="px-4 py-1.5 rounded-lg text-sm font-semibold text-white transition-all duration-200
-                         hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed
-                         min-w-[95px] flex items-center justify-center gap-2"
+              className="btn-neumorphic-primary px-4 py-1.5 text-sm min-w-[95px] flex items-center justify-center gap-2"
               style={{
-                background: isAnalyzing ? '#475569' : 'linear-gradient(135deg, #2563EB 0%, #7C3AED 100%)',
-                boxShadow: isAnalyzing ? 'none' : '0 4px 15px -3px rgba(37, 99, 235, 0.4)',
+                background: isAnalyzing ? '#475569' : undefined,
+                boxShadow: isAnalyzing ? 'none' : undefined,
               }}
             >
               {isInitializing && total === 0 ? (
