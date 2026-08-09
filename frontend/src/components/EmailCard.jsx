@@ -10,6 +10,7 @@
 import React, { useState } from 'react';
 import ScamBadge from './ScamBadge';
 import { getAvatarProps } from '../utils/avatarColors';
+import { decodeHTMLEntities } from '../utils/htmlDecode';
 
 // Default fallback label style
 const DEFAULT_LABEL_STYLE = { bg: 'rgba(148, 163, 184, 0.15)', text: '#94A3B8' };
@@ -31,6 +32,10 @@ function EmailCard({
   // Get sender name and avatar props using new gradient utility
   const senderName = email.sender?.split('<')[0]?.trim()?.replace(/"/g, '') || 'Unknown';
   const avatar = getAvatarProps(senderName);
+
+  // Decode HTML entities in subject and snippet
+  const decodedSubject = decodeHTMLEntities(email.subject) || '(No Subject)';
+  const decodedSnippet = decodeHTMLEntities(email.snippet) || '';
 
   // Format date
   function formatDate(dateStr) {
@@ -94,10 +99,10 @@ function EmailCard({
             <span className="text-xs text-lavender-400 flex-shrink-0">{formatDate(email.analyzed_at || email.date)}</span>
           </div>
           <p className="text-sm text-white truncate mt-0.5">
-            {email.subject || '(No Subject)'}
+            {decodedSubject}
           </p>
           {!expanded && (
-            <p className="text-xs text-lavender-400 truncate mt-0.5">{email.snippet || ''}</p>
+            <p className="text-xs text-lavender-400 truncate mt-0.5">{decodedSnippet}</p>
           )}
         </div>
 
@@ -173,13 +178,13 @@ function EmailCard({
 
         {/* Row 2: Subject Line - Up to 2 lines, wrap allowed */}
         <p className="text-sm text-white line-clamp-2 leading-snug">
-          {email.subject || '(No Subject)'}
+          {decodedSubject}
         </p>
 
         {/* Row 3: Snippet Preview - Single line with ellipsis */}
         {!expanded && (
           <p className="text-xs text-lavender-400 truncate leading-relaxed">
-            {email.snippet || ''}
+            {decodedSnippet}
           </p>
         )}
 
@@ -244,7 +249,7 @@ function EmailCard({
       {expanded && (
         <div className="px-5 pb-5 pt-2 border-t border-white/5">
           <p className="text-sm text-lavender-400 whitespace-pre-wrap leading-relaxed">
-            {email.snippet || 'No preview available'}
+            {decodedSnippet || 'No preview available'}
           </p>
         </div>
       )}

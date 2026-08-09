@@ -387,16 +387,23 @@ function Inbox() {
 
           {/* Analyze Button Group */}
           <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-            <select
-              value={analyzeLimit}
-              onChange={(e) => setAnalyzeLimit(Number(e.target.value))}
-              disabled={isAnalyzing}
-              className="select-neumorphic px-3 py-1.5 text-sm min-w-[95px]"
-            >
-              {LIMIT_OPTIONS.map((n) => (
-                <option key={n} value={n}>{n} emails</option>
-              ))}
-            </select>
+            <div className="relative group">
+              <select
+                value={analyzeLimit}
+                onChange={(e) => setAnalyzeLimit(Number(e.target.value))}
+                disabled={isAnalyzing}
+                className="select-neumorphic px-3 py-1.5 text-sm min-w-[95px]"
+                title="Batch size: number of emails to analyze per run"
+              >
+                {LIMIT_OPTIONS.map((n) => (
+                  <option key={n} value={n}>{n} emails</option>
+                ))}
+              </select>
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-navy-700 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10"
+                   style={{ border: '1px solid #334155' }}>
+                Batch size for analysis
+              </div>
+            </div>
             <button
               onClick={handleAnalyze}
               disabled={isAnalyzing}
@@ -430,15 +437,17 @@ function Inbox() {
             </button>
 
             {/* Apply to Gmail Button (Phase 36/38/43) */}
-            <button
-              onClick={handleBatchApply}
-              disabled={pendingCount === 0 || isApplying}
-              className="btn-neumorphic-secondary px-4 py-1.5 text-sm min-w-[95px] flex items-center justify-center gap-2"
-              style={{
-                background: (pendingCount > 0 && !isApplying) ? undefined : '#475569',
-                boxShadow: (pendingCount > 0 && !isApplying) ? undefined : 'none',
-              }}
-            >
+            <div className="relative group">
+              <button
+                onClick={handleBatchApply}
+                disabled={pendingCount === 0 || isApplying}
+                className="btn-neumorphic-secondary px-4 py-1.5 text-sm min-w-[95px] flex items-center justify-center gap-2"
+                style={{
+                  background: (pendingCount > 0 && !isApplying) ? undefined : '#475569',
+                  boxShadow: (pendingCount > 0 && !isApplying) ? undefined : 'none',
+                }}
+                title={pendingCount === 0 ? "No pending label changes" : `Apply ${pendingCount} pending label changes to Gmail`}
+              >
               {isApplying ? (
                 <span className="flex items-center gap-2">
                   <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
@@ -456,10 +465,17 @@ function Inbox() {
                     <span className="px-2 py-0.5 bg-white/20 rounded-full text-xs">
                       {pendingCount}
                     </span>
-                  )}
-                </span>
+                   )}
+                 </span>
+               )}
+              </button>
+              {pendingCount === 0 && (
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-navy-700 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10"
+                     style={{ border: '1px solid #334155' }}>
+                  No pending changes to apply
+                </div>
               )}
-            </button>
+            </div>
 
             <button
               onClick={() => setShowBatchDelete(prev => !prev)}
