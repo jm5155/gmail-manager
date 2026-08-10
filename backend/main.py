@@ -403,7 +403,7 @@ def _sync_label_to_gmail(email_id: str, user_id: int, service) -> dict:
         cursor.execute("""
             SELECT email_id, label_id, last_applied_label_id
             FROM analyzed_emails
-            WHERE email_id = ? AND user_id = ?
+            WHERE email_id = %s AND user_id = %s
         """, (email_id, user_id))
 
         row = cursor.fetchone()
@@ -456,8 +456,8 @@ def _sync_label_to_gmail(email_id: str, user_id: int, service) -> dict:
         cursor.execute("""
             UPDATE analyzed_emails
             SET applied_to_gmail = 1,
-                last_applied_label_id = ?
-            WHERE email_id = ?
+                last_applied_label_id = %s
+            WHERE email_id = %s
         """, (current_label_id, email_id))
         conn.commit()
         conn.close()
