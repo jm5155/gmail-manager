@@ -124,9 +124,15 @@ def delete_token(user_email: str = None) -> None:
 def is_logged_in(user_email: str = None) -> bool:
     """
     Check if a valid (non-expired) token exists for a specific user.
-    If user_email is not provided, checks legacy token.json.
+    If user_email is not provided, tries legacy token.json for backward compatibility.
     """
-    creds = load_token(user_email)
+    # Try user-specific token first if email provided
+    if user_email:
+        creds = load_token(user_email)
+        return creds is not None and creds.valid
+    
+    # Otherwise, try legacy token.json for backward compatibility
+    creds = load_token(user_email=None)
     return creds is not None and creds.valid
 
 
