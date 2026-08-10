@@ -23,7 +23,7 @@ function ScamBadge({ score, reason, indicators = [] }) {
   const risk = getRiskLevel(score);
 
   return (
-    <div className="relative inline-block">
+    <div className="relative inline-block" style={{ zIndex: showTooltip ? 10000 : 'auto' }}>
       {/* Badge Button */}
       <button
         onMouseEnter={() => setShowTooltip(true)}
@@ -50,7 +50,7 @@ function ScamBadge({ score, reason, indicators = [] }) {
           className="absolute right-0 mt-2 w-72 p-4 rounded-lg shadow-2xl border border-white/10 animate-fadeIn"
           style={{
             background: 'linear-gradient(135deg, #1E293B 0%, #0F172A 100%)',
-            zIndex: 9999,
+            zIndex: 10001,
             top: '100%',
           }}
           onClick={(e) => e.stopPropagation()}
