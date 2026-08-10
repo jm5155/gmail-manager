@@ -6,8 +6,16 @@ Uses SessionMiddleware to store user_id and gmail_address after login.
 """
 
 import os
+import sys
 import json
 import webbrowser
+
+# Force UTF-8 encoding for stdout/stderr to handle emoji in logs
+if sys.platform == 'win32':
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, HTMLResponse
