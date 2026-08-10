@@ -12,54 +12,61 @@
 /* ---------- DESIGN TOKENS ---------- */
 @layer base {
   :root {
-    /* === MUTED PASTELS COLOR SCHEME === */
-    /* Background & Surface */
-    --surface: #2C2C2C; /* Slate gray - main background */
-    --surface-light: #3A3A3A; /* Slightly lighter for hover states */
+    /* === LIGHT NEUMORPHIC COLOR SYSTEM === */
+    /* Base Surface - Everything sits on this soft base tone */
+    --bg-base: #E8ECF3;          /* Base surface for hero, page, everything */
+    --bg-card: #E8ECF3;          /* Same as base (cards pressed into surface) */
+    --bg-section: #EEF1F6;       /* Slight shift for alternating sections */
 
-    /* === NEUMORPHIC SHADOW PAIR === */
-    --shadow-light: rgba(255, 255, 255, 0.05);
-    --shadow-dark: rgba(0, 0, 0, 0.5);
+    /* === NEUMORPHIC SHADOWS === */
+    --shadow-light: #FFFFFF;     /* Light-side shadow (top-left) */
+    --shadow-dark: #B8C0D0;      /* Dark-side shadow (bottom-right) */
 
-    --neu-raised: 6px 6px 14px var(--shadow-dark), -6px -6px 14px var(--shadow-light);
-    --neu-inset: inset 4px 4px 10px var(--shadow-dark), inset -4px -4px 10px var(--shadow-light);
+    /* Neumorphic Shadow Recipes */
+    --neu-raised: 6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light);
+    --neu-pressed: inset 4px 4px 8px var(--shadow-dark), inset -4px -4px 8px var(--shadow-light);
+    --neu-inset: inset 2px 2px 5px var(--shadow-dark), inset -2px -2px 5px var(--shadow-light);
     --neu-flat: 2px 2px 6px var(--shadow-dark), -2px -2px 6px var(--shadow-light);
     --neu-hover: 8px 8px 18px var(--shadow-dark), -8px -8px 18px var(--shadow-light);
 
-    /* === TEXT: Muted Pastels Hierarchy === */
-    --text-primary: #E4E4E4; /* Light gray - main text */
-    --text-secondary: #B8B8B8; /* Medium gray - secondary text */
-    --text-tertiary: #8A8A8A; /* Muted gray - tertiary text */
+    /* === TEXT HIERARCHY === */
+    --text-heading: #1E293B;     /* Headlines */
+    --text-body: #475569;        /* Paragraph text */
+    --text-muted: #94A3B8;       /* Captions, labels */
+    --text-primary: #1E293B;     /* Alias for heading */
+    --text-secondary: #475569;   /* Alias for body */
+    --text-tertiary: #94A3B8;    /* Alias for muted */
+
+    /* === BRAND COLORS (text/icons/accents only, NOT backgrounds) === */
+    --primary: #2563EB;          /* Blue - buttons, active states, links */
+    --primary-hover: #1E40AF;
+    --primary-active: #1E3A8A;
+    --secondary: #7C3AED;        /* Purple - icon accents only */
+    --secondary-hover: #6D28D9;
 
     /* === BORDERS === */
-    --border-subtle: rgba(228, 228, 228, 0.08);
-    --border-default: rgba(228, 228, 228, 0.12);
+    --border: #D6DCE8;           /* Subtle dividers */
+    --border-subtle: #E2E8F0;
+    --border-default: #D6DCE8;
 
-    /* === BRAND: Muted Pastels === */
-    --primary: #B39CD0; /* Lavender - primary buttons/CTAs */
-    --primary-hover: #9D85BC;
-    --primary-active: #8770A8;
-    --secondary: #A8DADC; /* Light cyan - secondary accent */
-    --secondary-hover: #94C9CB;
-    --accent-pink: #FFC1CC; /* Soft pink - tertiary accent */
-    --accent-pink-hover: #FFADB9;
+    /* === STATUS COLORS (flat, for dots/badges) === */
+    --success: #16A34A;          /* Groq - 🟢 green */
+    --success-bg: rgba(22, 163, 74, 0.1);
+    --success-border: rgba(22, 163, 74, 0.2);
 
-    /* === STATUS COLORS (adjusted for muted pastels) === */
-    --success: #A8DADC; /* Light cyan for success */
-    --success-bg: rgba(168, 218, 220, 0.15);
-    --success-border: rgba(168, 218, 220, 0.3);
+    --info: #2563EB;             /* Gemini - 🔵 blue */
+    --info-bg: rgba(37, 99, 235, 0.1);
+    --info-border: rgba(37, 99, 235, 0.2);
 
-    --warning: #FFC1CC; /* Soft pink for warnings */
-    --warning-bg: rgba(255, 193, 204, 0.15);
-    --warning-border: rgba(255, 193, 204, 0.3);
+    --warning: #CA8A04;          /* Cohere - 🟡 yellow */
+    --warning-bg: rgba(202, 138, 4, 0.1);
+    --warning-border: rgba(202, 138, 4, 0.2);
 
-    --danger: #FFADB9; /* Slightly darker pink for danger */
-    --danger-bg: rgba(255, 173, 185, 0.15);
-    --danger-border: rgba(255, 173, 185, 0.3);
+    --danger: #DC2626;           /* Danger/error red */
+    --danger-bg: rgba(220, 38, 38, 0.1);
+    --danger-border: rgba(220, 38, 38, 0.2);
 
-    --info: #A8DADC; /* Light cyan for info */
-    --info-bg: rgba(168, 218, 220, 0.15);
-    --info-border: rgba(168, 218, 220, 0.3);
+    --neutral: #94A3B8;          /* NVIDIA - ⚪ gray */
 
     /* === RADIUS === */
     --radius-sm: 8px;
@@ -69,7 +76,7 @@
   
   /* Base styles */
   * {
-    -webkit-tap-highlight-color: rgba(76, 111, 255, 0.2);
+    -webkit-tap-highlight-color: rgba(37, 99, 235, 0.1);
   }
 
   html {
@@ -82,15 +89,15 @@
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background: var(--surface);
-    color: var(--text-secondary);
+    background: var(--bg-base);
+    color: var(--text-body);
     overflow-x: hidden;
     overflow-y: auto;
   }
 
   #root {
     min-height: 100vh;
-    background: var(--surface);
+    background: var(--bg-base);
     overflow-x: hidden;
     overflow-y: auto;
   }
