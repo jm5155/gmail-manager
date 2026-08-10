@@ -56,48 +56,77 @@ CLIENT_CONFIG = {
 
 # ---------- TOKEN MANAGEMENT ----------
 
-def load_token() -> Credentials | None:
+def load_token(user_email: str = None) -> Credentials | None:
     """
-    Load saved OAuth token from token.json.
+    Load saved OAuth token for a specific user.
+    If user_email is not provided, tries to load the legacy token.json (for backward compatibility).
     If the token exists and is expired but has a refresh token, auto-refresh it.
     Returns Credentials object or None if no valid token found.
     """
-    if not TOKEN_PATH.exists():
+    # Determine which token file to use
+    if user_email:
+        token_path = get_token_path(user_email)
+    else:
+        # Fallback to legacy single-user token.json
+        token_path = Path(__file__).parent / "token.json"
+    
+    if not token_path.exists():
         return None
 
     try:
-        creds = Credentials.from_authorized_user_file(str(TOKEN_PATH), SCOPES)
+        creds = Credentials.from_authorized_user_file(str(token_path), SCOPES)
 
         if creds and creds.expired and creds.refresh_token:
-            print("[AUTH] Token expired, refreshing...")
+            print(f"[AUTH] Token expired for {user_email or 'legacy user'}, refreshing...")
             creds.refresh(Request())
-            save_token(creds)
+            save_token(creds, user_email)
             print("[AUTH] Token refreshed successfully.")
 
         return creds if creds and creds.valid else None
 
     except Exception as e:
-        print(f"[AUTH] Error loading token: {e}")
+        print(f"[AUTH] Error loading token for {user_email}: {e}")
         return None
 
 
-def save_token(creds: Credentials) -> None:
-    """Save OAuth credentials to token.json for persistent login."""
-    with open(TOKEN_PATH, "w") as f:
+def save_token(creds: Credentials, user_email: str = None) -> None:
+    """
+    Save OAuth credentials to a user-specific token file.
+    If user_email is not provided, saves to legacy token.json (for backward compatibility).
+    """
+    if user_email:
+        token_path = get_token_path(user_email)
+        print(f"[AUTH] Token saved for user: {user_email}")
+    else:
+        # Fallback to legacy single-user token.json
+        token_path = Path(__file__).parent / "token.json"
+        print("[AUTH] Token saved to legacy token.json")
+    
+    with open(token_path, "w") as f:
         f.write(creds.to_json())
-    print("[AUTH] Token saved to token.json")
 
 
-def delete_token() -> None:
-    """Remove the saved token file (used for logout)."""
-    if TOKEN_PATH.exists():
-        TOKEN_PATH.unlink()
-        print("[AUTH] Token deleted.")
+def delete_token(user_email: str = None) -> None:
+    """
+    Remove the saved token file for a specific user (used for logout).
+    If user_email is not provided, deletes legacy token.json.
+    """
+    if user_email:
+        token_path = get_token_path(user_email)
+    else:
+        token_path = Path(__file__).parent / "token.json"
+    
+    if token_path.exists():
+        token_path.unlink()
+        print(f"[AUTH] Token deleted for {user_email or 'legacy user'}.")
 
 
-def is_logged_in() -> bool:
-    """Check if a valid (non-expired) token exists."""
-    creds = load_token()
+def is_logged_in(user_email: str = None) -> bool:
+    """
+    Check if a valid (non-expired) token exists for a specific user.
+    If user_email is not provided, checks legacy token.json.
+    """
+    creds = load_token(user_email)
     return creds is not None and creds.valid
 
 
@@ -151,9 +180,10 @@ def handle_callback(authorization_code: str) -> dict:
     Exchange the authorization code for tokens.
     After token exchange:
       1. Extract Gmail address from Google userinfo endpoint
-      2. Call upsert_user(gmail_address, access_token) to get user_id
-      3. Call seed_default_labels(user_id)
-      4. Return user_id and gmail_address for session storage
+      2. Save token for THIS SPECIFIC USER (multi-user support)
+      3. Call upsert_user(gmail_address, access_token) to get user_id
+      4. Call seed_default_labels(user_id)
+      5. Return user_id and gmail_address for session storage
     """
     from database import upsert_user, seed_default_labels
 
@@ -164,10 +194,7 @@ def handle_callback(authorization_code: str) -> dict:
     flow.fetch_token(code=authorization_code)
     creds = flow.credentials
 
-    # Save the token for future sessions
-    save_token(creds)
-
-    # Extract Gmail address from Google userinfo endpoint
+    # Extract Gmail address from Google userinfo endpoint FIRST
     import requests
     gmail_address = None
     try:
@@ -188,6 +215,9 @@ def handle_callback(authorization_code: str) -> dict:
             "message": "Could not retrieve Gmail address.",
         }
 
+    # Save the token for THIS SPECIFIC USER (multi-user support)
+    save_token(creds, user_email=gmail_address)
+
     # Upsert user in database — returns user_id
     access_token = creds.token
     user_id = upsert_user(gmail_address, access_token)
@@ -205,9 +235,10 @@ def handle_callback(authorization_code: str) -> dict:
     }
 
 
-def get_credentials() -> Credentials | None:
+def get_credentials(user_email: str = None) -> Credentials | None:
     """
-    Get valid credentials for making Gmail API calls.
+    Get valid credentials for making Gmail API calls for a specific user.
+    If user_email is not provided, falls back to legacy token.json.
     Returns None if user is not logged in.
     """
-    return load_token()
+    return load_token(user_email)
