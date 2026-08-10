@@ -709,17 +709,18 @@ function Inbox() {
 
         {/* Email Cards */}
         {!loading && !error && (
-          <div className="space-y-2">
-            {emails.map((email) => (
-              <EmailCard
-                key={email.email_id}
-                email={email}
-                showScamBadge={true}
-                onLabelUpdate={handleLabelUpdate}
-                onLabelChange={handleCardLabelChange}
-                pendingLabel={pendingLabelChanges[email.email_id]}
-                availableLabels={labelObjects}
-              />
+          <div className="space-y-2" style={{ isolation: 'auto' }}>
+            {emails.map((email, index) => (
+              <div key={email.email_id} style={{ position: 'relative', zIndex: emails.length - index }}>
+                <EmailCard
+                  email={email}
+                  showScamBadge={true}
+                  onLabelUpdate={handleLabelUpdate}
+                  onLabelChange={handleCardLabelChange}
+                  pendingLabel={pendingLabelChanges[email.email_id]}
+                  availableLabels={labelObjects}
+                />
+              </div>
             ))}
           </div>
         )}
