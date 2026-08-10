@@ -152,7 +152,7 @@ function EmailCard({
         )}
 
         {/* Scam Badge */}
-        {showScamBadge && email.scam_score > 0 && (
+        {showScamBadge && email.scam_score != null && (
           <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
             <ScamBadge
               score={email.scam_score}
@@ -241,7 +241,7 @@ function EmailCard({
           </div>
 
           {/* Right: Scam Badge */}
-          {showScamBadge && email.scam_score > 0 && (
+          {showScamBadge && email.scam_score != null && (
             <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
               <ScamBadge
                 score={email.scam_score}
