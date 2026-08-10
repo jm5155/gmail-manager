@@ -36,17 +36,19 @@ app = FastAPI(
 # Session middleware for storing user_id after login
 app.add_middleware(SessionMiddleware, secret_key="gmail-manager-session-secret-key-2024")
 
-# Enable CORS - AGGRESSIVE FIX for Railway deployment
-# Allows all origins temporarily to bypass deployment issues
+# Enable CORS - Fixed for credentials mode
+# Wildcard (*) not allowed with credentials, must specify exact origins
 IS_PRODUCTION = os.getenv("RAILWAY_ENVIRONMENT") is not None
-ALLOWED_ORIGIN = os.getenv("ALLOWED_ORIGIN", "")
 
 if IS_PRODUCTION:
-    # Production: Allow all origins (temporary fix for Railway deployment issues)
-    origins = ["*"]
-    print(f"[CORS] Production mode - Allowing ALL origins (temporary)")
+    # Production: Specific Vercel origin (required for credentials: 'include')
+    origins = [
+        "https://gmail-manager-gamma.vercel.app",
+        "https://gmail-manager-gamma.vercel.app/",  # With trailing slash
+    ]
+    print(f"[CORS] Production mode - Allowed origins: {origins}")
 else:
-    # Local dev: Specific origins only
+    # Local dev: Specific localhost origins
     origins = [
         "http://localhost:5173",
         "http://localhost:3000",
