@@ -39,11 +39,24 @@ app.add_middleware(SessionMiddleware, secret_key="gmail-manager-session-secret-k
 # Enable CORS - supports both local dev and production deployment
 # Set ALLOWED_ORIGIN environment variable to your production frontend URL
 ALLOWED_ORIGIN = os.getenv("ALLOWED_ORIGIN", "http://localhost:5173")
-origins = [ALLOWED_ORIGIN]
 
-# Support multiple origins if comma-separated
-if "," in ALLOWED_ORIGIN:
-    origins = [origin.strip() for origin in ALLOWED_ORIGIN.split(",")]
+# Default allowed origins (local dev + common deployment patterns)
+default_origins = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "https://gmail-manager-gamma.vercel.app",  # Production Vercel frontend
+]
+
+origins = default_origins.copy()
+
+# Add custom origins from environment variable
+if ALLOWED_ORIGIN and ALLOWED_ORIGIN not in origins:
+    if "," in ALLOWED_ORIGIN:
+        custom_origins = [origin.strip() for origin in ALLOWED_ORIGIN.split(",")]
+        origins.extend([o for o in custom_origins if o not in origins])
+    else:
+        if ALLOWED_ORIGIN not in origins:
+            origins.append(ALLOWED_ORIGIN)
 
 print(f"[CORS] Allowed origins: {origins}")
 
