@@ -256,7 +256,7 @@ function EmailCard({
       {/* Expanded Content (Full Email Snippet) */}
       {expanded && (
         <div className="px-5 pb-5 pt-2 border-t border-white/5">
-          <p className="text-sm text-lavender-400 whitespace-pre-wrap leading-relaxed">
+          <p className="text-sm text-lavender-400 whitespace-pre-wrap leading-relaxed break-words">
             {decodedSnippet || 'No preview available'}
           </p>
         </div>
