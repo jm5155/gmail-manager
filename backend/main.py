@@ -155,13 +155,33 @@ async def auth_callback(request: Request):
 
     html_content = """
     <html>
-    <head><title>Gmail Manager — Login Success</title></head>
+    <head>
+        <title>Gmail Manager — Login Success</title>
+        <meta http-equiv="refresh" content="2;url=https://gmail-manager-gamma.vercel.app/inbox">
+        <script>
+            // Automatic redirect after 2 seconds
+            setTimeout(function() {
+                window.location.href = 'https://gmail-manager-gamma.vercel.app/inbox';
+            }, 2000);
+        </script>
+    </head>
     <body style="display:flex;justify-content:center;align-items:center;height:100vh;
-                 font-family:Inter,sans-serif;background:#0F172A;color:#F1F5F9;">
+                 font-family:Inter,sans-serif;background:#1B1F30;color:#F5F6FA;">
         <div style="text-align:center;">
-            <h1 style="color:#22C55E;">✓ Login Successful</h1>
-            <p>You can close this tab and return to Gmail Manager.</p>
+            <h1 style="color:#22C55E;font-size:2.5rem;margin-bottom:1rem;">✓ Login Successful</h1>
+            <p style="color:#9CA3C2;font-size:1.1rem;">Redirecting you to the Inbox...</p>
+            <div style="margin-top:2rem;">
+                <div style="width:200px;height:4px;background:#2D3E5F;border-radius:999px;overflow:hidden;margin:0 auto;">
+                    <div style="width:0;height:100%;background:linear-gradient(90deg,#4C6FFF,#8B5CF6);border-radius:999px;animation:progress 2s ease-out forwards;"></div>
+                </div>
+            </div>
         </div>
+        <style>
+            @keyframes progress {
+                from { width: 0%; }
+                to { width: 100%; }
+            }
+        </style>
     </body>
     </html>
     """
