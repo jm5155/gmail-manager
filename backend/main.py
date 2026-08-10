@@ -199,21 +199,33 @@ async def auth_callback(request: Request):
 @app.get("/auth/status")
 async def auth_status(request: Request):
     """GET /auth/status — Returns login status and user email."""
+    # DEBUG: Log session contents
+    print(f"[AUTH/STATUS DEBUG] Session data: {dict(request.session)}")
+    print(f"[AUTH/STATUS DEBUG] Cookies: {request.cookies}")
+    
     # Check session first for multi-user support
     user_email = request.session.get("gmail_address")
+    user_id = request.session.get("user_id")
+    
+    print(f"[AUTH/STATUS DEBUG] user_email from session: {user_email}")
+    print(f"[AUTH/STATUS DEBUG] user_id from session: {user_id}")
     
     if user_email:
         # User has active session, check if their token is still valid
         logged_in = is_logged_in(user_email)
+        print(f"[AUTH/STATUS DEBUG] Token valid for {user_email}: {logged_in}")
     else:
         # No session, check legacy token.json for backward compatibility
         logged_in = is_logged_in(user_email=None)
+        print(f"[AUTH/STATUS DEBUG] Legacy token check: {logged_in}")
     
     result = {"logged_in": logged_in}
     if logged_in:
         email = user_email or get_user_email()
         if email:
             result["email"] = email
+    
+    print(f"[AUTH/STATUS DEBUG] Returning: {result}")
     return result
 
 
