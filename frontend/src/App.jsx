@@ -7,6 +7,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
 import Inbox from './pages/Inbox';
 import ScamAlerts from './pages/ScamAlerts';
@@ -95,8 +96,10 @@ function AppContent() {
         }}
       >
         <Routes>
+          {/* Landing page - public homepage */}
+          <Route path="/" element={<LandingPage />} />
+          
           {/* Auth routes */}
-          <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
 
           {/* Main app routes */}
