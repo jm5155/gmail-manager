@@ -14,6 +14,7 @@ import Quarantine from './pages/Quarantine';
 import Rewriter from './pages/Rewriter';
 import Settings from './pages/Settings';
 import Sidebar from './components/Sidebar';
+import AnimatedBackground from './components/AnimatedBackground';
 import { ToastProvider } from './components/ToastNotification';
 
 // API Base URL - reads from environment variable or defaults to localhost
@@ -51,11 +52,14 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-screen bg-bg-dark font-inter">
-      {/* Mobile Hamburger Button - only visible on mobile when sidebar pages are active */}
+    <div className="min-h-screen" style={{ background: 'var(--surface)' }}>
+      {/* Animated Background - Particles & Gradients */}
+      <AnimatedBackground />
+
+      {/* Mobile Menu Button */}
       {showSidebar && (
         <button
-          onClick={() => setMobileMenuOpen(true)}
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           className="fixed top-4 left-4 z-40 w-8 h-8 flex items-center justify-center rounded-lg bg-bg-card border border-border-subtle md:hidden hover:bg-bg-hover transition-colors"
           aria-label="Open menu"
         >
