@@ -39,7 +39,7 @@ function Inbox() {
 
   // Pending label changes (Phase 36/38/43)
   const [pendingLabelChanges, setPendingLabelChanges] = useState({});
-  const [pendingCount, setPendingCount] = useState(0);
+  const [unappliedCount, setUnappliedCount] = useState(0);
   const [isApplying, setIsApplying] = useState(false);
 
   // Filters (Phase 7)
@@ -86,6 +86,7 @@ function Inbox() {
       // Use refs so we always read current filter state, not stale closure values
       fetchFilteredEmails(searchQueryRef.current, labelFilterRef.current, sortByRef.current);
       fetchStats();
+      fetchUnappliedCount();
       // Clear stats so re-mounting Inbox doesn't re-fire the notification
       clearStats();
     }
@@ -108,7 +109,7 @@ function Inbox() {
 
       await fetchFilteredEmails();
       await fetchStats();
-      await fetchPendingCount();
+      await fetchUnappliedCount();
     } catch (err) {
       setError('Could not connect to backend.');
     } finally {
@@ -116,15 +117,15 @@ function Inbox() {
     }
   }
 
-  async function fetchPendingCount() {
+  async function fetchUnappliedCount() {
     try {
       const res = await fetch(`${API_BASE}/emails/pending-count`, { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
-        setPendingCount(data.pending_count || 0);
+        setUnappliedCount(data.pending_count || 0);
       }
     } catch (err) {
-      console.error('Failed to fetch pending count:', err);
+      console.error('Failed to fetch unapplied count:', err);
     }
   }
 
@@ -240,8 +241,8 @@ function Inbox() {
 
       console.log('Label saved to DB, marked as pending (applied_to_gmail=0)');
 
-      // Refresh pending count from DB
-      await fetchPendingCount();
+      // Refresh unapplied count from DB
+      await fetchUnappliedCount();
 
       // Update local email list to reflect new label
       setEmails(prev => prev.map(e => 
@@ -264,7 +265,7 @@ function Inbox() {
   }
 
   async function handleBatchApply() {
-    if (pendingCount === 0 || isApplying) return;
+    if (unappliedCount === 0 || isApplying) return;
 
     setIsApplying(true);
 
@@ -277,24 +278,28 @@ function Inbox() {
       const result = await response.json();
 
       if (result.applied > 0) {
-        toast(`✅ Applied ${result.applied} labels to Gmail`);
+        toast.success('Labels applied to Gmail', `${result.applied} labels successfully synced`);
       }
 
       if (result.failed > 0) {
-        toast(`⚠️ ${result.failed} emails failed to update`);
+        toast.error('Some labels failed', `${result.failed} emails could not be updated`);
+      }
+
+      if (result.applied === 0 && result.failed === 0) {
+        toast.info('No changes to apply', 'All labels are already synced with Gmail');
       }
 
       // Clear local pending map
       setPendingLabelChanges({});
 
-      // Refresh pending count from DB
-      await fetchPendingCount();
+      // Refresh unapplied count from DB
+      await fetchUnappliedCount();
 
       // Refresh email list
-      fetchEmails();
+      await fetchFilteredEmails(searchQuery, labelFilter, sortBy);
 
     } catch (error) {
-      toast(`❌ Batch apply failed: ${error.message}`);
+      toast.error('Apply failed', error.message);
     } finally {
       setIsApplying(false);
     }
@@ -436,45 +441,46 @@ function Inbox() {
               )}
             </button>
 
-            {/* Apply to Gmail Button (Phase 36/38/43) */}
+            {/* Apply to Gmail Button - enabled when labeled emails exist */}
             <div className="relative group">
               <button
                 onClick={handleBatchApply}
-                disabled={pendingCount === 0 || isApplying}
-                className="btn-neumorphic-secondary px-4 py-1.5 text-sm min-w-[95px] flex items-center justify-center gap-2"
+                disabled={unappliedCount === 0 || isApplying}
+                className="btn-neumorphic-secondary px-4 py-1.5 text-sm min-w-[120px] flex items-center justify-center gap-2"
                 style={{
-                  background: (pendingCount > 0 && !isApplying) ? undefined : '#475569',
-                  boxShadow: (pendingCount > 0 && !isApplying) ? undefined : 'none',
+                  background: (unappliedCount > 0 && !isApplying) ? undefined : '#475569',
+                  boxShadow: (unappliedCount > 0 && !isApplying) ? undefined : 'none',
+                  cursor: (unappliedCount > 0 && !isApplying) ? 'pointer' : 'not-allowed',
                 }}
-                title={pendingCount === 0 ? "No pending label changes" : `Apply ${pendingCount} pending label changes to Gmail`}
+                title={
+                  unappliedCount === 0 
+                    ? emailStats.total_analyzed === 0 
+                      ? "No emails analyzed yet" 
+                      : "All labels already synced with Gmail"
+                    : `Push ${unappliedCount} labeled email${unappliedCount > 1 ? 's' : ''} to Gmail`
+                }
               >
-              {isApplying ? (
-                <span className="flex items-center gap-2">
-                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10"
-                            stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                  Applying...
-                </span>
-              ) : (
-                <span className="flex items-center gap-2">
-                  📧 Apply to Gmail
-                  {pendingCount > 0 && (
-                    <span className="px-2 py-0.5 bg-white/20 rounded-full text-xs">
-                      {pendingCount}
-                    </span>
-                   )}
-                 </span>
-               )}
+                {isApplying ? (
+                  <span className="flex items-center gap-2">
+                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10"
+                              stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Applying...
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    📧 Apply to Gmail
+                    {unappliedCount > 0 && (
+                      <span className="px-2 py-0.5 bg-white/20 rounded-full text-xs font-semibold">
+                        {unappliedCount}
+                      </span>
+                    )}
+                  </span>
+                )}
               </button>
-              {pendingCount === 0 && (
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-navy-700 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10"
-                     style={{ border: '1px solid #334155' }}>
-                  No pending changes to apply
-                </div>
-              )}
             </div>
 
             <button
