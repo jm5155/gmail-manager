@@ -1,19 +1,16 @@
 /**
- * EmailCard.jsx — Email List Card Component (Neumorphic Design)
+ * EmailCard.jsx — Email List Card Component (Unified Neumorphic Design)
  * Reusable card for displaying email in Inbox and Scam Alerts.
- * Shows sender avatar with gradient, name, subject, date, label chip, and scam badge.
- * Click to expand and show email snippet.
+ * Shows sender avatar, name, subject, date, label chip, and scam badge.
+ * Click to expand email snippet and scam analysis (inline accordion).
  * 
- * Updated: 2026-07-25 - Neumorphic dark gradient design system
+ * Updated: 2026-08-10 - Unified neumorphic design system
  */
 
 import React, { useState } from 'react';
 import ScamBadge from './ScamBadge';
 import { getAvatarProps } from '../utils/avatarColors';
 import { decodeHTMLEntities } from '../utils/htmlDecode';
-
-// Default fallback label style
-const DEFAULT_LABEL_STYLE = { bg: 'rgba(148, 163, 184, 0.15)', text: '#94A3B8' };
 
 function EmailCard({ 
   email, 
@@ -25,15 +22,16 @@ function EmailCard({
   availableLabels = [] 
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [scamExpanded, setScamExpanded] = useState(false);
 
-  // Get the label display name from new API field
+  // Get the label display name from API field
   const labelName = email.label_name || email.label || 'Uncategorized';
 
-  // Get sender name and avatar props using new gradient utility
+  // Get sender name and avatar props
   const senderName = email.sender?.split('<')[0]?.trim()?.replace(/"/g, '') || 'Unknown';
   const avatar = getAvatarProps(senderName);
 
-  // Decode HTML entities in subject and snippet
+  // Decode HTML entities in subject and snippet (fixes &#39; bug)
   const decodedSubject = decodeHTMLEntities(email.subject) || '(No Subject)';
   const decodedSnippet = decodeHTMLEntities(email.snippet) || '';
 
@@ -53,18 +51,7 @@ function EmailCard({
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }
 
-  // Label chip colors — prefer API-provided colors, fall back to available labels lookup
-  let labelStyle = DEFAULT_LABEL_STYLE;
-  if (email.label_color_bg && email.label_color_text) {
-    labelStyle = { bg: email.label_color_bg, text: email.label_color_text };
-  } else {
-    const matchingLabel = availableLabels.find(l => l.label_name === labelName);
-    if (matchingLabel) {
-      labelStyle = { bg: matchingLabel.color_bg, text: matchingLabel.color_text };
-    }
-  }
-
-  // Build combined label list for override dropdown
+  // Build combined label list for dropdown
   const combinedLabels = [...availableLabels];
 
   // Parse scam indicators
@@ -73,191 +60,165 @@ function EmailCard({
     : [];
 
   return (
-    <div
-      onClick={() => setExpanded(!expanded)}
-      className="relative bg-navy-800 rounded-card shadow-neumorphic-md hover:shadow-hover-lift hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 cursor-pointer overflow-visible"
-      style={{
-        border: '1px solid rgba(255, 255, 255, 0.05)',
-      }}
-    >
-      {/* Gradient Accent Bar (Left Edge) */}
-      <div className="accent-bar-primary" />
-
-      {/* DESKTOP LAYOUT (≥768px) - Original Single Row */}
-      <div className="hidden md:flex items-center gap-4 p-5">
-        {/* Sender Avatar - Two-tone gradient */}
-        <div
-          className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-semibold flex-shrink-0 bg-gradient-to-br ${avatar.gradient.tailwind.from} ${avatar.gradient.tailwind.to}`}
-        >
-          {avatar.initials}
-        </div>
-
-        {/* Email Content */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-4">
-            <span className="text-sm font-medium text-white truncate">{senderName}</span>
-            <span className="text-xs text-lavender-400 flex-shrink-0">{formatDate(email.analyzed_at || email.date)}</span>
+    <div className="neu-card p-0 overflow-visible">
+      {/* Main Card Content */}
+      <div
+        onClick={() => setExpanded(!expanded)}
+        className="cursor-pointer p-5"
+      >
+        {/* DESKTOP LAYOUT (≥768px) */}
+        <div className="hidden md:flex items-center gap-4">
+          {/* Sender Avatar */}
+          <div
+            className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-semibold flex-shrink-0 bg-gradient-to-br ${avatar.gradient.tailwind.from} ${avatar.gradient.tailwind.to}`}
+          >
+            {avatar.initials}
           </div>
-          <p className="text-sm text-white truncate mt-0.5">
-            {decodedSubject}
-          </p>
-          {!expanded && (
-            <p className="text-xs text-lavender-400 truncate mt-0.5">{decodedSnippet}</p>
-          )}
-        </div>
 
-        {/* Label Dropdown (Phase 36) */}
-        {availableLabels.length > 0 && (
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <select
-              value={pendingLabel || labelName || ''}
-              onChange={(e) => {
-                e.stopPropagation();
-                if (onLabelChange) onLabelChange(email.email_id, e.target.value);
-              }}
-              onClick={(e) => e.stopPropagation()}
-              className="select-neumorphic text-xs px-3 py-1.5 rounded-full cursor-pointer"
-              style={{
-                background: pendingLabel ? 'rgba(234, 179, 8, 0.1)' : labelStyle.bg,
-                color: labelStyle.text,
-              }}
-            >
-              {combinedLabels.map(label => (
-                <option key={label.label_id} value={label.label_name}>
-                  {label.label_name}
-                </option>
-              ))}
-            </select>
-            {pendingLabel && (
-              <span className="text-yellow-400 text-xs">●</span>
+          {/* Email Content */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-sm font-medium text-primary truncate">{senderName}</span>
+              <span className="text-xs text-tertiary flex-shrink-0">{formatDate(email.analyzed_at || email.date)}</span>
+            </div>
+            <p className="text-sm text-primary truncate mt-0.5">
+              {decodedSubject}
+            </p>
+            {!expanded && (
+              <p className="text-xs text-secondary truncate mt-0.5">{decodedSnippet}</p>
             )}
           </div>
-        )}
 
-        {/* Status Badges */}
-        {email.status === 'fetched' && (
-          <span className="badge-status bg-yellow-500/15 text-yellow-400">
-            ⏳ Analyzing...
-          </span>
-        )}
-        {email.status === 'failed' && (
-          <div className="flex items-center gap-2">
+          {/* Label Dropdown */}
+          {availableLabels.length > 0 && (
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <select
+                value={pendingLabel || labelName || ''}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  if (onLabelChange) onLabelChange(email.email_id, e.target.value);
+                }}
+                onClick={(e) => e.stopPropagation()}
+                className="neu-input text-xs px-3 py-1.5 cursor-pointer"
+              >
+                {combinedLabels.map(label => (
+                  <option key={label.label_id} value={label.label_name}>
+                    {label.label_name}
+                  </option>
+                ))}
+              </select>
+              {pendingLabel && (
+                <span className="text-warning text-xs">●</span>
+              )}
+            </div>
+          )}
+
+          {/* Status Badges */}
+          {email.status === 'fetched' && (
+            <span className="badge badge-warning">
+              ⏳ Analyzing...
+            </span>
+          )}
+          {email.status === 'failed' && (
             <span 
-              className="badge-status bg-red-500/15 text-red-400 cursor-help"
+              className="badge badge-danger cursor-help"
               title={email.error_reason ? `Failed: ${email.error_reason}` : 'Analysis failed - will retry automatically'}
             >
               ⚠ Analysis Failed {email.retry_count > 0 && `(${email.retry_count} retries)`}
             </span>
-          </div>
-        )}
-
-        {/* Scam Badge */}
-        {showScamBadge && email.scam_score != null && (
-          <div className="relative flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-            <ScamBadge
-              score={email.scam_score}
-              reason={email.scam_reason || ''}
-              indicators={indicators}
-            />
-          </div>
-        )}
-      </div>
-
-      {/* MOBILE LAYOUT (<768px) - 4-Row Stacked Structure (Phase 16) */}
-      <div className="md:hidden p-4 space-y-2.5">
-        {/* Row 1: Avatar + Sender Name | Timestamp */}
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5 flex-1 min-w-0">
-            {/* Smaller Avatar on Mobile - Two-tone gradient */}
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0 bg-gradient-to-br ${avatar.gradient.tailwind.from} ${avatar.gradient.tailwind.to}`}
-            >
-              {avatar.initials}
-            </div>
-            {/* Sender Name - truncate if too long */}
-            <span className="text-sm font-medium text-white truncate">{senderName}</span>
-          </div>
-          {/* Timestamp - right-aligned */}
-          <span className="text-xs text-lavender-400 flex-shrink-0">{formatDate(email.analyzed_at || email.date)}</span>
-        </div>
-
-        {/* Row 2: Subject Line - Up to 2 lines, wrap allowed */}
-        <p className="text-sm text-white line-clamp-2 leading-snug">
-          {decodedSubject}
-        </p>
-
-        {/* Row 3: Snippet Preview - Single line with ellipsis */}
-        {!expanded && (
-          <p className="text-xs text-lavender-400 truncate leading-relaxed">
-            {decodedSnippet}
-          </p>
-        )}
-
-        {/* Row 4: Label Dropdown + Scam Badge (same row, spread apart) */}
-        <div className="flex items-center justify-between gap-3 pt-1">
-          {/* Left: Label Dropdown or Status Badge */}
-          <div className="flex items-center gap-2 flex-wrap">
-            {availableLabels.length > 0 && (
-              <div className="flex items-center gap-2">
-                <select
-                  value={pendingLabel || labelName || ''}
-                  onChange={(e) => {
-                    e.stopPropagation();
-                    if (onLabelChange) onLabelChange(email.email_id, e.target.value);
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                  className="select-neumorphic text-xs px-2.5 py-1 rounded-full cursor-pointer min-h-tap"
-                  style={{
-                    background: pendingLabel ? 'rgba(234, 179, 8, 0.1)' : labelStyle.bg,
-                    color: labelStyle.text,
-                  }}
-                >
-                  {combinedLabels.map(label => (
-                    <option key={label.label_id} value={label.label_name}>
-                      {label.label_name}
-                    </option>
-                  ))}
-                </select>
-                {pendingLabel && (
-                  <span className="text-yellow-400 text-xs">●</span>
-                )}
-              </div>
-            )}
-
-            {/* Status Badges */}
-            {email.status === 'fetched' && (
-              <span className="badge-status bg-yellow-500/15 text-yellow-400 text-[10px] md:text-xs">
-                ⏳ Analyzing...
-              </span>
-            )}
-            {email.status === 'failed' && (
-              <span 
-                className="badge-status bg-red-500/15 text-red-400 text-[10px] md:text-xs cursor-help"
-                title={email.error_reason ? `Failed: ${email.error_reason}` : 'Analysis failed - will retry automatically'}
-              >
-                ⚠ Failed {email.retry_count > 0 && `(${email.retry_count}x)`}
-              </span>
-            )}
-          </div>
-
-          {/* Right: Scam Badge */}
-          {showScamBadge && email.scam_score != null && (
-            <div className="relative flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-              <ScamBadge
-                score={email.scam_score}
-                reason={email.scam_reason || ''}
-                indicators={indicators}
-              />
-            </div>
           )}
         </div>
+
+        {/* MOBILE LAYOUT (<768px) */}
+        <div className="md:hidden space-y-2.5">
+          {/* Row 1: Avatar + Sender | Timestamp */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 flex-1 min-w-0">
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0 bg-gradient-to-br ${avatar.gradient.tailwind.from} ${avatar.gradient.tailwind.to}`}
+              >
+                {avatar.initials}
+              </div>
+              <span className="text-sm font-medium text-primary truncate">{senderName}</span>
+            </div>
+            <span className="text-xs text-tertiary flex-shrink-0">{formatDate(email.analyzed_at || email.date)}</span>
+          </div>
+
+          {/* Row 2: Subject */}
+          <p className="text-sm text-primary line-clamp-2 leading-snug">
+            {decodedSubject}
+          </p>
+
+          {/* Row 3: Snippet */}
+          {!expanded && (
+            <p className="text-xs text-secondary truncate leading-relaxed">
+              {decodedSnippet}
+            </p>
+          )}
+
+          {/* Row 4: Label + Status */}
+          <div className="flex items-center justify-between gap-3 pt-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              {availableLabels.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <select
+                    value={pendingLabel || labelName || ''}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      if (onLabelChange) onLabelChange(email.email_id, e.target.value);
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="neu-input text-xs px-2.5 py-1 cursor-pointer"
+                  >
+                    {combinedLabels.map(label => (
+                      <option key={label.label_id} value={label.label_name}>
+                        {label.label_name}
+                      </option>
+                    ))}
+                  </select>
+                  {pendingLabel && (
+                    <span className="text-warning text-xs">●</span>
+                  )}
+                </div>
+              )}
+
+              {/* Status Badges */}
+              {email.status === 'fetched' && (
+                <span className="badge badge-warning text-[10px] md:text-xs">
+                  ⏳ Analyzing...
+                </span>
+              )}
+              {email.status === 'failed' && (
+                <span 
+                  className="badge badge-danger text-[10px] md:text-xs cursor-help"
+                  title={email.error_reason ? `Failed: ${email.error_reason}` : 'Analysis failed - will retry automatically'}
+                >
+                  ⚠ Failed {email.retry_count > 0 && `(${email.retry_count}x)`}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
+
+      {/* Scam Badge - Outside main content, always visible */}
+      {showScamBadge && email.scam_score != null && (
+        <div className="px-5 pb-3" onClick={(e) => e.stopPropagation()}>
+          <ScamBadge
+            score={email.scam_score}
+            reason={email.scam_reason || ''}
+            indicators={indicators}
+            expanded={scamExpanded}
+            onToggle={() => setScamExpanded(!scamExpanded)}
+          />
+        </div>
+      )}
 
       {/* Expanded Content (Full Email Snippet) */}
       {expanded && (
-        <div className="px-5 pb-5 pt-2 border-t border-white/5">
+        <div className="px-5 pb-5 pt-2 border-t border-subtle">
           <p 
-            className="text-sm text-lavender-400 leading-relaxed"
+            className="text-sm text-secondary leading-relaxed"
             style={{
               whiteSpace: 'pre-wrap',
               wordBreak: 'break-word',
@@ -271,7 +232,7 @@ function EmailCard({
 
       {/* Custom Actions (e.g., delete, move) */}
       {actions && (
-        <div className="px-5 pb-4 flex gap-2 border-t border-white/5 pt-3">
+        <div className="px-5 pb-4 flex gap-2 border-t border-subtle pt-3">
           {actions}
         </div>
       )}
