@@ -12,71 +12,77 @@
 /* ---------- DESIGN TOKENS ---------- */
 @layer base {
   :root {
-    /* === LIGHT NEUMORPHIC COLOR SYSTEM === */
-    /* Base Surface - Everything sits on this soft base tone */
-    --bg-base: #E8ECF3;          /* Base surface for hero, page, everything */
-    --bg-card: #E8ECF3;          /* Same as base (cards pressed into surface) */
-    --bg-section: #EEF1F6;       /* Slight shift for alternating sections */
-
-    /* === NEUMORPHIC SHADOWS === */
-    --shadow-light: #FFFFFF;     /* Light-side shadow (top-left) */
-    --shadow-dark: #B8C0D0;      /* Dark-side shadow (bottom-right) */
-
-    /* Neumorphic Shadow Recipes */
-    --neu-raised: 6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light);
-    --neu-pressed: inset 4px 4px 8px var(--shadow-dark), inset -4px -4px 8px var(--shadow-light);
-    --neu-inset: inset 2px 2px 5px var(--shadow-dark), inset -2px -2px 5px var(--shadow-light);
-    --neu-flat: 2px 2px 6px var(--shadow-dark), -2px -2px 6px var(--shadow-light);
-    --neu-hover: 8px 8px 18px var(--shadow-dark), -8px -8px 18px var(--shadow-light);
-
-    /* === TEXT HIERARCHY === */
-    --text-heading: #1E293B;     /* Headlines */
-    --text-body: #475569;        /* Paragraph text */
-    --text-muted: #94A3B8;       /* Captions, labels */
-    --text-primary: #1E293B;     /* Alias for heading */
-    --text-secondary: #475569;   /* Alias for body */
-    --text-tertiary: #94A3B8;    /* Alias for muted */
-
-    /* === BRAND COLORS (text/icons/accents only, NOT backgrounds) === */
-    --primary: #2563EB;          /* Blue - buttons, active states, links */
-    --primary-hover: #1E40AF;
-    --primary-active: #1E3A8A;
-    --secondary: #7C3AED;        /* Purple - icon accents only */
-    --secondary-hover: #6D28D9;
-
-    /* === BORDERS === */
-    --border: #D6DCE8;           /* Subtle dividers */
-    --border-subtle: #E2E8F0;
-    --border-default: #D6DCE8;
-
-    /* === STATUS COLORS (flat, for dots/badges) === */
-    --success: #16A34A;          /* Groq - 🟢 green */
-    --success-bg: rgba(22, 163, 74, 0.1);
-    --success-border: rgba(22, 163, 74, 0.2);
-
-    --info: #2563EB;             /* Gemini - 🔵 blue */
-    --info-bg: rgba(37, 99, 235, 0.1);
-    --info-border: rgba(37, 99, 235, 0.2);
-
-    --warning: #CA8A04;          /* Cohere - 🟡 yellow */
-    --warning-bg: rgba(202, 138, 4, 0.1);
-    --warning-border: rgba(202, 138, 4, 0.2);
-
-    --danger: #DC2626;           /* Danger/error red */
-    --danger-bg: rgba(220, 38, 38, 0.1);
-    --danger-border: rgba(220, 38, 38, 0.2);
-
-    --neutral: #94A3B8;          /* NVIDIA - ⚪ gray */
-
-    /* === RADIUS === */
+    /* === DARK MODERN PROFESSIONAL COLOR SYSTEM === */
+    
+    /* BASE BACKGROUNDS - Dark Slate */
+    --bg-dark: #0A0E1A;           /* Deep navy background - main surface */
+    --bg-elevated: #131827;        /* Slightly lighter for cards/panels */
+    --bg-hover: #1C2333;          /* Hover state for interactive elements */
+    
+    /* TEXT HIERARCHY - Clean & Readable */
+    --text-primary: #F1F5F9;      /* Bright white for headings/important text */
+    --text-secondary: #94A3B8;    /* Medium gray for body text */
+    --text-tertiary: #64748B;     /* Muted gray for captions/labels */
+    
+    /* BRAND PRIMARY - Vibrant Blue */
+    --primary: #3B82F6;           /* Bright blue - primary action color */
+    --primary-hover: #2563EB;     /* Darker blue on hover */
+    --primary-light: #60A5FA;     /* Lighter blue for accents */
+    --primary-dark: #1E40AF;      /* Darker for active states */
+    
+    /* SEMANTIC COLORS - Status Indicators */
+    --success: #10B981;           /* Green - success/connected states */
+    --success-bg: rgba(16, 185, 129, 0.1);
+    --success-border: rgba(16, 185, 129, 0.2);
+    
+    --warning: #F59E0B;           /* Amber - warning states */
+    --warning-bg: rgba(245, 158, 11, 0.1);
+    --warning-border: rgba(245, 158, 11, 0.2);
+    
+    --danger: #EF4444;            /* Red - danger/error states */
+    --danger-bg: rgba(239, 68, 68, 0.1);
+    --danger-border: rgba(239, 68, 68, 0.2);
+    
+    --info: #06B6D4;              /* Cyan - info states */
+    --info-bg: rgba(6, 182, 212, 0.1);
+    --info-border: rgba(6, 182, 212, 0.2);
+    
+    /* BORDERS & DIVIDERS */
+    --border: #1E293B;            /* Subtle dark border */
+    --border-light: #334155;      /* Slightly lighter border */
+    
+    /* SHADOWS - Simple, Flat (NO NEUMORPHISM) */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.4);
+    --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.5);
+    
+    /* RADIUS */
     --radius-sm: 8px;
     --radius-md: 12px;
     --radius-lg: 16px;
+    
+    /* LEGACY ALIASES (for backward compatibility) */
+    --bg-base: var(--bg-dark);
+    --bg-card: var(--bg-elevated);
+    --bg-section: var(--bg-elevated);
+    --text-heading: var(--text-primary);
+    --text-body: var(--text-secondary);
+    --text-muted: var(--text-tertiary);
+    --secondary: #8B5CF6;         /* Purple for secondary accents */
+    --secondary-hover: #7C3AED;
+    
+    /* REMOVE NEUMORPHIC SHADOWS */
+    --neu-raised: var(--shadow-md);
+    --neu-pressed: var(--shadow-sm);
+    --neu-inset: var(--shadow-sm);
+    --neu-flat: var(--shadow-sm);
+    --neu-hover: var(--shadow-lg);
   }
   
   /* Base styles */
   * {
-    -webkit-tap-highlight-color: rgba(37, 99, 235, 0.1);
+    -webkit-tap-highlight-color: rgba(59, 130, 246, 0.1);
   }
 
   html {
@@ -89,15 +95,15 @@
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background: var(--bg-base);
-    color: var(--text-body);
+    background: var(--bg-dark);
+    color: var(--text-secondary);
     overflow-x: hidden;
     overflow-y: auto;
   }
 
   #root {
     min-height: 100vh;
-    background: var(--bg-base);
+    background: var(--bg-dark);
     overflow-x: hidden;
     overflow-y: auto;
   }
