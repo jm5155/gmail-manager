@@ -75,7 +75,7 @@ function EmailCard({
   return (
     <div
       onClick={() => setExpanded(!expanded)}
-      className="relative bg-navy-800 rounded-card shadow-neumorphic-md hover:shadow-hover-lift hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 cursor-pointer overflow-hidden"
+      className="relative bg-navy-800 rounded-card shadow-neumorphic-md hover:shadow-hover-lift hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 cursor-pointer overflow-visible"
       style={{
         border: '1px solid rgba(255, 255, 255, 0.05)',
       }}

@@ -11,88 +11,93 @@
 import React, { useState } from 'react';
 
 // Risk level configuration based on score ranges
-function getRiskConfig(score) {
-  if (score >= 81) return { label: 'Danger', color: '#EF4444', bg: 'rgba(239, 68, 68, 0.15)', border: 'rgba(239, 68, 68, 0.3)' };
-  if (score >= 61) return { label: 'High Risk', color: '#F97316', bg: 'rgba(249, 115, 22, 0.15)', border: 'rgba(249, 115, 22, 0.3)' };
-  if (score >= 31) return { label: 'Moderate Risk', color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.15)', border: 'rgba(245, 158, 11, 0.3)' };
+function getRiskLevel(score) {
+  if (score === 0) return { label: 'Safe', color: '#22C55E', bg: 'rgba(34, 197, 94, 0.15)', border: 'rgba(34, 197, 94, 0.3)' };
+  if (score >= 70) return { label: 'High Risk', color: '#EF4444', bg: 'rgba(239, 68, 68, 0.15)', border: 'rgba(239, 68, 68, 0.3)' };
+  if (score >= 30) return { label: 'Medium Risk', color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.15)', border: 'rgba(245, 158, 11, 0.3)' };
   return { label: 'Low Risk', color: '#22C55E', bg: 'rgba(34, 197, 94, 0.15)', border: 'rgba(34, 197, 94, 0.3)' };
 }
 
-function ScamBadge({ score = 0, reason = '', indicators = [] }) {
+function ScamBadge({ score, reason, indicators = [] }) {
   const [showTooltip, setShowTooltip] = useState(false);
-  const risk = getRiskConfig(score);
-
-  // Parse indicators if it's a JSON string
-  let parsedIndicators = indicators;
-  if (typeof indicators === 'string') {
-    try { parsedIndicators = JSON.parse(indicators); } catch { parsedIndicators = []; }
-  }
+  const risk = getRiskLevel(score);
 
   return (
     <div className="relative inline-block">
-      {/* Badge pill */}
-      <div
-        className="px-2.5 py-1 rounded-full text-xs font-semibold cursor-pointer transition-all duration-200 hover:scale-105"
+      {/* Badge Button */}
+      <button
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+        onClick={(e) => {
+          e.stopPropagation();
+          setShowTooltip(!showTooltip);
+        }}
+        className="px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-1.5"
         style={{
           background: risk.bg,
           color: risk.color,
           border: `1px solid ${risk.border}`,
         }}
-        onMouseEnter={() => setShowTooltip(true)}
-        onMouseLeave={() => setShowTooltip(false)}
       >
-        {score} — {risk.label}
-      </div>
+        <span className="text-[10px]">🛡️</span>
+        <span>{risk.label}</span>
+        <span className="font-semibold">{score}%</span>
+      </button>
 
-      {/* Hover Tooltip Card */}
-      {showTooltip && (score > 0 || reason) && (
-        <div
-          className="absolute z-50 right-0 top-full mt-2 w-72 p-4 rounded-xl text-sm"
+      {/* Tooltip Panel - Fixed z-index and positioning */}
+      {showTooltip && (
+        <div 
+          className="absolute right-0 mt-2 w-72 p-4 rounded-lg shadow-2xl border border-white/10 animate-fadeIn"
           style={{
-            background: '#1E293B',
-            border: '1px solid #334155',
-            boxShadow: '0 20px 40px -10px rgba(0, 0, 0, 0.6)',
-            animation: 'fadeIn 0.15s ease-out',
+            background: 'linear-gradient(135deg, #1E293B 0%, #0F172A 100%)',
+            zIndex: 9999,
+            top: '100%',
           }}
-          onMouseEnter={() => setShowTooltip(true)}
-          onMouseLeave={() => setShowTooltip(false)}
+          onClick={(e) => e.stopPropagation()}
         >
+          {/* Header */}
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-semibold text-white">Scam Analysis</h4>
+            <span className="text-lg">{score >= 70 ? '🚨' : score >= 30 ? '⚠️' : '✅'}</span>
+          </div>
+
           {/* Score Bar */}
           <div className="mb-3">
-            <div className="flex justify-between text-xs mb-1.5">
-              <span className="text-text-secondary">Scam Score</span>
-              <span style={{ color: risk.color }} className="font-bold">{score}%</span>
+            <div className="flex justify-between text-xs text-lavender-400 mb-1.5">
+              <span>Risk Score</span>
+              <span className="font-semibold" style={{ color: risk.color }}>{score}%</span>
             </div>
             <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: '#0F172A' }}>
               <div
                 className="h-full rounded-full transition-all duration-500"
                 style={{
                   width: `${score}%`,
-                  background: `linear-gradient(90deg, #22C55E 0%, #F59E0B 50%, #EF4444 100%)`,
+                  background: `linear-gradient(90deg, ${risk.color}99, ${risk.color})`,
                 }}
-              ></div>
+              />
             </div>
           </div>
 
-          {/* Reason */}
-          {reason && (
-            <p className="text-text-secondary text-xs mb-3 leading-relaxed">
-              {reason}
-            </p>
-          )}
-
           {/* Indicators */}
-          {parsedIndicators.length > 0 && (
-            <div>
-              <p className="text-text-secondary text-xs font-semibold mb-1.5">Indicators:</p>
+          {indicators.length > 0 && (
+            <div className="mb-3">
+              <h5 className="text-xs font-medium text-lavender-300 mb-1.5">Detected Indicators:</h5>
               <ul className="space-y-1">
-                {parsedIndicators.map((indicator, idx) => (
-                  <li key={idx} className="flex items-start gap-1.5 text-xs text-text-secondary">
-                    <span style={{ color: risk.color }} className="mt-0.5 flex-shrink-0">•</span>
-                    {indicator}
+                {indicators.map((indicator, idx) => (
+                  <li key={idx} className="text-xs text-lavender-400 flex items-start gap-1.5">
+                    <span className="text-red-400 mt-0.5">•</span>
+                    <span>{indicator}</span>
                   </li>
                 ))}
               </ul>
+            </div>
+          )}
+
+          {/* Reason */}
+          {reason && (
+            <div>
+              <h5 className="text-xs font-medium text-lavender-300 mb-1.5">Analysis:</h5>
+              <p className="text-xs text-lavender-400 leading-relaxed">{reason}</p>
             </div>
           )}
         </div>
