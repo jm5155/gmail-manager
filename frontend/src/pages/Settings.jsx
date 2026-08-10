@@ -72,12 +72,6 @@ function Settings() {
   const [deleteMode, setDeleteMode] = useState('trash');
   const [showDeleteInfo, setShowDeleteInfo] = useState(false);
 
-  // API Key Management State
-  const [apiKeys, setApiKeys] = useState({});
-  const [editingKeys, setEditingKeys] = useState({});
-  const [showApiKeys, setShowApiKeys] = useState({});
-  const [savingKeys, setSavingKeys] = useState(false);
-
   useEffect(() => {
     loadSettings();
   }, []);
@@ -107,52 +101,10 @@ function Settings() {
         const dmData = await dmRes.json();
         setDeleteMode(dmData.delete_mode || 'trash');
       }
-
-      // Fetch API keys (masked)
-      const keysRes = await fetch(`${API_BASE}/settings/api-keys`, { credentials: 'include' });
-      if (keysRes.ok) {
-        const keysData = await keysRes.json();
-        setApiKeys(keysData);
-      }
     } catch (err) {
       console.error('[SETTINGS] Failed to load:', err);
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function handleSaveApiKeys() {
-    if (Object.keys(editingKeys).length === 0) {
-      toast.error('No changes', 'Please enter at least one API key to update');
-      return;
-    }
-
-    setSavingKeys(true);
-    try {
-      const res = await fetch(`${API_BASE}/settings/api-keys`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editingKeys),
-        credentials: 'include',
-      });
-      const data = await res.json();
-      
-      if (!res.ok) throw new Error(data.error || 'Failed to update API keys');
-      
-      toast.success('API Keys Updated', data.message);
-      setEditingKeys({});
-      setShowApiKeys({});
-      
-      // Refresh API keys
-      const keysRes = await fetch(`${API_BASE}/settings/api-keys`, { credentials: 'include' });
-      if (keysRes.ok) {
-        const keysData = await keysRes.json();
-        setApiKeys(keysData);
-      }
-    } catch (err) {
-      toast.error('Update failed', err.message);
-    } finally {
-      setSavingKeys(false);
     }
   }
 
@@ -286,7 +238,7 @@ function Settings() {
           </div>
         </section>
 
-        {/* AI Providers Section with Editable Keys */}
+        {/* AI Providers Section */}
         <section className="rounded-lg p-4 md:p-5 w-full" style={{ background: 'rgba(30, 41, 59, 0.6)', border: '1px solid #334155' }}>
           <h2 className="text-sm font-semibold text-text-primary mb-4 flex items-center gap-2">
             <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -295,104 +247,70 @@ function Settings() {
             AI Cascade Providers
           </h2>
           <p className="text-xs text-text-secondary mb-4">
-            Update your API keys below. Changes take effect immediately. Click "Save Changes" when done.
+            Providers are tried in order. If one hits a rate limit, the next one is used automatically.
           </p>
 
           <div className="space-y-3">
             {API_FIELDS.map((field) => {
-              const providerKey = field.key.toLowerCase().replace('_api_key', '').replace('google_safe_browsing_key', 'safebrowsing');
-              const keyData = apiKeys[providerKey] || {};
-              const configured = keyData.configured;
-              const maskedKey = keyData.masked_key;
+              const configured = isConfigured(field.key);
               const isInactive = field.role === 'Inactive';
-              const isEditing = showApiKeys[providerKey];
-              
               return (
                 <div
                   key={field.key}
-                  className="p-3 rounded-lg transition-all duration-200"
+                  className="flex items-center justify-between p-3 rounded-lg transition-all duration-200"
                   style={{
                     background: isInactive ? 'rgba(15, 23, 42, 0.3)' : 'rgba(15, 23, 42, 0.5)',
                     border: `1px solid ${isInactive ? 'rgba(100, 116, 139, 0.2)' : configured ? 'rgba(34, 197, 94, 0.2)' : '#334155'}`,
                     opacity: isInactive ? 0.6 : 1,
                   }}
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                      <span className="text-lg">{field.icon}</span>
-                      <div>
-                        <p className="text-sm text-text-primary font-medium">{field.label}</p>
-                        <p className="text-xs text-text-secondary">{field.description}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span
-                        className="px-2.5 py-1 rounded-full text-[10px] md:text-xs font-medium"
-                        style={{
-                          background: isInactive
-                            ? 'rgba(100, 116, 139, 0.15)'
-                            : configured
-                              ? 'rgba(34, 197, 94, 0.12)'
-                              : 'rgba(239, 68, 68, 0.12)',
-                          color: isInactive
-                            ? '#64748B'
-                            : configured
-                              ? '#22C55E'
-                              : '#EF4444',
-                          border: `1px solid ${isInactive ? 'rgba(100, 116, 139, 0.2)' : configured ? 'rgba(34, 197, 94, 0.25)' : 'rgba(239, 68, 68, 0.25)'}`,
-                        }}
-                      >
-                        {isInactive ? 'Reserved' : configured ? 'Connected' : 'Not Set'}
-                      </span>
-                      <span
-                        className="px-2 py-0.5 rounded text-[10px] md:text-xs font-semibold"
-                        style={{
-                          background: 'rgba(37, 99, 235, 0.1)',
-                          color: '#60A5FA',
-                          border: '1px solid rgba(37, 99, 235, 0.2)',
-                        }}
-                      >
-                        {field.role}
-                      </span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg">{field.icon}</span>
+                    <div>
+                      <p className="text-sm text-text-primary font-medium">{field.label}</p>
+                      <p className="text-xs text-text-secondary">{field.description}</p>
                     </div>
                   </div>
-                  
-                  <div className="flex items-center gap-2 mt-2">
-                    <input
-                      type={isEditing ? "text" : "password"}
-                      placeholder={configured ? maskedKey : "Enter API key..."}
-                      value={editingKeys[providerKey + '_key'] || ''}
-                      onChange={(e) => setEditingKeys({...editingKeys, [providerKey + '_key']: e.target.value})}
-                      className="flex-1 px-3 py-2 rounded-lg text-xs text-text-primary outline-none transition-colors font-mono"
-                      style={{ background: 'rgba(15, 23, 42, 0.5)', border: '1px solid #334155' }}
-                    />
-                    <button
-                      onClick={() => setShowApiKeys({...showApiKeys, [providerKey]: !isEditing})}
-                      className="px-3 py-2 rounded-lg text-xs font-medium text-text-secondary hover:text-text-primary transition-colors"
-                      style={{ border: '1px solid #334155' }}
-                      title={isEditing ? "Hide" : "Show"}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span
+                      className="px-2.5 py-1 rounded-full text-[10px] md:text-xs font-medium"
+                      style={{
+                        background: isInactive
+                          ? 'rgba(100, 116, 139, 0.15)'
+                          : configured
+                            ? 'rgba(34, 197, 94, 0.12)'
+                            : 'rgba(239, 68, 68, 0.12)',
+                        color: isInactive
+                          ? '#64748B'
+                          : configured
+                            ? '#22C55E'
+                            : '#EF4444',
+                        border: `1px solid ${isInactive ? 'rgba(100, 116, 139, 0.2)' : configured ? 'rgba(34, 197, 94, 0.25)' : 'rgba(239, 68, 68, 0.25)'}`,
+                      }}
                     >
-                      {isEditing ? '🙈' : '👁️'}
-                    </button>
+                      {isInactive ? 'Reserved' : configured ? 'Connected' : 'Not Set'}
+                    </span>
+                    <span
+                      className="px-2 py-0.5 rounded text-[10px] md:text-xs font-semibold"
+                      style={{
+                        background: 'rgba(37, 99, 235, 0.1)',
+                        color: '#60A5FA',
+                        border: '1px solid rgba(37, 99, 235, 0.2)',
+                      }}
+                    >
+                      {field.role}
+                    </span>
                   </div>
                 </div>
               );
             })}
           </div>
 
-          <button
-            onClick={handleSaveApiKeys}
-            disabled={savingKeys || Object.keys(editingKeys).length === 0}
-            className="mt-4 w-full py-2.5 rounded-lg text-sm font-semibold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ background: 'linear-gradient(135deg, #2563EB 0%, #7C3AED 100%)' }}
-          >
-            {savingKeys ? 'Saving...' : 'Save API Key Changes'}
-          </button>
-
           <div className="mt-4 p-3 rounded-lg space-y-2"
                style={{ background: 'rgba(37, 99, 235, 0.06)', border: '1px solid rgba(37, 99, 235, 0.12)' }}>
             <p className="text-xs text-text-secondary">
-              💡 <strong className="text-primary">How it works:</strong> Keys update immediately without restart. For Railway deployment, set keys as environment variables for persistence.
+              💡 API keys are configured in <code className="text-primary font-mono text-xs">backend/.env</code>. 
+              Restart the backend after making changes.
             </p>
             <p className="text-xs text-text-secondary">
               ⚡ <strong className="text-primary">Cascade order:</strong> Groq → Gemini → Cohere. If a provider hits rate limits, the system automatically falls back to the next one.
