@@ -41,8 +41,8 @@ GOOGLE_SAFE_BROWSING_KEY = os.getenv("GOOGLE_SAFE_BROWSING_KEY")
 # ---------- AI CALL CONCURRENCY THROTTLE ----------
 
 # Cap concurrent in-flight AI provider calls to avoid bursting past per-minute
-# rate limits (Phase 13, Option 1). Starting limit: 5.
-AI_CALL_SEMAPHORE = asyncio.Semaphore(5)
+# rate limits (Phase 13, Option 1). Increased to 10 for faster analysis.
+AI_CALL_SEMAPHORE = asyncio.Semaphore(10)
 
 
 # ---------- COHERE PER-PROVIDER RATE LIMITER (Phase 16, Option B) ----------
