@@ -42,7 +42,15 @@ app = FastAPI(
 )
 
 # Session middleware for storing user_id after login
-app.add_middleware(SessionMiddleware, secret_key="gmail-manager-session-secret-key-2024")
+# Configure session cookies to work across domains (Vercel frontend → Railway backend)
+app.add_middleware(
+    SessionMiddleware,
+    secret_key="gmail-manager-session-secret-key-2024",
+    session_cookie="gmail_manager_session",
+    max_age=86400 * 7,  # 7 days
+    same_site="none",  # Allow cross-site cookies (Vercel → Railway)
+    https_only=True,  # Require HTTPS in production
+)
 
 # Enable CORS - Fixed for credentials mode
 # Wildcard (*) not allowed with credentials, must specify exact origins
