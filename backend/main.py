@@ -595,7 +595,7 @@ async def get_pending_count(request: Request):
     cursor.execute("""
         SELECT COUNT(*)
         FROM analyzed_emails
-        WHERE user_id = ?
+        WHERE user_id = %s
           AND status = 'labeled'
           AND applied_to_gmail = 0
     """, (user_id,))
