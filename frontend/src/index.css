@@ -1,7 +1,7 @@
 /**
- * index.css — Neumorphic Dark Gradient Design System (Updated 2026-07-25)
- * All design tokens, Tailwind directives, base styles, and utility classes.
- * Imported in main.jsx as the single CSS entry point.
+ * index.css — Gmail Manager Unified Design System
+ * Single source of truth for all colors, spacing, and styles
+ * Updated: 2026-08-10
  */
 
 /* ---------- TAILWIND DIRECTIVES ---------- */
@@ -12,360 +12,467 @@
 /* ---------- CSS CUSTOM PROPERTIES (Design Tokens) ---------- */
 @layer base {
   :root {
-    /* ========== NEW: NEUMORPHIC NAVY-PURPLE SYSTEM ========== */
+    /* ========== BACKGROUND PALETTE ========== */
+    --bg-app: #0F1729;              /* App container background */
+    --bg-page: #15162B;             /* Page background (navy-950) */
+    --bg-card: #1E293B;             /* Cards, panels (navy-800) */
+    --bg-sidebar: #1A1B2E;          /* Sidebar (navy-900) */
+    --bg-elevated: #2D3E5F;         /* Modals, dropdowns (navy-700) */
+    --bg-hover: #334B6B;            /* Hover states (navy-600) */
+    --bg-input: #1E293B;            /* Form inputs */
     
-    /* Navy-Purple Base Colors */
-    --bg-navy-950: #15162B;     /* Darkest (bg-primary-dark) */
-    --bg-navy-900: #1A1B2E;     /* Page background (bg-primary) */
-    --bg-navy-800: #22243D;     /* Cards (bg-secondary) */
-    --bg-navy-700: #262A47;     /* Elevated cards (bg-tertiary) */
-    --bg-navy-600: #2A2D4A;     /* Hover state */
+    /* ========== TEXT PALETTE ========== */
+    --text-primary: #FFFFFF;        /* Headings, important text */
+    --text-secondary: #CBD5E1;      /* Body text, descriptions */
+    --text-tertiary: #94A3B8;       /* Muted text, placeholders */
+    --text-accent: #B4B4D4;         /* Lavender accent text */
     
-    /* Teal-Blue Gradient Colors */
-    --brand-teal: #2DD4BF;      /* Gradient start */
-    --brand-blue: #3B82F6;      /* Gradient end */
-    --brand-purple: #8B5CF6;    /* Accent */
+    /* ========== BORDER PALETTE ========== */
+    --border-subtle: rgba(255, 255, 255, 0.05);   /* Very subtle dividers */
+    --border-default: rgba(255, 255, 255, 0.1);   /* Default borders */
+    --border-emphasis: #334155;                   /* Emphasized borders */
     
-    /* Lavender-Gray Text (warmer than slate) */
-    --text-white: #ffffff;
-    --text-lavender-400: #9CA3C4;  /* Secondary text */
-    --text-lavender-500: #6B7094;  /* Muted text */
+    /* ========== BRAND COLORS (Primary Actions) ========== */
+    --primary: #2563EB;             /* Primary blue */
+    --primary-hover: #1D4ED8;       /* Hover state */
+    --primary-active: #1E40AF;      /* Active state */
+    --secondary: #7C3AED;           /* Purple accent */
+    --secondary-hover: #6D28D9;
+    --secondary-active: #5B21B6;
     
-    /* Gradient System */
-    --gradient-primary: linear-gradient(135deg, #2DD4BF 0%, #3B82F6 100%);
-    --gradient-danger: linear-gradient(135deg, #F87171 0%, #EF4444 100%);
-    --gradient-success: linear-gradient(135deg, #34D399 0%, #10B981 100%);
-    --gradient-warning: linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%);
-    --gradient-page: linear-gradient(135deg, #1A1B2E 0%, #15162B 100%);
+    /* ========== STATUS COLORS ========== */
+    /* Success (Green) */
+    --success-bg: rgba(34, 197, 94, 0.15);
+    --success-border: rgba(34, 197, 94, 0.3);
+    --success-text: #22C55E;
     
-    /* Neumorphic Shadows (soft elevation) - Standard drop shadows for cards */
-    --shadow-neumorphic-sm: 0 2px 12px rgba(0, 0, 0, 0.25);
-    --shadow-neumorphic-md: 0 4px 20px rgba(0, 0, 0, 0.35);
-    --shadow-neumorphic-lg: 0 8px 32px rgba(0, 0, 0, 0.45);
+    /* Warning (Yellow) */
+    --warning-bg: rgba(245, 158, 11, 0.15);
+    --warning-border: rgba(245, 158, 11, 0.3);
+    --warning-text: #F59E0B;
     
-    /* TRUE NEUMORPHIC (SOFT UI) - Dual-direction shadows for interactive elements */
-    /* Raised state: light shadow top-left, dark shadow bottom-right - STRENGTHENED */
-    --shadow-soft-raised: -6px -6px 16px rgba(255, 255, 255, 0.08), 6px 6px 16px rgba(0, 0, 0, 0.6);
-    --shadow-soft-raised-lg: -8px -8px 20px rgba(255, 255, 255, 0.1), 8px 8px 20px rgba(0, 0, 0, 0.7);
+    /* Danger (Red) */
+    --danger-bg: rgba(239, 68, 68, 0.15);
+    --danger-border: rgba(239, 68, 68, 0.3);
+    --danger-text: #EF4444;
     
-    /* Pressed state: inverted inset shadows - STRENGTHENED */
-    --shadow-soft-pressed: inset 6px 6px 12px rgba(0, 0, 0, 0.5), inset -6px -6px 12px rgba(255, 255, 255, 0.05);
-    --shadow-soft-pressed-lg: inset 8px 8px 16px rgba(0, 0, 0, 0.6), inset -8px -8px 16px rgba(255, 255, 255, 0.08);
+    /* Info (Blue) */
+    --info-bg: rgba(59, 130, 246, 0.15);
+    --info-border: rgba(59, 130, 246, 0.3);
+    --info-text: #3B82F6;
     
-    /* Hover state: stronger extrusion - STRENGTHENED */
-    --shadow-soft-hover: -8px -8px 20px rgba(255, 255, 255, 0.1), 8px 8px 20px rgba(0, 0, 0, 0.7);
+    /* ========== GRADIENTS ========== */
+    --gradient-primary: linear-gradient(135deg, #2563EB, #7C3AED);
+    --gradient-secondary: linear-gradient(135deg, #7C3AED, #A78BFA);
     
-    /* Glow Effects */
-    --shadow-glow-teal: 0 0 16px rgba(45, 212, 191, 0.3);
-    --shadow-glow-blue: 0 0 16px rgba(59, 130, 246, 0.3);
-    --shadow-glow-danger: 0 0 16px rgba(239, 68, 68, 0.3);
+    /* ========== SPACING ========== */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
     
-    /* Inset Shadows (legacy - now replaced by soft-pressed for true neumorphism) */
-    --shadow-inset-input: inset 0 2px 4px rgba(0, 0, 0, 0.2);
-    --shadow-focus-teal: 0 0 0 3px rgba(45, 212, 191, 0.2), inset 0 2px 4px rgba(0, 0, 0, 0.2);
+    /* ========== BORDER RADIUS ========== */
+    --radius-sm: 0.5rem;
+    --radius-md: 0.75rem;
+    --radius-lg: 1rem;
+    --radius-xl: 1.5rem;
     
-    /* Border Radius System */
-    --radius-card: 16px;
-    --radius-input: 12px;
-    --radius-button: 12px;
-    
-    /* Category Colors */
-    --color-work: #3B82F6;
-    --color-work-light: #60A5FA;
-    --color-finance: #10B981;
-    --color-finance-light: #34D399;
-    --color-newsletter: #A855F7;
-    --color-newsletter-light: #C084FC;
-    --color-promotional: #F97316;
-    --color-promotional-light: #FB923C;
-    --color-personal: #06B6D4;
-    --color-personal-light: #22D3EE;
-    --color-spam: #EF4444;
-    --color-spam-light: #F87171;
-    
-    /* Risk Colors */
-    --risk-low: #10B981;
-    --risk-moderate: #F59E0B;
-    --risk-high: #F97316;
-    --risk-danger: #EF4444;
-    
-    
-    /* ========== BACKWARD COMPATIBILITY ALIASES ========== */
-    /* Keep old variable names working for untouched components */
-    
-    /* Brand Colors (aliases) */
-    --color-primary: var(--brand-teal);           /* Was #2563EB, now #2DD4BF */
-    --color-primary-hover: #1fb4a0;               /* Darker teal */
-    --color-primary-light: rgba(45, 212, 191, 0.15);
-    
-    /* Backgrounds (aliases) */
-    --color-bg-dark: var(--bg-navy-900);          /* Was #0F172A, now #1A1B2E */
-    --color-surface: var(--bg-navy-800);          /* Was #1E293B, now #22243D */
-    --color-surface-hover: var(--bg-navy-700);    /* Was #263548, now #262A47 */
-    
-    /* Borders (keep existing) */
-    --color-border: #334155;
-    --color-border-light: rgba(255, 255, 255, 0.1);
-    
-    /* Text (aliases) */
-    --color-text-primary: var(--text-white);
-    --color-text-secondary: var(--text-lavender-400);  /* Was #94A3B8, now #9CA3C4 */
-    --color-text-muted: var(--text-lavender-500);      /* Was #64748B, now #6B7094 */
-    
-    /* Status Colors (keep existing) */
-    --color-success: #22C55E;
-    --color-warning: #F59E0B;
-    --color-danger: #EF4444;
-    
-    /* Shadows (aliases to neumorphic) */
-    --shadow-sm: var(--shadow-neumorphic-sm);
-    --shadow-md: var(--shadow-neumorphic-md);
-    --shadow-lg: var(--shadow-neumorphic-lg);
-    --shadow-primary: var(--shadow-glow-teal);
-    
-    /* Border Radius (keep existing) */
-    --radius-sm: 6px;
-    --radius-md: 8px;
-    --radius-lg: 12px;
-    --radius-xl: 16px;
-    --radius-pill: 999px;
-    
-    /* Transitions (keep existing) */
-    --transition-fast: 150ms ease-out;
-    --transition-normal: 200ms ease-out;
-    --transition-slow: 300ms ease-out;
-    
-    /* Sidebar */
-    --sidebar-width: 240px;
+    /* ========== SHADOWS (Neumorphic) ========== */
+    --shadow-neumorphic-sm: 
+      6px 6px 12px rgba(0, 0, 0, 0.4),
+      -6px -6px 12px rgba(255, 255, 255, 0.02);
+    --shadow-neumorphic-md: 
+      8px 8px 16px rgba(0, 0, 0, 0.4),
+      -8px -8px 16px rgba(255, 255, 255, 0.02);
+    --shadow-neumorphic-lg: 
+      12px 12px 24px rgba(0, 0, 0, 0.5),
+      -12px -12px 24px rgba(255, 255, 255, 0.03);
+    --shadow-hover: 
+      10px 10px 20px rgba(0, 0, 0, 0.5),
+      -10px -10px 20px rgba(255, 255, 255, 0.03);
   }
-}
-
-/* ---------- BASE STYLES ---------- */
-@layer base {
+  
+  /* Base styles */
+  * {
+    -webkit-tap-highlight-color: rgba(37, 99, 235, 0.2);
+  }
+  
   body {
-    @apply bg-gradient-to-br from-navy-900 to-navy-950;
-    @apply text-white;
-    @apply font-sans;
-    @apply antialiased;
-    @apply min-h-screen;
+    margin: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background: var(--bg-page);
+    color: var(--text-secondary);
+  }
+  
+  #root {
+    min-height: 100vh;
   }
 }
 
-/* ---------- COMPONENT UTILITIES ---------- */
+/* ---------- COMPONENT STYLES ---------- */
 @layer components {
-  /* Gradient Background Classes (for buttons, nav, etc.) */
-  .bg-gradient-primary {
+  /* ========== BUTTONS ========== */
+  
+  /* Primary Button */
+  .btn-primary {
     background: var(--gradient-primary);
+    color: var(--text-primary);
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-neumorphic-sm);
   }
   
-  .bg-gradient-danger {
-    background: var(--gradient-danger);
+  .btn-primary:hover:not(:disabled) {
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-1px);
   }
   
-  .bg-gradient-success {
-    background: var(--gradient-success);
+  .btn-primary:active:not(:disabled) {
+    transform: translateY(0) scale(0.98);
   }
   
-  .bg-gradient-warning {
-    background: var(--gradient-warning);
+  .btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    box-shadow: none;
   }
   
-  /* Neumorphic Input Styles (TRUE SOFT UI - pressed-in look) */
+  /* Secondary Button */
+  .btn-secondary {
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-default);
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-neumorphic-sm);
+  }
+  
+  .btn-secondary:hover:not(:disabled) {
+    background: var(--bg-elevated);
+    border-color: var(--border-emphasis);
+    box-shadow: var(--shadow-hover);
+  }
+  
+  .btn-secondary:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+  
+  .btn-secondary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  /* Danger Button */
+  .btn-danger {
+    background: #7F1D1D;
+    color: #FCA5A5;
+    border: 1px solid var(--danger-border);
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .btn-danger:hover:not(:disabled) {
+    background: #991B1B;
+    color: #FEE2E2;
+  }
+  
+  .btn-danger:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+  
+  /* Ghost Button */
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-default);
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .btn-ghost:hover:not(:disabled) {
+    background: var(--bg-card);
+    border-color: var(--border-emphasis);
+  }
+  
+  /* ========== FORM INPUTS ========== */
+  
+  /* Text Input */
   .input-neumorphic {
-    @apply bg-navy-900 border-0 rounded-input px-4 py-3;
-    @apply text-white placeholder-lavender-400;
-    @apply transition-all duration-200;
-    @apply outline-none;
-    box-shadow: var(--shadow-soft-pressed);
+    background: var(--bg-input);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: 0.5rem 0.75rem;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+    outline: none;
+  }
+  
+  .input-neumorphic::placeholder {
+    color: var(--text-tertiary);
   }
   
   .input-neumorphic:hover {
-    box-shadow: var(--shadow-soft-pressed-lg);
+    border-color: var(--border-emphasis);
   }
   
   .input-neumorphic:focus {
-    box-shadow: var(--shadow-soft-pressed-lg), 0 0 0 2px rgba(45, 212, 191, 0.3);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
   }
   
-  .input-neumorphic:disabled {
-    @apply opacity-50 cursor-not-allowed;
-  }
-  
-  /* Neumorphic Select Dropdown (TRUE SOFT UI) */
+  /* Select Dropdown */
   .select-neumorphic {
-    @apply input-neumorphic;
-    @apply cursor-pointer appearance-none;
-    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%239CA3C4' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 1rem center;
-    background-size: 12px;
-    padding-right: 2.75rem;
+    background: var(--bg-input);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: 0.375rem 0.75rem;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    outline: none;
   }
   
   .select-neumorphic:hover {
-    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%232DD4BF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    border-color: var(--border-emphasis);
+    background: var(--bg-elevated);
   }
   
   .select-neumorphic:focus {
-    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 6.5L6 1.5L1 6.5' stroke='%232DD4BF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
   }
   
-  /* Neumorphic Button - Primary (TRUE SOFT UI with gradient) */
-  .btn-neumorphic-primary {
-    @apply bg-gradient-primary text-white font-semibold;
-    @apply px-6 py-3 rounded-button;
-    @apply transition-all duration-200;
-    @apply disabled:opacity-50 disabled:cursor-not-allowed;
-    box-shadow: var(--shadow-soft-raised);
+  /* Textarea */
+  .textarea-neumorphic {
+    background: var(--bg-input);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: 0.75rem;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    outline: none;
+    resize: vertical;
+    min-height: 100px;
   }
   
-  .btn-neumorphic-primary:hover:not(:disabled) {
-    box-shadow: var(--shadow-soft-hover), var(--shadow-glow-teal);
-    @apply -translate-y-0.5;
+  .textarea-neumorphic::placeholder {
+    color: var(--text-tertiary);
   }
   
-  .btn-neumorphic-primary:active:not(:disabled) {
-    box-shadow: var(--shadow-soft-pressed);
-    @apply scale-[0.98] translate-y-0;
+  .textarea-neumorphic:hover {
+    border-color: var(--border-emphasis);
   }
   
-  /* Neumorphic Button - Secondary (TRUE SOFT UI) */
-  .btn-neumorphic-secondary {
-    @apply bg-navy-900 text-lavender-400 font-semibold;
-    @apply px-6 py-3 rounded-button;
-    @apply transition-all duration-200;
-    @apply disabled:opacity-50 disabled:cursor-not-allowed;
-    box-shadow: var(--shadow-soft-raised);
+  .textarea-neumorphic:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
   }
   
-  .btn-neumorphic-secondary:hover:not(:disabled) {
-    @apply text-teal-400;
-    box-shadow: var(--shadow-soft-hover);
-  }
+  /* ========== CARDS ========== */
   
-  .btn-neumorphic-secondary:active:not(:disabled) {
-    box-shadow: var(--shadow-soft-pressed);
-    @apply scale-[0.98];
-  }
-  
-  /* Neumorphic Button - Destructive (TRUE SOFT UI) */
-  .btn-neumorphic-destructive {
-    @apply bg-navy-900 text-red-400 font-semibold;
-    @apply px-6 py-3 rounded-button;
-    @apply transition-all duration-200;
-    @apply disabled:opacity-50 disabled:cursor-not-allowed;
-    box-shadow: var(--shadow-soft-raised);
-  }
-  
-  .btn-neumorphic-destructive:hover:not(:disabled) {
-    @apply bg-gradient-danger text-white;
-    box-shadow: var(--shadow-soft-hover), var(--shadow-glow-danger);
-  }
-  
-  .btn-neumorphic-destructive:active:not(:disabled) {
-    box-shadow: var(--shadow-soft-pressed);
-    @apply scale-[0.98];
-  }
-  
-  /* Neumorphic Checkbox (TRUE SOFT UI) */
-  .checkbox-neumorphic {
-    @apply appearance-none w-5 h-5 rounded-md cursor-pointer;
-    @apply bg-navy-900 transition-all duration-200;
-    box-shadow: var(--shadow-soft-pressed);
-  }
-  
-  .checkbox-neumorphic:hover {
-    box-shadow: var(--shadow-soft-pressed-lg);
-  }
-  
-  .checkbox-neumorphic:checked {
-    @apply bg-gradient-primary;
-    box-shadow: var(--shadow-soft-raised), var(--shadow-glow-teal);
-  }
-  
-  .checkbox-neumorphic:checked::after {
-    content: '';
-    @apply block w-full h-full;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M13.5 3.5L6 11L2.5 7.5' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-    background-size: 14px;
-    background-position: center;
-    background-repeat: no-repeat;
-  }
-  
-  /* Neumorphic Card */
   .card-neumorphic {
-    @apply bg-navy-800 rounded-card p-5;
-    @apply shadow-neumorphic-md;
-    @apply transition-all duration-200;
-    @apply hover:shadow-hover-lift hover:-translate-y-0.5;
-    @apply cursor-pointer;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-md);
+    box-shadow: var(--shadow-neumorphic-md);
+    transition: all 0.2s ease;
   }
   
-  /* Status Badge (rounded pill) */
-  .badge-status {
-    @apply inline-flex items-center gap-1.5;
-    @apply px-3 py-1 rounded-full;
-    @apply text-xs font-medium;
-    @apply transition-all duration-200;
+  .card-neumorphic:hover {
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-2px);
   }
   
-  /* Risk Badge Variants */
-  .badge-risk-low {
-    @apply badge-status;
-    @apply bg-green-500/15 text-green-400;
+  /* ========== BADGES & STATUS ========== */
+  
+  .badge-success {
+    background: var(--success-bg);
+    color: var(--success-text);
+    border: 1px solid var(--success-border);
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
   }
   
-  .badge-risk-moderate {
-    @apply badge-status;
-    @apply bg-yellow-500/15 text-yellow-400;
+  .badge-warning {
+    background: var(--warning-bg);
+    color: var(--warning-text);
+    border: 1px solid var(--warning-border);
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
   }
   
-  .badge-risk-high {
-    @apply badge-status;
-    @apply bg-orange-500/15 text-orange-400;
+  .badge-danger {
+    background: var(--danger-bg);
+    color: var(--danger-text);
+    border: 1px solid var(--danger-border);
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
   }
   
-  .badge-risk-danger {
-    @apply badge-status;
-    @apply bg-red-500/15 text-red-400;
+  .badge-info {
+    background: var(--info-bg);
+    color: var(--info-text);
+    border: 1px solid var(--info-border);
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
   }
   
-  /* Gradient Accent Bar (for cards) */
+  /* ========== MODALS ========== */
+  
+  .modal-overlay {
+    background: rgba(15, 23, 41, 0.8);
+    backdrop-filter: blur(4px);
+  }
+  
+  .modal-content {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-neumorphic-lg);
+  }
+  
+  /* ========== UTILITY CLASSES ========== */
+  
+  /* Accent bar (left edge of cards) */
   .accent-bar-primary {
-    @apply absolute left-0 top-0 w-1 h-full;
-    @apply bg-gradient-primary rounded-l-full;
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--gradient-primary);
+    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
   }
   
-  .accent-bar-danger {
-    @apply absolute left-0 top-0 w-1 h-full;
-    @apply bg-gradient-danger rounded-l-full;
+  /* Divider */
+  .divider {
+    height: 1px;
+    background: var(--border-subtle);
+    margin: var(--spacing-md) 0;
   }
-}
-
-/* ---------- UTILITY OVERRIDES ---------- */
-@layer utilities {
-  /* Custom scrollbar for dark theme */
-  .scrollbar-neumorphic::-webkit-scrollbar {
+  
+  /* Text utilities */
+  .text-primary {
+    color: var(--text-primary);
+  }
+  
+  .text-secondary {
+    color: var(--text-secondary);
+  }
+  
+  .text-tertiary {
+    color: var(--text-tertiary);
+  }
+  
+  .text-accent {
+    color: var(--text-accent);
+  }
+  
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
   
-  .scrollbar-neumorphic::-webkit-scrollbar-track {
-    @apply bg-navy-900 rounded-full;
+  ::-webkit-scrollbar-track {
+    background: var(--bg-page);
   }
   
-  .scrollbar-neumorphic::-webkit-scrollbar-thumb {
-    @apply bg-navy-600 rounded-full;
-    @apply hover:bg-navy-500;
+  ::-webkit-scrollbar-thumb {
+    background: var(--bg-elevated);
+    border-radius: 4px;
   }
   
-  /* Body scroll lock (for mobile drawer) */
-  .drawer-open {
-    overflow: hidden;
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--bg-hover);
+  }
+}
+
+/* ---------- ANIMATIONS ---------- */
+@layer utilities {
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
   
-  /* Tap highlight color for mobile */
-  * {
-    -webkit-tap-highlight-color: rgba(45, 212, 191, 0.2);
+  @keyframes slideIn {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+  
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+  
+  .animate-fadeIn {
+    animation: fadeIn 0.3s ease-out;
+  }
+  
+  .animate-slideIn {
+    animation: slideIn 0.3s ease-out;
+  }
+  
+  .animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 }
