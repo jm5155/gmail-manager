@@ -94,9 +94,9 @@ function ScamAlerts() {
   return (
     <div className="h-screen overflow-hidden pl-0 md:pl-[240px]">
       {/* Header */}
-      <div className="px-6 py-4 pt-16 md:pt-4" style={{ borderBottom: '1px solid #1E293B' }}>
-        <h1 className="text-xl font-bold text-text-primary mb-1">Scam Alerts</h1>
-        <p className="text-sm text-text-secondary">
+      <div className="px-6 py-4 pt-16 md:pt-4" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+        <h1 className="text-xl font-bold text-primary mb-1">Scam Alerts</h1>
+        <p className="text-sm text-secondary">
           Emails flagged by AI with elevated scam probability scores.
         </p>
 
@@ -125,14 +125,14 @@ function ScamAlerts() {
         {loading && (
           <div className="flex flex-col items-center justify-center h-64 gap-4">
             <div className="w-10 h-10 border-3 border-primary border-t-transparent rounded-full animate-spin" style={{ borderWidth: '3px' }}></div>
-            <p className="text-text-secondary">Loading scam alerts...</p>
+            <p className="text-secondary">Loading scam alerts...</p>
           </div>
         )}
 
         {!loading && filteredEmails.length === 0 && (
           <div className="flex flex-col items-center justify-center h-64 gap-3">
             <div className="text-5xl opacity-30">🛡️</div>
-            <p className="text-text-secondary">
+            <p className="text-secondary">
               {emails.length === 0 ? 'No scam alerts found. Your inbox looks clean!' : 'No emails match this risk level.'}
             </p>
           </div>
@@ -148,10 +148,10 @@ function ScamAlerts() {
                 <button
                   onClick={() => handleReanalyze(email.email_id)}
                   disabled={reanalyzing[email.email_id]}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-text-secondary
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-secondary
                              transition-all duration-200 hover:text-primary hover:bg-surface
                              disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ border: '1px solid #334155' }}
+                  style={{ border: '1px solid var(--border-default)' }}
                 >
                   {reanalyzing[email.email_id] ? (
                     <span className="flex items-center gap-1.5">
