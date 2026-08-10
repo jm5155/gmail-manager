@@ -187,15 +187,16 @@ function Quarantine() {
       </div>
 
       {/* Delete Confirmation Modal */}
-      <ConfirmModal
-        isOpen={!!deleteTarget}
-        title="Move to Trash?"
-        message={`This will move "${deleteTarget?.subject || 'this email'}" to Gmail Trash. It will NOT be permanently deleted.`}
-        onConfirm={() => handleDelete(deleteTarget?.email_id)}
-        onCancel={() => setDeleteTarget(null)}
-        confirmLabel="Move to Trash"
-        danger={true}
-      />
+      {deleteTarget && (
+        <ConfirmModal
+          title="Move to Trash?"
+          message={`This will move "${deleteTarget.subject || 'this email'}" to Gmail Trash. It will NOT be permanently deleted.`}
+          confirmText="Move to Trash"
+          isDangerous={true}
+          onConfirm={() => handleDelete(deleteTarget.email_id)}
+          onCancel={() => setDeleteTarget(null)}
+        />
+      )}
     </div>
   );
 }
