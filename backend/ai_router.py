@@ -34,6 +34,16 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 # Cohere API (tertiary)
 COHERE_API_KEY = os.getenv("COHERE_API_KEY")
 
+# TokenRouter API (quaternary — 5 keys for load distribution)
+TOKENROUTER_BASE_URL = os.getenv("TOKENROUTER_BASE_URL")
+TOKENROUTER_API_KEYS = [
+    os.getenv("TOKENROUTER_API_KEY_1"),
+    os.getenv("TOKENROUTER_API_KEY_2"),
+    os.getenv("TOKENROUTER_API_KEY_3"),
+    os.getenv("TOKENROUTER_API_KEY_4"),
+    os.getenv("TOKENROUTER_API_KEY_5"),
+]
+
 # Google Safe Browsing API
 GOOGLE_SAFE_BROWSING_KEY = os.getenv("GOOGLE_SAFE_BROWSING_KEY")
 
@@ -147,7 +157,7 @@ class AIRouter:
     If the primary provider is rate-limited (429), automatically falls back
     to the next provider in the chain.
     
-    Cascade order: Groq → Gemini → Cohere
+    Cascade order: Groq → Gemini → Cohere → TokenRouter
     (NVIDIA preserved but not in active cascade)
     """
 
@@ -355,6 +365,59 @@ class AIRouter:
         except httpx.TimeoutException:
             raise ProviderError("Cohere request timed out (30s)")
 
+    # ---------- PROVIDER: TOKENROUTER (QUATERNARY) ----------
+
+    async def _call_tokenrouter(self, prompt: str) -> str:
+        """
+        Call TokenRouter API with OpenAI-compatible endpoint.
+        Load-balances across 5 API keys via round-robin selection.
+        
+        Args:
+            prompt: The text prompt to send
+            
+        Returns:
+            Response text from the model
+            
+        Raises:
+            QuotaError: If status 429 (rate limited)
+            ProviderError: If any other error occurs
+        """
+        if not TOKENROUTER_BASE_URL or not any(TOKENROUTER_API_KEYS):
+            raise ProviderError("TokenRouter API not configured")
+
+        # Round-robin key selection based on timestamp
+        import time
+        key_index = int(time.time()) % len([k for k in TOKENROUTER_API_KEYS if k])
+        api_key = [k for k in TOKENROUTER_API_KEYS if k][key_index]
+
+        url = f"{TOKENROUTER_BASE_URL}/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+        body = {
+            "model": "gpt-4o-mini",  # TokenRouter's default fast model
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": 500,
+            "temperature": 0.2,
+        }
+
+        try:
+            response = await self.async_client.post(url, headers=headers, json=body)
+
+            if response.status_code == 429:
+                retry_after = response.headers.get("Retry-After")
+                raise QuotaError(f"TokenRouter quota exceeded: {response.text[:300]} | retry-after={retry_after}")
+
+            if response.status_code != 200:
+                raise ProviderError(f"TokenRouter error {response.status_code}: {response.text[:200]}")
+
+            data = response.json()
+            return data["choices"][0]["message"]["content"].strip()
+
+        except httpx.TimeoutException:
+            raise ProviderError("TokenRouter request timed out (30s)")
+
     # ---------- RETRY-DELAY PARSING (Phase 13, Option 3) ----------
 
     @staticmethod
@@ -389,7 +452,7 @@ class AIRouter:
 
     async def analyze(self, prompt: str) -> dict:
         """
-        Run a prompt through the AI cascade: Groq → Gemini → Cohere.
+        Run a prompt through the AI cascade: Groq → Gemini → Cohere → TokenRouter.
         Automatically switches to the next provider if the current one hits quota limits.
         
         Args:
@@ -404,6 +467,7 @@ class AIRouter:
             ("Groq", self._call_groq),
             ("Gemini", self._call_gemini),
             ("Cohere", self._call_cohere),
+            ("TokenRouter", self._call_tokenrouter),
         ]
 
         for name, call_fn in providers:
