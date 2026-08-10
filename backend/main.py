@@ -144,7 +144,8 @@ async def auth_callback(request: Request):
     """
     GET /auth/callback
     Google redirects here after the user grants permissions.
-    Stores user_id and gmail_address in the session.
+    Stores user_id and gmail_address in the session AND creates a legacy token.json
+    for backward compatibility with existing code.
     """
     code = request.query_params.get("code")
 
@@ -160,6 +161,18 @@ async def auth_callback(request: Request):
     if result.get("success") and result.get("user_id"):
         request.session["user_id"] = result["user_id"]
         request.session["gmail_address"] = result["gmail_address"]
+        
+        # CRITICAL FIX: Also create legacy token.json for backward compatibility
+        # This ensures all existing endpoints work without session cookies
+        from auth import load_token, save_token
+        user_email = result["gmail_address"]
+        creds = load_token(user_email)
+        if creds:
+            # Copy user-specific token to legacy token.json
+            save_token(creds, user_email=None)
+            print(f"[AUTH] Created legacy token.json for {user_email} for backward compatibility")
+    
+    print(f"[AUTH CALLBACK] Session set: user_id={result.get('user_id')}, email={result.get('gmail_address')}")
 
     html_content = """
     <html>
