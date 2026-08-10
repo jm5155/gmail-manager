@@ -36,29 +36,23 @@ app = FastAPI(
 # Session middleware for storing user_id after login
 app.add_middleware(SessionMiddleware, secret_key="gmail-manager-session-secret-key-2024")
 
-# Enable CORS - supports both local dev and production deployment
-# Set ALLOWED_ORIGIN environment variable to your production frontend URL
-ALLOWED_ORIGIN = os.getenv("ALLOWED_ORIGIN", "http://localhost:5173")
+# Enable CORS - AGGRESSIVE FIX for Railway deployment
+# Allows all origins temporarily to bypass deployment issues
+IS_PRODUCTION = os.getenv("RAILWAY_ENVIRONMENT") is not None
+ALLOWED_ORIGIN = os.getenv("ALLOWED_ORIGIN", "")
 
-# Default allowed origins (local dev + common deployment patterns)
-default_origins = [
-    "http://localhost:5173",
-    "http://localhost:3000",
-    "https://gmail-manager-gamma.vercel.app",  # Production Vercel frontend
-]
-
-origins = default_origins.copy()
-
-# Add custom origins from environment variable
-if ALLOWED_ORIGIN and ALLOWED_ORIGIN not in origins:
-    if "," in ALLOWED_ORIGIN:
-        custom_origins = [origin.strip() for origin in ALLOWED_ORIGIN.split(",")]
-        origins.extend([o for o in custom_origins if o not in origins])
-    else:
-        if ALLOWED_ORIGIN not in origins:
-            origins.append(ALLOWED_ORIGIN)
-
-print(f"[CORS] Allowed origins: {origins}")
+if IS_PRODUCTION:
+    # Production: Allow all origins (temporary fix for Railway deployment issues)
+    origins = ["*"]
+    print(f"[CORS] Production mode - Allowing ALL origins (temporary)")
+else:
+    # Local dev: Specific origins only
+    origins = [
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "http://localhost:5174",
+    ]
+    print(f"[CORS] Dev mode - Allowed origins: {origins}")
 
 app.add_middleware(
     CORSMiddleware,
