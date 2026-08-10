@@ -13,7 +13,8 @@ from datetime import datetime, timedelta
 
 # Detect database type from environment
 DATABASE_URL = os.getenv("DATABASE_URL")  # Railway Postgres connection string
-USE_POSTGRES = DATABASE_URL is not None
+FORCE_SQLITE = os.getenv("FORCE_SQLITE", "false").lower() == "true"
+USE_POSTGRES = DATABASE_URL is not None and not FORCE_SQLITE
 
 if USE_POSTGRES:
     import psycopg2
