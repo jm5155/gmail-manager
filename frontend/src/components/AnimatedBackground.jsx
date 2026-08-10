@@ -39,25 +39,25 @@ function AnimatedBackground() {
         }}
       />
 
-      {/* Animated Orbs - Solid Colors Only, No Gradients */}
+      {/* Animated Orbs - Muted Pastels (Solid Colors Only) */}
       <div
         className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full opacity-10 blur-3xl"
         style={{
-          background: 'var(--primary)',
+          background: '#B39CD0', /* Lavender */
           animation: 'floatSlow 20s ease-in-out infinite, pulse 8s ease-in-out infinite',
         }}
       />
       <div
         className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full opacity-8 blur-3xl"
         style={{
-          background: 'var(--secondary)',
+          background: '#A8DADC', /* Light cyan */
           animation: 'floatReverse 25s ease-in-out infinite, pulse 10s ease-in-out infinite',
         }}
       />
       <div
         className="absolute top-[40%] left-[50%] w-[400px] h-[400px] rounded-full opacity-6 blur-3xl"
         style={{
-          background: 'var(--success)',
+          background: '#FFC1CC', /* Soft pink */
           animation: 'floatSlow 15s ease-in-out infinite reverse, pulse 12s ease-in-out infinite',
         }}
       />

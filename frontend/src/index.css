@@ -12,64 +12,59 @@
 /* ---------- DESIGN TOKENS ---------- */
 @layer base {
   :root {
-    /* === SURFACE: only ONE base background color for the entire app === */
-    --surface: #1B1F30;
-    --surface-light: #232840; /* use ONLY for active/focused elements, sparingly */
+    /* === MUTED PASTELS COLOR SCHEME === */
+    /* Background & Surface */
+    --surface: #2C2C2C; /* Slate gray - main background */
+    --surface-light: #3A3A3A; /* Slightly lighter for hover states */
 
-    /* === NEUMORPHIC SHADOW PAIR (this creates all visual depth) === */
-    --shadow-light: rgba(255, 255, 255, 0.04);
-    --shadow-dark: rgba(0, 0, 0, 0.45);
+    /* === NEUMORPHIC SHADOW PAIR === */
+    --shadow-light: rgba(255, 255, 255, 0.05);
+    --shadow-dark: rgba(0, 0, 0, 0.5);
 
     --neu-raised: 6px 6px 14px var(--shadow-dark), -6px -6px 14px var(--shadow-light);
     --neu-inset: inset 4px 4px 10px var(--shadow-dark), inset -4px -4px 10px var(--shadow-light);
     --neu-flat: 2px 2px 6px var(--shadow-dark), -2px -2px 6px var(--shadow-light);
     --neu-hover: 8px 8px 18px var(--shadow-dark), -8px -8px 18px var(--shadow-light);
 
-    /* === TEXT: exactly 3 levels, no exceptions === */
-    --text-primary: #F5F6FA;
-    --text-secondary: #9CA3C2;
-    --text-tertiary: #6B7291;
+    /* === TEXT: Muted Pastels Hierarchy === */
+    --text-primary: #E4E4E4; /* Light gray - main text */
+    --text-secondary: #B8B8B8; /* Medium gray - secondary text */
+    --text-tertiary: #8A8A8A; /* Muted gray - tertiary text */
 
-    /* === BORDERS: 2 levels only === */
-    --border-subtle: rgba(255, 255, 255, 0.04);
-    --border-default: rgba(255, 255, 255, 0.08);
+    /* === BORDERS === */
+    --border-subtle: rgba(228, 228, 228, 0.08);
+    --border-default: rgba(228, 228, 228, 0.12);
 
-    /* === BRAND === */
-    --primary: #4C6FFF;
-    --primary-hover: #3E5CE0;
-    --primary-active: #2F4ACC;
-    --secondary: #8B5CF6;
-    --secondary-hover: #7C3AED;
+    /* === BRAND: Muted Pastels === */
+    --primary: #B39CD0; /* Lavender - primary buttons/CTAs */
+    --primary-hover: #9D85BC;
+    --primary-active: #8770A8;
+    --secondary: #A8DADC; /* Light cyan - secondary accent */
+    --secondary-hover: #94C9CB;
+    --accent-pink: #FFC1CC; /* Soft pink - tertiary accent */
+    --accent-pink-hover: #FFADB9;
 
-    /* === STATUS COLORS (fixed, one shade each, no variants) === */
-    --success: #22C55E;
-    --success-bg: rgba(34, 197, 94, 0.15);
-    --success-border: rgba(34, 197, 94, 0.3);
+    /* === STATUS COLORS (adjusted for muted pastels) === */
+    --success: #A8DADC; /* Light cyan for success */
+    --success-bg: rgba(168, 218, 220, 0.15);
+    --success-border: rgba(168, 218, 220, 0.3);
 
-    --warning: #F59E0B;
-    --warning-bg: rgba(245, 158, 11, 0.15);
-    --warning-border: rgba(245, 158, 11, 0.3);
+    --warning: #FFC1CC; /* Soft pink for warnings */
+    --warning-bg: rgba(255, 193, 204, 0.15);
+    --warning-border: rgba(255, 193, 204, 0.3);
 
-    --danger: #EF4444;
-    --danger-bg: rgba(239, 68, 68, 0.15);
-    --danger-border: rgba(239, 68, 68, 0.3);
+    --danger: #FFADB9; /* Slightly darker pink for danger */
+    --danger-bg: rgba(255, 173, 185, 0.15);
+    --danger-border: rgba(255, 173, 185, 0.3);
 
-    --info: #4C6FFF;
-    --info-bg: rgba(76, 111, 255, 0.15);
-    --info-border: rgba(76, 111, 255, 0.3);
+    --info: #A8DADC; /* Light cyan for info */
+    --info-bg: rgba(168, 218, 220, 0.15);
+    --info-border: rgba(168, 218, 220, 0.3);
 
-    /* === RADIUS (consistent rounding scale) === */
+    /* === RADIUS === */
     --radius-sm: 8px;
     --radius-md: 12px;
     --radius-lg: 16px;
-    --radius-pill: 999px;
-
-    /* === SPACING SCALE === */
-    --space-xs: 4px;
-    --space-sm: 8px;
-    --space-md: 16px;
-    --space-lg: 24px;
-    --space-xl: 32px;
   }
   
   /* Base styles */
