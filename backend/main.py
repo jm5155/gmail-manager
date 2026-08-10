@@ -628,7 +628,7 @@ async def apply_all_pending(request: Request):
     cursor.execute("""
         SELECT email_id
         FROM analyzed_emails
-        WHERE user_id = ?
+        WHERE user_id = %s
           AND status = 'labeled'
           AND applied_to_gmail = 0
     """, (user_id,))
