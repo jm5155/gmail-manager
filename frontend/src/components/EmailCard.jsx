@@ -141,9 +141,14 @@ function EmailCard({
           </span>
         )}
         {email.status === 'failed' && (
-          <span className="badge-status bg-red-500/15 text-red-400">
-            ⚠ Analysis Failed
-          </span>
+          <div className="flex items-center gap-2">
+            <span 
+              className="badge-status bg-red-500/15 text-red-400 cursor-help"
+              title={email.error_reason ? `Failed: ${email.error_reason}` : 'Analysis failed - will retry automatically'}
+            >
+              ⚠ Analysis Failed {email.retry_count > 0 && `(${email.retry_count} retries)`}
+            </span>
+          </div>
         )}
 
         {/* Scam Badge */}
@@ -226,8 +231,11 @@ function EmailCard({
               </span>
             )}
             {email.status === 'failed' && (
-              <span className="badge-status bg-red-500/15 text-red-400 text-[10px] md:text-xs">
-                ⚠ Failed
+              <span 
+                className="badge-status bg-red-500/15 text-red-400 text-[10px] md:text-xs cursor-help"
+                title={email.error_reason ? `Failed: ${email.error_reason}` : 'Analysis failed - will retry automatically'}
+              >
+                ⚠ Failed {email.retry_count > 0 && `(${email.retry_count}x)`}
               </span>
             )}
           </div>

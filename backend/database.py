@@ -552,11 +552,10 @@ def is_already_analyzed(email_id: str, user_id: int) -> bool:
 def get_analyzed_emails(user_id: int) -> list[dict]:
     """
     Return all analyzed emails for user joined with custom_labels.
-    Excludes emails that are still in the retry_queue (placeholder rows
-    saved before analysis completed — they carry false labels).
+    Now includes retry_queue error_reason for failed emails.
     Each dict contains: email_id, label_name, bg_color, text_color,
     scam_score, scam_indicators, is_quarantined, snippet, sender, subject, analyzed_at, body,
-    applied_to_gmail, last_applied_label_id, label_id
+    applied_to_gmail, last_applied_label_id, label_id, status, error_reason
     """
     conn = _get_connection()
     try:
@@ -566,12 +565,12 @@ def get_analyzed_emails(user_id: int) -> list[dict]:
             SELECT ae.email_id, cl.label_name, cl.bg_color, cl.text_color,
                    ae.scam_score, ae.scam_indicators, ae.is_quarantined,
                    ae.snippet, ae.sender, ae.subject, ae.analyzed_at, ae.body,
-                   ae.applied_to_gmail, ae.last_applied_label_id, ae.label_id
+                   ae.applied_to_gmail, ae.last_applied_label_id, ae.label_id,
+                   ae.status, rq.error_reason, rq.retry_count
             FROM analyzed_emails ae
             LEFT JOIN custom_labels cl ON ae.label_id = cl.label_id
             LEFT JOIN retry_queue rq ON ae.email_id = rq.email_id
             WHERE ae.user_id = %s
-              AND rq.email_id IS NULL
             ORDER BY ae.analyzed_at DESC
             """,
             (user_id,),
