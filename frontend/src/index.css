@@ -126,6 +126,30 @@
     color: var(--text-tertiary);
   }
 
+  /* Textarea-specific overrides - kill browser defaults */
+  textarea,
+  textarea.neu-input {
+    background: var(--surface) !important;
+    color: var(--text-primary) !important;
+    box-shadow: var(--neu-inset) !important;
+    border: 1px solid var(--border-subtle) !important;
+  }
+  
+  textarea:focus,
+  textarea.neu-input:focus {
+    border-color: var(--primary) !important;
+    box-shadow: var(--neu-inset), 0 0 0 3px rgba(76, 111, 255, 0.15) !important;
+  }
+
+  /* Kill browser autofill white flash */
+  textarea:-webkit-autofill,
+  textarea:-webkit-autofill:hover,
+  textarea:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0px 1000px var(--surface) inset !important;
+    -webkit-text-fill-color: var(--text-primary) !important;
+    box-shadow: var(--neu-inset) !important;
+  }
+
   /* BUTTON — PRIMARY */
   .btn-primary {
     background: linear-gradient(135deg, var(--primary), var(--secondary));

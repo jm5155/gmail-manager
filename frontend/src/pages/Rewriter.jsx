@@ -116,7 +116,7 @@ function Rewriter() {
             value={originalText}
             onChange={(e) => setOriginalText(e.target.value.slice(0, 5000))}
             placeholder="Paste or type your email text here..."
-            className="input-neumorphic flex-1 p-4 text-sm resize-none"
+            className="neu-input flex-1 p-4 text-sm resize-none"
             style={{
               minHeight: '200px',
             }}
