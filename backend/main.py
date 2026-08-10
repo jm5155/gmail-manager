@@ -593,14 +593,15 @@ async def get_pending_count(request: Request):
     conn = _get_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT COUNT(*)
+        SELECT COUNT(*) as count
         FROM analyzed_emails
         WHERE user_id = %s
           AND status = 'labeled'
           AND applied_to_gmail = 0
     """, (user_id,))
 
-    count = cursor.fetchone()[0]
+    result = cursor.fetchone()
+    count = result['count'] if isinstance(result, dict) else result[0]
     conn.close()
 
     return {"pending_count": count}
