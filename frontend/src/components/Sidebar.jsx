@@ -1,8 +1,10 @@
 /**
- * Sidebar.jsx — Responsive Navigation Sidebar
+ * Sidebar.jsx — Responsive Navigation Sidebar (Unified Neumorphic Design)
  * Desktop: 240px fixed sidebar
  * Mobile: Slide-out drawer with hamburger menu
- * Active link highlighted with primary color left border.
+ * Uses .nav-item classes from unified design system
+ * 
+ * Updated: 2026-08-10 - Unified neumorphic design system
  */
 
 import React from 'react';
@@ -83,8 +85,8 @@ function Sidebar({ userEmail, mobileMenuOpen = false, onCloseMobileMenu = () => 
         <div
           className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
           style={{
-            background: 'linear-gradient(135deg, #2563EB 0%, #7C3AED 100%)',
-            boxShadow: '0 4px 12px -2px rgba(37, 99, 235, 0.4)',
+            background: 'linear-gradient(135deg, var(--primary), var(--secondary))',
+            boxShadow: 'var(--neu-flat)',
           }}
         >
           <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -92,8 +94,8 @@ function Sidebar({ userEmail, mobileMenuOpen = false, onCloseMobileMenu = () => 
           </svg>
         </div>
         <div>
-          <h1 className="text-sm font-bold text-text-primary leading-tight">Gmail Manager</h1>
-          <p className="text-xs text-text-secondary leading-tight">Intelligence</p>
+          <h1 className="text-sm font-bold text-primary leading-tight">Gmail Manager</h1>
+          <p className="text-xs text-secondary leading-tight">Intelligence</p>
         </div>
       </div>
 
@@ -105,11 +107,7 @@ function Sidebar({ userEmail, mobileMenuOpen = false, onCloseMobileMenu = () => 
             to={item.path}
             onClick={onCloseMobileMenu}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 ${
-                isActive
-                  ? 'bg-primary/10 text-primary border-l-2 border-primary pl-[10px]'
-                  : 'text-text-secondary hover:text-text-primary hover:bg-bg-hover border-l-2 border-transparent'
-              }`
+              `nav-item ${isActive ? 'active' : ''}`
             }
           >
             {item.icon}
@@ -119,25 +117,26 @@ function Sidebar({ userEmail, mobileMenuOpen = false, onCloseMobileMenu = () => 
       </nav>
 
       {/* User Info + Logout */}
-      <div className="p-4 border-t border-border-subtle">
+      <div className="p-4" style={{ borderTop: '1px solid var(--border-subtle)' }}>
         <div className="flex items-center gap-3 mb-3">
           <div
             className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
             style={{
               background: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)',
               color: '#fff',
+              boxShadow: 'var(--neu-flat)',
             }}
           >
             {initials}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm text-text-primary font-medium truncate">{userEmail || 'User'}</p>
-            <p className="text-xs text-text-secondary">Active</p>
+            <p className="text-sm text-primary font-medium truncate">{userEmail || 'User'}</p>
+            <p className="text-xs text-secondary">Active</p>
           </div>
         </div>
         <button
           onClick={handleLogout}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-bg-hover hover:bg-bg-card text-text-secondary hover:text-text-primary transition-colors text-sm font-medium"
+          className="btn-secondary w-full flex items-center justify-center gap-2"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
@@ -155,9 +154,8 @@ function Sidebar({ userEmail, mobileMenuOpen = false, onCloseMobileMenu = () => 
         className="hidden md:flex fixed left-0 top-0 h-screen flex-col"
         style={{
           width: '240px',
-          background: 'rgba(15, 23, 42, 0.95)',
-          borderRight: '1px solid #1E293B',
-          backdropFilter: 'blur(20px)',
+          background: 'var(--surface)',
+          borderRight: '1px solid var(--border-subtle)',
           zIndex: 50,
         }}
       >
@@ -173,15 +171,15 @@ function Sidebar({ userEmail, mobileMenuOpen = false, onCloseMobileMenu = () => 
         `}
         style={{
           width: '280px',
-          background: 'rgba(15, 23, 42, 0.98)',
-          borderRight: '1px solid #1E293B',
-          backdropFilter: 'blur(20px)',
+          background: 'var(--surface)',
+          borderRight: '1px solid var(--border-subtle)',
         }}
       >
         {/* Close button - mobile only */}
         <button
           onClick={onCloseMobileMenu}
-          className="absolute top-4 right-4 p-2 text-text-secondary hover:text-text-primary rounded-lg hover:bg-bg-hover transition-colors z-10"
+          className="absolute top-4 right-4 p-2 text-secondary hover:text-primary rounded-lg transition-colors z-10"
+          style={{ background: 'var(--surface-light)' }}
           aria-label="Close menu"
         >
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -191,6 +189,14 @@ function Sidebar({ userEmail, mobileMenuOpen = false, onCloseMobileMenu = () => 
 
         <SidebarContent />
       </div>
+
+      {/* Mobile Overlay */}
+      {mobileMenuOpen && (
+        <div
+          className="md:hidden fixed inset-0 bg-black/50 z-40"
+          onClick={onCloseMobileMenu}
+        />
+      )}
     </>
   );
 }
