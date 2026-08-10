@@ -35,32 +35,30 @@ function AnimatedBackground() {
       <div
         className="absolute inset-0"
         style={{
-          background: 'linear-gradient(135deg, #1B1F30 0%, #0F1729 50%, #1B1F30 100%)',
-          backgroundSize: '400% 400%',
-          animation: 'gradientShift 15s ease infinite',
+          background: 'var(--surface)',
         }}
       />
 
-      {/* Gradient Orbs */}
+      {/* Animated Orbs - Solid Colors Only, No Gradients */}
       <div
-        className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full opacity-20 blur-3xl"
+        className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full opacity-10 blur-3xl"
         style={{
-          background: 'radial-gradient(circle, #4C6FFF 0%, transparent 70%)',
-          animation: 'floatSlow 20s ease-in-out infinite',
+          background: 'var(--primary)',
+          animation: 'floatSlow 20s ease-in-out infinite, pulse 8s ease-in-out infinite',
         }}
       />
       <div
-        className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full opacity-15 blur-3xl"
+        className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full opacity-8 blur-3xl"
         style={{
-          background: 'radial-gradient(circle, #8B5CF6 0%, transparent 70%)',
-          animation: 'floatReverse 25s ease-in-out infinite',
+          background: 'var(--secondary)',
+          animation: 'floatReverse 25s ease-in-out infinite, pulse 10s ease-in-out infinite',
         }}
       />
       <div
-        className="absolute top-[40%] left-[50%] w-[400px] h-[400px] rounded-full opacity-10 blur-3xl"
+        className="absolute top-[40%] left-[50%] w-[400px] h-[400px] rounded-full opacity-6 blur-3xl"
         style={{
-          background: 'radial-gradient(circle, #22C55E 0%, transparent 70%)',
-          animation: 'pulse 15s ease-in-out infinite',
+          background: 'var(--success)',
+          animation: 'floatSlow 15s ease-in-out infinite reverse, pulse 12s ease-in-out infinite',
         }}
       />
 
@@ -97,15 +95,6 @@ function AnimatedBackground() {
 
       {/* CSS Animations */}
       <style>{`
-        @keyframes gradientShift {
-          0%, 100% {
-            background-position: 0% 50%;
-          }
-          50% {
-            background-position: 100% 50%;
-          }
-        }
-
         @keyframes floatSlow {
           0%, 100% {
             transform: translate(0, 0) scale(1);
@@ -132,11 +121,9 @@ function AnimatedBackground() {
 
         @keyframes pulse {
           0%, 100% {
-            transform: scale(1);
-            opacity: 0.1;
+            opacity: 0.05;
           }
           50% {
-            transform: scale(1.3);
             opacity: 0.15;
           }
         }

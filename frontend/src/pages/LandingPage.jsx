@@ -84,8 +84,7 @@ function LandingPage() {
           <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
             Your Gmail Inbox,
             <br />
-            <span className="bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent"
-                  style={{ backgroundSize: '200% auto', animation: 'gradient 3s linear infinite' }}>
+            <span className="text-primary animate-pulse">
               Supercharged with AI
             </span>
           </h1>
@@ -100,7 +99,12 @@ function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
             <button
               onClick={() => navigate('/login')}
-              className="btn-primary px-8 py-4 text-lg min-w-[200px] flex items-center justify-center gap-2"
+              className="px-8 py-4 text-lg min-w-[200px] flex items-center justify-center gap-2 rounded-lg font-semibold text-white transition-all duration-200"
+              style={{
+                background: 'var(--primary)',
+                boxShadow: 'var(--neu-flat)',
+                animation: 'float 3s ease-in-out infinite',
+              }}
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>

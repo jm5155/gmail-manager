@@ -173,7 +173,7 @@
 
   /* BUTTON — PRIMARY */
   .btn-primary {
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    background: var(--primary);
     color: #FFFFFF;
     border: none;
     border-radius: var(--radius-sm);
@@ -182,11 +182,13 @@
     font-weight: 600;
     font-size: 14px;
     cursor: pointer;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.3s ease;
+    animation: float 3s ease-in-out infinite;
   }
   .btn-primary:hover:not(:disabled) {
     box-shadow: var(--neu-hover);
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    background: var(--primary-hover);
   }
   .btn-primary:active:not(:disabled) {
     transform: translateY(0);
