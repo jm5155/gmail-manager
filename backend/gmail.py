@@ -725,7 +725,7 @@ async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
                     update_analyzed_email(
                         email_id=email_id,
                         label_id=None,        # NULL sentinel for failed analysis
-                        scam_score=None,      # NULL sentinel for failed analysis
+                        scam_score=0,         # Default to 0 when analysis fails
                         scam_indicators='[]',
                         is_quarantined=0,
                         status='failed',      # Marks as failed, not fetched
