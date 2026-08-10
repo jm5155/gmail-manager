@@ -91,23 +91,23 @@ function Login() {
                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
              }}>
 
-          {/* App Logo — Gmail-style envelope icon */}
+          {/* App Logo — Gmail-style envelope icon (FIXED: removed gradient, neumorphic) */}
           <div className="mb-6 flex justify-center">
             <div className="w-20 h-20 rounded-2xl flex items-center justify-center"
                  style={{
-                   background: 'linear-gradient(135deg, #2563EB 0%, #7C3AED 100%)',
-                   boxShadow: '0 10px 30px -5px rgba(37, 99, 235, 0.4)',
+                   background: 'var(--bg-base)',
+                   boxShadow: '6px 6px 12px #B8C0D0, -6px -6px 12px #FFFFFF',
                  }}>
-              <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <svg className="w-10 h-10" style={{ color: 'var(--primary)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round"
                       d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
               </svg>
             </div>
           </div>
 
-          {/* App Title */}
-          <h1 className="text-3xl font-bold text-text-white mb-2">Gmail Manager</h1>
-          <p className="text-text-gray mb-8 text-sm leading-relaxed">
+          {/* App Title (FIXED: dark text on light background) */}
+          <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--text-heading)' }}>Gmail Manager</h1>
+          <p className="mb-8 text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>
             AI-powered email management. Smart labeling,<br />scam detection, and intelligent sorting.
           </p>
 
@@ -167,7 +167,7 @@ function Login() {
           </p>
         </div>
 
-        {/* Features preview below the card */}
+        {/* Features preview below the card (FIXED: light neumorphic, dark text) */}
         <div className="mt-6 grid grid-cols-3 gap-3">
           {[
             { icon: '🏷️', label: 'Auto Labels' },
@@ -175,11 +175,12 @@ function Login() {
             { icon: '✨', label: 'AI Rewrite' },
           ].map((feat) => (
             <div key={feat.label}
-                 className="rounded-lg py-3 px-2 text-center text-xs text-text-gray
-                            transition-all duration-300 hover:text-text-white hover:scale-105"
+                 className="rounded-lg py-3 px-2 text-center text-xs
+                            transition-all duration-300 hover:scale-105"
                  style={{
-                   background: 'rgba(30, 41, 59, 0.5)',
-                   border: '1px solid rgba(51, 65, 85, 0.3)',
+                   background: 'var(--bg-base)',
+                   boxShadow: '6px 6px 12px #B8C0D0, -6px -6px 12px #FFFFFF',
+                   color: 'var(--text-body)',
                  }}>
               <div className="text-xl mb-1">{feat.icon}</div>
               {feat.label}
