@@ -86,8 +86,8 @@ function Quarantine() {
             </svg>
           </div>
           <div>
-            <h1 className="text-xl font-bold text-primary">Quarantine</h1>
-            <p className="text-sm text-secondary">
+            <h1 className="text-xl font-bold text-white">Quarantine</h1>
+            <p className="text-sm text-gray">
               {emails.length} email{emails.length !== 1 ? 's' : ''} flagged as suspicious
             </p>
           </div>
@@ -99,15 +99,15 @@ function Quarantine() {
         {loading && (
           <div className="flex flex-col items-center justify-center h-64 gap-4">
             <div className="w-10 h-10 border-3 border-danger border-t-transparent rounded-full animate-spin" style={{ borderWidth: '3px' }}></div>
-            <p className="text-secondary">Loading quarantined emails...</p>
+            <p className="text-gray">Loading quarantined emails...</p>
           </div>
         )}
 
         {!loading && emails.length === 0 && (
           <div className="flex flex-col items-center justify-center h-64 gap-3">
             <div className="text-5xl opacity-30">✅</div>
-            <p className="text-secondary text-lg font-medium">Quarantine is empty</p>
-            <p className="text-secondary text-sm">No suspicious emails detected. You're safe!</p>
+            <p className="text-gray text-lg font-medium">Quarantine is empty</p>
+            <p className="text-gray text-sm">No suspicious emails detected. You're safe!</p>
           </div>
         )}
 
@@ -136,12 +136,12 @@ function Quarantine() {
                 </div>
 
                 {/* Email Info */}
-                <h3 className="text-sm font-semibold text-primary mb-1">{email.subject || '(No Subject)'}</h3>
-                <p className="text-xs text-secondary mb-2">From: {email.sender}</p>
+                <h3 className="text-sm font-semibold text-white mb-1">{email.subject || '(No Subject)'}</h3>
+                <p className="text-xs text-gray mb-2">From: {email.sender}</p>
 
                 {/* Threat Reason */}
                 {email.scam_reason && (
-                  <p className="text-xs text-secondary mb-2 p-2 rounded-lg"
+                  <p className="text-xs text-gray mb-2 p-2 rounded-lg"
                      style={{ background: 'rgba(15, 23, 42, 0.5)' }}>
                     💡 {email.scam_reason}
                   </p>
@@ -150,10 +150,10 @@ function Quarantine() {
                 {/* Indicators */}
                 {indicators.length > 0 && (
                   <div className="mb-3">
-                    <p className="text-xs text-secondary font-semibold mb-1">Suspicious indicators:</p>
+                    <p className="text-xs text-gray font-semibold mb-1">Suspicious indicators:</p>
                     <ul className="space-y-0.5">
                       {indicators.map((ind, idx) => (
-                        <li key={idx} className="text-xs text-secondary flex items-start gap-1.5">
+                        <li key={idx} className="text-xs text-gray flex items-start gap-1.5">
                           <span className="text-danger mt-0.5">•</span> {ind}
                         </li>
                       ))}

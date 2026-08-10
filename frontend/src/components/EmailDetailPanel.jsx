@@ -118,7 +118,7 @@ function EmailDetailPanel({ email, isOpen, onClose, onLabelChange }) {
         <div className="sticky top-0 bg-background-secondary border-b border-border-primary p-4 z-10 flex items-center justify-between">
           <button
             onClick={onClose}
-            className="text-text-secondary hover:text-text-primary text-2xl leading-none"
+            className="text-text-gray hover:text-text-white text-2xl leading-none"
             aria-label="Close"
           >
             ×
@@ -142,16 +142,16 @@ function EmailDetailPanel({ email, isOpen, onClose, onLabelChange }) {
         <div className="p-6 border-b border-border-primary">
           <div className="space-y-2">
             <div className="flex items-start gap-2">
-              <span className="text-sm font-medium text-text-secondary min-w-[60px]">Sender:</span>
-              <span className="text-sm text-text-primary flex-1">{email.sender || 'Unknown Sender'}</span>
+              <span className="text-sm font-medium text-text-gray min-w-[60px]">Sender:</span>
+              <span className="text-sm text-text-white flex-1">{email.sender || 'Unknown Sender'}</span>
             </div>
             <div className="flex items-start gap-2">
-              <span className="text-sm font-medium text-text-secondary min-w-[60px]">Subject:</span>
-              <span className="text-sm text-text-primary flex-1">{email.subject || '(No Subject)'}</span>
+              <span className="text-sm font-medium text-text-gray min-w-[60px]">Subject:</span>
+              <span className="text-sm text-text-white flex-1">{email.subject || '(No Subject)'}</span>
             </div>
             <div className="flex items-start gap-2">
-              <span className="text-sm font-medium text-text-secondary min-w-[60px]">Date:</span>
-              <span className="text-sm text-text-tertiary flex-1">{formatDate(email.analyzed_at || email.date)}</span>
+              <span className="text-sm font-medium text-text-gray min-w-[60px]">Date:</span>
+              <span className="text-sm text-text-muted flex-1">{formatDate(email.analyzed_at || email.date)}</span>
             </div>
           </div>
         </div>
@@ -159,12 +159,12 @@ function EmailDetailPanel({ email, isOpen, onClose, onLabelChange }) {
         {/* Label picker with unsaved indicator */}
         <div className="p-6 border-b border-border-primary bg-background-primary">
           <div className="flex items-center gap-3 mb-4">
-            <span className="text-sm font-medium text-text-secondary min-w-[60px]">Label:</span>
+            <span className="text-sm font-medium text-text-gray min-w-[60px]">Label:</span>
             <select
               value={selectedLabel}
               onChange={handleDropdownChange}
               disabled={isUpdating}
-              className="flex-1 px-3 py-2 rounded-lg border border-border-primary bg-background-secondary text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-primary disabled:opacity-50"
+              className="flex-1 px-3 py-2 rounded-lg border border-border-primary bg-background-secondary text-text-white focus:outline-none focus:ring-2 focus:ring-accent-primary disabled:opacity-50"
             >
               {labels.map(label => (
                 <option key={label.label_id} value={label.label_name}>
@@ -191,16 +191,16 @@ function EmailDetailPanel({ email, isOpen, onClose, onLabelChange }) {
         {/* Email body */}
         <div className="p-6">
           {email.body ? (
-            <pre className="whitespace-pre-wrap text-sm text-text-primary font-sans leading-relaxed">
+            <pre className="whitespace-pre-wrap text-sm text-text-white font-sans leading-relaxed">
               {email.body}
             </pre>
           ) : email.snippet ? (
             <div>
-              <p className="text-sm text-text-tertiary italic mb-2">Full body not available. Showing snippet:</p>
-              <p className="text-sm text-text-primary">{email.snippet}</p>
+              <p className="text-sm text-text-muted italic mb-2">Full body not available. Showing snippet:</p>
+              <p className="text-sm text-text-white">{email.snippet}</p>
             </div>
           ) : (
-            <p className="text-sm text-text-tertiary italic">No content available</p>
+            <p className="text-sm text-text-muted italic">No content available</p>
           )}
         </div>
       </div>

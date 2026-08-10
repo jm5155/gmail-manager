@@ -360,14 +360,20 @@
   }
 
   /* TEXT UTILITIES */
-  .text-primary {
+  .text-white {
     color: var(--text-primary);
   }
-  .text-secondary {
+  
+  .text-gray {
     color: var(--text-secondary);
   }
-  .text-tertiary {
+  
+  .text-muted {
     color: var(--text-tertiary);
+  }
+  
+  .text-accent {
+    color: var(--primary);
   }
 
   /* DIVIDER */

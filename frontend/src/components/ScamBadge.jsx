@@ -61,13 +61,13 @@ function ScamBadge({ score, reason, indicators = [], expanded = false, onToggle 
           <div className="neu-card p-4 space-y-3 animate-fadeIn">
             {/* Header */}
             <div className="flex items-center justify-between">
-              <h4 className="text-sm font-semibold text-primary">Scam Analysis</h4>
+              <h4 className="text-sm font-semibold text-white">Scam Analysis</h4>
               <span className="text-lg">{risk.icon}</span>
             </div>
 
             {/* Score Bar */}
             <div>
-              <div className="flex justify-between text-xs text-secondary mb-1.5">
+              <div className="flex justify-between text-xs text-gray mb-1.5">
                 <span>Risk Score</span>
                 <span className="font-semibold" style={{ color: `var(--${score >= 70 ? 'danger' : score >= 30 ? 'warning' : 'success'})` }}>
                   {score}%
@@ -87,10 +87,10 @@ function ScamBadge({ score, reason, indicators = [], expanded = false, onToggle 
             {/* Indicators */}
             {indicators.length > 0 && (
               <div>
-                <h5 className="text-xs font-medium text-primary mb-1.5">Detected Indicators:</h5>
+                <h5 className="text-xs font-medium text-white mb-1.5">Detected Indicators:</h5>
                 <ul className="space-y-1">
                   {indicators.map((indicator, idx) => (
-                    <li key={idx} className="text-xs text-secondary flex items-start gap-1.5">
+                    <li key={idx} className="text-xs text-gray flex items-start gap-1.5">
                       <span className="text-danger mt-0.5">•</span>
                       <span className="truncate-url">{truncateUrl(indicator)}</span>
                     </li>
@@ -102,8 +102,8 @@ function ScamBadge({ score, reason, indicators = [], expanded = false, onToggle 
             {/* Reason */}
             {reason && (
               <div>
-                <h5 className="text-xs font-medium text-primary mb-1.5">Analysis:</h5>
-                <p className="text-xs text-secondary leading-relaxed">{reason}</p>
+                <h5 className="text-xs font-medium text-white mb-1.5">Analysis:</h5>
+                <p className="text-xs text-gray leading-relaxed">{reason}</p>
               </div>
             )}
           </div>

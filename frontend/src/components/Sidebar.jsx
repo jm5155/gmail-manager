@@ -94,8 +94,8 @@ function Sidebar({ userEmail, mobileMenuOpen = false, onCloseMobileMenu = () => 
           </svg>
         </div>
         <div>
-          <h1 className="text-sm font-bold text-primary leading-tight">Gmail Manager</h1>
-          <p className="text-xs text-secondary leading-tight">Intelligence</p>
+          <h1 className="text-sm font-bold text-white leading-tight">Gmail Manager</h1>
+          <p className="text-xs text-gray leading-tight">Intelligence</p>
         </div>
       </div>
 
@@ -130,8 +130,8 @@ function Sidebar({ userEmail, mobileMenuOpen = false, onCloseMobileMenu = () => 
             {initials}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm text-primary font-medium truncate">{userEmail || 'User'}</p>
-            <p className="text-xs text-secondary">Active</p>
+            <p className="text-sm text-white font-medium truncate">{userEmail || 'User'}</p>
+            <p className="text-xs text-gray">Active</p>
           </div>
         </div>
         <button
@@ -178,7 +178,7 @@ function Sidebar({ userEmail, mobileMenuOpen = false, onCloseMobileMenu = () => 
         {/* Close button - mobile only */}
         <button
           onClick={onCloseMobileMenu}
-          className="absolute top-4 right-4 p-2 text-secondary hover:text-primary rounded-lg transition-colors z-10"
+          className="absolute top-4 right-4 p-2 text-gray hover:text-white rounded-lg transition-colors z-10"
           style={{ background: 'var(--surface-light)' }}
           aria-label="Close menu"
         >

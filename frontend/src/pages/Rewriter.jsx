@@ -97,8 +97,8 @@ function Rewriter() {
     <div className="h-screen overflow-hidden pl-0 md:pl-[240px]">
       {/* Header */}
       <div className="px-6 py-4 pt-16 md:pt-4" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-        <h1 className="text-xl font-bold text-primary mb-1">AI Email Rewriter</h1>
-        <p className="text-sm text-secondary">
+        <h1 className="text-xl font-bold text-white mb-1">AI Email Rewriter</h1>
+        <p className="text-sm text-gray">
           Paste an email and let AI transform it. Works independently of Gmail.
         </p>
       </div>
@@ -108,8 +108,8 @@ function Rewriter() {
         {/* LEFT COLUMN — Original (Desktop) */}
         <div className="flex-1 flex flex-col">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-semibold text-primary">Original</h2>
-            <span className="text-xs text-secondary">{originalText.length} / 5000 chars</span>
+            <h2 className="text-sm font-semibold text-white">Original</h2>
+            <span className="text-xs text-gray">{originalText.length} / 5000 chars</span>
           </div>
 
           <textarea
@@ -124,7 +124,7 @@ function Rewriter() {
 
           {/* Command Buttons - Desktop Only */}
           <div className="mt-4">
-            <p className="text-xs text-secondary mb-2 font-semibold">Quick Commands:</p>
+            <p className="text-xs text-gray mb-2 font-semibold">Quick Commands:</p>
             <div className="flex flex-wrap gap-2">
               {COMMANDS.map((cmd) => (
                 <button
@@ -155,7 +155,7 @@ function Rewriter() {
                   setActiveCommand(null);
                 }}
                 onKeyDown={(e) => e.key === 'Enter' && handleCustomSubmit()}
-                className="flex-1 px-4 py-2 rounded-lg text-sm text-primary placeholder-text-secondary
+                className="flex-1 px-4 py-2 rounded-lg text-sm text-white placeholder-text-gray
                            outline-none transition-all duration-200 focus:ring-2 focus:ring-primary"
                 style={{ background: 'var(--surface)', border: '1px solid var(--border-default)' }}
               />
@@ -176,12 +176,12 @@ function Rewriter() {
         {/* RIGHT COLUMN — Rewritten (Desktop) */}
         <div className="flex-1 flex flex-col">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-semibold text-primary">Rewritten</h2>
+            <h2 className="text-sm font-semibold text-white">Rewritten</h2>
             {rewrittenText && (
               <button
                 onClick={handleCopy}
-                className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium text-secondary
-                           transition-all duration-200 hover:text-primary hover:bg-surface"
+                className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium text-gray
+                           transition-all duration-200 hover:text-white hover:bg-surface"
                 style={{ border: '1px solid var(--border-default)' }}
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -203,16 +203,16 @@ function Rewriter() {
             {loading ? (
               <div className="flex flex-col items-center justify-center h-full gap-3">
                 <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-secondary text-sm">AI is rewriting...</p>
+                <p className="text-gray text-sm">AI is rewriting...</p>
               </div>
             ) : rewrittenText ? (
-              <p className="text-primary whitespace-pre-wrap leading-relaxed">{rewrittenText}</p>
+              <p className="text-white whitespace-pre-wrap leading-relaxed">{rewrittenText}</p>
             ) : (
               <div className="flex flex-col items-center justify-center h-full gap-2 opacity-40">
-                <svg className="w-10 h-10 text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                <svg className="w-10 h-10 text-gray" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
                 </svg>
-                <p className="text-secondary text-sm">Rewritten text will appear here</p>
+                <p className="text-gray text-sm">Rewritten text will appear here</p>
               </div>
             )}
           </div>
@@ -220,10 +220,10 @@ function Rewriter() {
           {/* Provider + Char Count */}
           {providerUsed && (
             <div className="flex items-center justify-between mt-2">
-              <span className="text-xs text-secondary">
-                Provider: <span className="text-primary font-medium">{providerUsed}</span>
+              <span className="text-xs text-gray">
+                Provider: <span className="text-white font-medium">{providerUsed}</span>
               </span>
-              <span className="text-xs text-secondary">
+              <span className="text-xs text-gray">
                 {charCounts.original} → {charCounts.rewritten} chars
               </span>
             </div>
@@ -246,16 +246,16 @@ function Rewriter() {
             {loading ? (
               <div className="flex flex-col items-center justify-center h-full gap-3">
                 <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-secondary text-sm">Rewriting...</p>
+                <p className="text-gray text-sm">Rewriting...</p>
               </div>
             ) : rewrittenText ? (
-              <div className="text-primary whitespace-pre-wrap">{rewrittenText}</div>
+              <div className="text-white whitespace-pre-wrap">{rewrittenText}</div>
             ) : (
               <div className="flex flex-col items-center justify-center h-full gap-3 opacity-50">
-                <svg className="w-12 h-12 text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <svg className="w-12 h-12 text-gray" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
                 </svg>
-                <p className="text-secondary text-sm">Rewritten text will appear here</p>
+                <p className="text-gray text-sm">Rewritten text will appear here</p>
               </div>
             )}
           </div>
@@ -280,9 +280,9 @@ function Rewriter() {
 
           {/* Provider info - floating when available */}
           {providerUsed && (
-            <div className="flex items-center justify-between mt-3 text-xs text-secondary">
+            <div className="flex items-center justify-between mt-3 text-xs text-gray">
               <span>
-                Provider: <span className="text-primary font-medium">{providerUsed}</span>
+                Provider: <span className="text-white font-medium">{providerUsed}</span>
               </span>
               <span>
                 {charCounts.original} → {charCounts.rewritten} chars
@@ -294,7 +294,7 @@ function Rewriter() {
         {/* Bottom Input Bar - Fixed */}
         <div className="fixed bottom-0 left-0 right-0 p-4 md:hidden" style={{ background: 'var(--surface)' }}>
           {/* Char Counter - Above input bar */}
-          <div className="text-center text-xs text-secondary mb-2">
+          <div className="text-center text-xs text-gray mb-2">
             {originalText.length} / 5000 chars
           </div>
 
@@ -306,7 +306,7 @@ function Rewriter() {
               value={originalText}
               onChange={(e) => setOriginalText(e.target.value.slice(0, 5000))}
               placeholder="Paste your email..."
-              className="flex-1 bg-transparent text-sm text-primary placeholder-text-secondary outline-none"
+              className="flex-1 bg-transparent text-sm text-white placeholder-text-gray outline-none"
             />
 
             {/* Submit button (up-arrow in circle) */}

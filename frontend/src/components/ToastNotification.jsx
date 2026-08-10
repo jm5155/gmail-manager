@@ -101,14 +101,14 @@ export function ToastProvider({ children }) {
                 {config.icon}
               </span>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-text-primary">{t.message}</p>
+                <p className="text-sm font-medium text-text-white">{t.message}</p>
                 {t.subtext && (
-                  <p className="text-xs text-text-secondary mt-0.5">{t.subtext}</p>
+                  <p className="text-xs text-text-gray mt-0.5">{t.subtext}</p>
                 )}
               </div>
               <button
                 onClick={() => removeToast(t.id)}
-                className="text-text-secondary hover:text-text-primary transition-colors flex-shrink-0"
+                className="text-text-gray hover:text-text-white transition-colors flex-shrink-0"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />

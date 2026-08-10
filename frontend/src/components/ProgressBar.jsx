@@ -13,10 +13,10 @@ function ProgressBar({ current = 0, total = 0, label = '' }) {
     <div className="w-full">
       {/* Label + Counter */}
       <div className="flex justify-between items-center mb-2">
-        <span className="text-sm text-text-secondary">
+        <span className="text-sm text-text-gray">
           {label || `Analyzing ${current} of ${total}...`}
         </span>
-        <span className="text-sm font-semibold text-text-primary">{percentage}%</span>
+        <span className="text-sm font-semibold text-text-white">{percentage}%</span>
       </div>
 
       {/* Bar Track */}

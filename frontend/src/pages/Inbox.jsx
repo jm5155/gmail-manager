@@ -384,8 +384,8 @@ function Inbox() {
       <div className="px-6 py-4 pt-16 md:pt-4" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
           <div>
-            <h1 className="text-xl font-bold text-primary">Inbox</h1>
-            <p className="text-sm text-secondary mt-0.5">
+            <h1 className="text-xl font-bold text-white">Inbox</h1>
+            <p className="text-sm text-gray mt-0.5">
               {emailStats.total_analyzed} analyzed · {emailStats.total_flagged || 0} flagged
             </p>
           </div>
@@ -490,7 +490,7 @@ function Inbox() {
               style={{
                 background: showBatchDelete ? 'var(--danger-bg)' : '#1E293B',
                 border: '1px solid var(--border-default)',
-                color: showBatchDelete ? 'var(--danger)' : 'var(--text-tertiary)',
+                color: showBatchDelete ? 'var(--danger)' : 'var(--text-muted)',
               }}
             >
               🗑 Batch Delete
@@ -502,7 +502,7 @@ function Inbox() {
         {showBatchDelete && (
           <div className="flex items-center gap-2 mt-2 p-3 rounded-lg"
                style={{ background: 'var(--surface)', border: '1px solid var(--border-default)' }}>
-            <span className="text-xs text-secondary whitespace-nowrap">Delete by:</span>
+            <span className="text-xs text-gray whitespace-nowrap">Delete by:</span>
 
             {/* Mode toggle */}
             <div className="flex rounded-md overflow-hidden" style={{ border: '1px solid var(--border-default)' }}>
@@ -513,7 +513,7 @@ function Inbox() {
                   className="px-3 py-1.5 text-xs capitalize transition-colors"
                   style={{
                     background: batchMode === mode ? '#2563EB' : 'transparent',
-                    color: batchMode === mode ? '#fff' : 'var(--text-tertiary)',
+                    color: batchMode === mode ? '#fff' : 'var(--text-muted)',
                   }}
                 >
                   {mode}
@@ -526,7 +526,7 @@ function Inbox() {
               <select
                 value={batchValue}
                 onChange={e => setBatchValue(e.target.value)}
-                className="px-3 py-1.5 rounded-lg text-sm text-primary outline-none"
+                className="px-3 py-1.5 rounded-lg text-sm text-white outline-none"
                 style={{ background: 'var(--surface)', border: '1px solid var(--border-default)' }}
               >
                 <option value="">Select label...</option>
@@ -540,7 +540,7 @@ function Inbox() {
                 placeholder="Sender name or email..."
                 value={batchValue}
                 onChange={e => setBatchValue(e.target.value)}
-                className="flex-1 px-3 py-1.5 rounded-lg text-sm text-primary outline-none"
+                className="flex-1 px-3 py-1.5 rounded-lg text-sm text-white outline-none"
                 style={{ background: 'var(--surface)', border: '1px solid var(--border-default)' }}
               />
             )}
@@ -558,7 +558,7 @@ function Inbox() {
             {/* Cancel */}
             <button
               onClick={() => { setShowBatchDelete(false); setBatchValue(''); }}
-              className="text-secondary hover:text-primary text-lg leading-none"
+              className="text-gray hover:text-white text-lg leading-none"
             >×</button>
           </div>
         )}
@@ -577,7 +577,7 @@ function Inbox() {
             </svg>
             <div className="flex-1">
               <p className="text-sm font-semibold" style={{ color: '#FBBF24' }}>No labels found</p>
-              <p className="text-xs text-secondary mt-0.5">
+              <p className="text-xs text-gray mt-0.5">
                 You must create at least one label before running analysis. The AI needs labels to classify your emails.
               </p>
             </div>
@@ -590,7 +590,7 @@ function Inbox() {
             </button>
             <button
               onClick={() => setShowNoLabelsWarning(false)}
-              className="text-secondary hover:text-primary text-lg leading-none flex-shrink-0 ml-1"
+              className="text-gray hover:text-white text-lg leading-none flex-shrink-0 ml-1"
             >×</button>
           </div>
         )}
@@ -614,7 +614,7 @@ function Inbox() {
                     }}
                   />
                 </div>
-                <span className="text-xs text-secondary whitespace-nowrap">
+                <span className="text-xs text-gray whitespace-nowrap">
                   Initializing...
                 </span>
               </div>
@@ -622,7 +622,7 @@ function Inbox() {
               <ProgressBar current={progress} total={total} />
             )}
             {currentEmail && (
-              <p className="text-xs text-secondary mt-1.5 truncate">{currentEmail}</p>
+              <p className="text-xs text-gray mt-1.5 truncate">{currentEmail}</p>
             )}
           </div>
         )}
@@ -631,7 +631,7 @@ function Inbox() {
         <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
           {/* Search Input */}
           <div className="relative flex-1">
-            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
             </svg>
             <input
@@ -673,7 +673,7 @@ function Inbox() {
         {loading && (
           <div className="flex flex-col items-center justify-center h-64 gap-4">
             <div className="w-10 h-10 border-3 border-primary border-t-transparent rounded-full animate-spin" style={{ borderWidth: '3px' }}></div>
-            <p className="text-secondary">Loading emails...</p>
+            <p className="text-gray">Loading emails...</p>
           </div>
         )}
 
@@ -689,12 +689,12 @@ function Inbox() {
         {!loading && !error && emails.length === 0 && (
           <div className="flex flex-col items-center justify-center h-64 gap-3">
             <div className="text-5xl opacity-30">📭</div>
-            <p className="text-secondary text-center">
+            <p className="text-gray text-center">
               {searchQuery || labelFilter !== 'All'
                 ? 'No emails match your filters.'
                 : 'No analyzed emails yet. Click "Analyze Emails" to get started!'}
             </p>
-            <p className="text-secondary text-xs">
+            <p className="text-gray text-xs">
               Showing {emails.length} of {totalCount} emails
             </p>
           </div>
@@ -702,7 +702,7 @@ function Inbox() {
 
         {/* Result Count */}
         {!loading && emails.length > 0 && (
-          <p className="text-xs text-secondary mb-3">
+          <p className="text-xs text-gray mb-3">
             Showing {emails.length} of {totalCount} emails
           </p>
         )}

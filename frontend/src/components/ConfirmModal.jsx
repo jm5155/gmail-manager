@@ -60,10 +60,10 @@ function ConfirmModal({
         </div>
 
         {/* Title */}
-        <h3 className="text-lg font-semibold text-primary text-center mb-2">{title}</h3>
+        <h3 className="text-lg font-semibold text-white text-center mb-2">{title}</h3>
 
         {/* Message */}
-        <p className="text-sm text-secondary text-center mb-6 leading-relaxed whitespace-pre-line">
+        <p className="text-sm text-gray text-center mb-6 leading-relaxed whitespace-pre-line">
           {message}
         </p>
 

@@ -78,14 +78,14 @@ function EmailCard({
           {/* Email Content */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-4">
-              <span className="text-sm font-medium text-primary truncate">{senderName}</span>
-              <span className="text-xs text-tertiary flex-shrink-0">{formatDate(email.analyzed_at || email.date)}</span>
+              <span className="text-sm font-medium text-white truncate">{senderName}</span>
+              <span className="text-xs text-muted flex-shrink-0">{formatDate(email.analyzed_at || email.date)}</span>
             </div>
-            <p className="text-sm text-primary truncate mt-0.5">
+            <p className="text-sm text-white truncate mt-0.5">
               {decodedSubject}
             </p>
             {!expanded && (
-              <p className="text-xs text-secondary truncate mt-0.5">{decodedSnippet}</p>
+              <p className="text-xs text-gray truncate mt-0.5">{decodedSnippet}</p>
             )}
           </div>
 
@@ -139,19 +139,19 @@ function EmailCard({
               >
                 {avatar.initials}
               </div>
-              <span className="text-sm font-medium text-primary truncate">{senderName}</span>
+              <span className="text-sm font-medium text-white truncate">{senderName}</span>
             </div>
-            <span className="text-xs text-tertiary flex-shrink-0">{formatDate(email.analyzed_at || email.date)}</span>
+            <span className="text-xs text-muted flex-shrink-0">{formatDate(email.analyzed_at || email.date)}</span>
           </div>
 
           {/* Row 2: Subject */}
-          <p className="text-sm text-primary line-clamp-2 leading-snug">
+          <p className="text-sm text-white line-clamp-2 leading-snug">
             {decodedSubject}
           </p>
 
           {/* Row 3: Snippet */}
           {!expanded && (
-            <p className="text-xs text-secondary truncate leading-relaxed">
+            <p className="text-xs text-gray truncate leading-relaxed">
               {decodedSnippet}
             </p>
           )}
@@ -218,7 +218,7 @@ function EmailCard({
       {expanded && (
         <div className="px-5 pb-5 pt-2 border-t border-subtle">
           <p 
-            className="text-sm text-secondary leading-relaxed"
+            className="text-sm text-gray leading-relaxed"
             style={{
               whiteSpace: 'pre-wrap',
               wordBreak: 'break-word',

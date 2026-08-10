@@ -66,7 +66,7 @@ function Login() {
   if (checkingAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-bg-dark">
-        <div className="animate-pulse text-text-secondary text-lg">Checking authentication...</div>
+        <div className="animate-pulse text-text-gray text-lg">Checking authentication...</div>
       </div>
     );
   }
@@ -106,8 +106,8 @@ function Login() {
           </div>
 
           {/* App Title */}
-          <h1 className="text-3xl font-bold text-text-primary mb-2">Gmail Manager</h1>
-          <p className="text-text-secondary mb-8 text-sm leading-relaxed">
+          <h1 className="text-3xl font-bold text-text-white mb-2">Gmail Manager</h1>
+          <p className="text-text-gray mb-8 text-sm leading-relaxed">
             AI-powered email management. Smart labeling,<br />scam detection, and intelligent sorting.
           </p>
 
@@ -162,7 +162,7 @@ function Login() {
           )}
 
           {/* Footer info */}
-          <p className="mt-6 text-xs text-text-secondary opacity-60">
+          <p className="mt-6 text-xs text-text-gray opacity-60">
             Requires Gmail API access · Your data stays on this device
           </p>
         </div>
@@ -175,8 +175,8 @@ function Login() {
             { icon: '✨', label: 'AI Rewrite' },
           ].map((feat) => (
             <div key={feat.label}
-                 className="rounded-lg py-3 px-2 text-center text-xs text-text-secondary
-                            transition-all duration-300 hover:text-text-primary hover:scale-105"
+                 className="rounded-lg py-3 px-2 text-center text-xs text-text-gray
+                            transition-all duration-300 hover:text-text-white hover:scale-105"
                  style={{
                    background: 'rgba(30, 41, 59, 0.5)',
                    border: '1px solid rgba(51, 65, 85, 0.3)',
