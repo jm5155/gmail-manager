@@ -96,7 +96,7 @@ function LandingPage() {
           </p>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
               onClick={() => navigate('/login')}
               className="px-8 py-4 text-lg min-w-[200px] flex items-center justify-center gap-2 rounded-lg font-semibold text-white transition-all duration-200"
@@ -122,16 +122,6 @@ function LandingPage() {
             >
               Learn More
             </button>
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat, idx) => (
-              <div key={idx} className="neu-card p-6">
-                <div className="text-3xl md:text-4xl font-bold text-white mb-2">{stat.value}</div>
-                <div className="text-sm text-gray">{stat.label}</div>
-              </div>
-            ))}
           </div>
         </div>
       </section>
