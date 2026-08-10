@@ -861,6 +861,84 @@ async def patch_mark_email_safe(email_id: str, request: Request):
     return {"success": True, "message": f"Email {email_id} marked as safe."}
 
 
+# ---------- API KEY MANAGEMENT ENDPOINTS ----------
+
+@app.get("/settings/api-keys")
+async def get_api_keys(request: Request):
+    """GET /settings/api-keys — Returns masked API keys for security."""
+    if not is_logged_in():
+        return JSONResponse(status_code=401, content={"error": "Not logged in."})
+    
+    def mask_key(key):
+        if not key or len(key) < 8:
+            return None
+        return key[:4] + "••••" + key[-4:]
+    
+    return {
+        "groq": {
+            "configured": bool(ai_router.GROQ_API_KEY),
+            "masked_key": mask_key(ai_router.GROQ_API_KEY) if ai_router.GROQ_API_KEY else None,
+        },
+        "gemini": {
+            "configured": bool(ai_router.GEMINI_API_KEY),
+            "masked_key": mask_key(ai_router.GEMINI_API_KEY) if ai_router.GEMINI_API_KEY else None,
+        },
+        "cohere": {
+            "configured": bool(ai_router.COHERE_API_KEY),
+            "masked_key": mask_key(ai_router.COHERE_API_KEY) if ai_router.COHERE_API_KEY else None,
+        },
+        "nvidia": {
+            "configured": bool(ai_router.NVIDIA_API_KEY),
+            "masked_key": mask_key(ai_router.NVIDIA_API_KEY) if ai_router.NVIDIA_API_KEY else None,
+        },
+        "safebrowsing": {
+            "configured": bool(ai_router.GOOGLE_SAFE_BROWSING_KEY),
+            "masked_key": mask_key(ai_router.GOOGLE_SAFE_BROWSING_KEY) if ai_router.GOOGLE_SAFE_BROWSING_KEY else None,
+        },
+    }
+
+
+@app.put("/settings/api-keys")
+async def update_api_keys(request: Request):
+    """PUT /settings/api-keys — Update API keys at runtime."""
+    if not is_logged_in():
+        return JSONResponse(status_code=401, content={"error": "Not logged in."})
+    
+    data = await request.json()
+    updated = []
+    
+    # Update runtime keys (effective immediately)
+    if data.get("groq_key"):
+        ai_router.GROQ_API_KEY = data["groq_key"]
+        updated.append("Groq")
+    
+    if data.get("gemini_key"):
+        ai_router.GEMINI_API_KEY = data["gemini_key"]
+        updated.append("Gemini")
+    
+    if data.get("cohere_key"):
+        ai_router.COHERE_API_KEY = data["cohere_key"]
+        updated.append("Cohere")
+    
+    if data.get("nvidia_key"):
+        ai_router.NVIDIA_API_KEY = data["nvidia_key"]
+        updated.append("NVIDIA")
+    
+    if data.get("safebrowsing_key"):
+        ai_router.GOOGLE_SAFE_BROWSING_KEY = data["safebrowsing_key"]
+        updated.append("Safe Browsing")
+    
+    if not updated:
+        return JSONResponse(status_code=400, content={"error": "No API keys provided"})
+    
+    return {
+        "success": True,
+        "message": f"Updated {', '.join(updated)} API key(s)",
+        "updated": updated,
+        "note": "Keys updated for this session. For permanent changes on Railway, update environment variables in dashboard."
+    }
+
+
 # ---------- AI REWRITE ENDPOINT ----------
 
 @app.post("/ai/rewrite")
