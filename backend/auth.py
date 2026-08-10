@@ -27,8 +27,15 @@ SCOPES = [
     "https://www.googleapis.com/auth/userinfo.profile",   # Get user profile
 ]
 
-# Path to store the OAuth token persistently
-TOKEN_PATH = Path(__file__).parent / "token.json"
+# Path to store OAuth tokens per user
+TOKEN_DIR = Path(__file__).parent / "tokens"
+TOKEN_DIR.mkdir(exist_ok=True)  # Create tokens directory if it doesn't exist
+
+def get_token_path(user_email: str) -> Path:
+    """Get the token file path for a specific user."""
+    # Sanitize email for use as filename
+    safe_email = user_email.replace('@', '_at_').replace('.', '_')
+    return TOKEN_DIR / f"token_{safe_email}.json"
 
 # Google OAuth credentials from environment variables
 CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
