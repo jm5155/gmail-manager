@@ -251,7 +251,7 @@ function Settings() {
     <div className="h-screen overflow-y-auto pl-0 md:pl-[240px]" style={{ background: 'var(--surface)' }}>
       {/* Header */}
       <div className="px-6 py-4 pt-16 md:pt-4" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-        <h1 className="text-xl font-bold text-white">Settings</h1>
+        <h1 className="text-xl font-bold style={{color: 'var(--color-text-primary)'}}">Settings</h1>
         <p className="text-sm text-gray mt-0.5">
           Manage AI providers, labels, and account settings.
         </p>
@@ -261,7 +261,7 @@ function Settings() {
       <div className="settings-grid">
         {/* Account Section */}
         <section className="neu-card p-5">
-          <h2 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
+          <h2 className="text-sm font-semibold style={{color: 'var(--color-text-primary)'}} mb-4 flex items-center gap-2">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
             </svg>
@@ -270,7 +270,7 @@ function Settings() {
 
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <p className="text-sm text-white font-medium">{userEmail || 'Connected Google Account'}</p>
+              <p className="text-sm style={{color: 'var(--color-text-primary)'}} font-medium">{userEmail || 'Connected Google Account'}</p>
               <p className="text-xs text-gray mt-0.5">OAuth 2.0 — Gmail API access granted</p>
             </div>
             <button
@@ -284,7 +284,7 @@ function Settings() {
 
         {/* AI Providers Section */}
         <section className="neu-card p-5">
-          <h2 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
+          <h2 className="text-sm font-semibold style={{color: 'var(--color-text-primary)'}} mb-4 flex items-center gap-2">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
             </svg>
@@ -308,7 +308,7 @@ function Settings() {
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       <span className="text-lg flex-shrink-0">{field.icon}</span>
                       <div className="min-w-0">
-                        <p className="text-sm text-white font-medium truncate">{field.label}</p>
+                        <p className="text-sm style={{color: 'var(--color-text-primary)'}} font-medium truncate">{field.label}</p>
                         <p className="text-xs text-gray truncate">{field.description}</p>
                       </div>
                     </div>
@@ -343,7 +343,7 @@ function Settings() {
 
         {/* Custom Labels Section */}
         <section className="neu-card p-5">
-          <h2 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
+          <h2 className="text-sm font-semibold style={{color: 'var(--color-text-primary)'}} mb-4 flex items-center gap-2">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6z" />
@@ -395,7 +395,7 @@ function Settings() {
 
         {/* Email Deletion Behavior Section */}
         <section className="neu-card p-5">
-          <h2 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
+          <h2 className="text-sm font-semibold style={{color: 'var(--color-text-primary)'}} mb-4 flex items-center gap-2">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
             </svg>
@@ -449,7 +449,7 @@ function Settings() {
 
         {/* About Section */}
         <section className="neu-card p-5">
-          <h2 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+          <h2 className="text-sm font-semibold style={{color: 'var(--color-text-primary)'}} mb-3 flex items-center gap-2">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
             </svg>
@@ -459,19 +459,19 @@ function Settings() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <p className="text-xs text-muted">Version</p>
-              <p className="text-sm text-white font-medium">2.0.0</p>
+              <p className="text-sm style={{color: 'var(--color-text-primary)'}} font-medium">2.0.0</p>
             </div>
             <div>
               <p className="text-xs text-muted">Last Updated</p>
-              <p className="text-sm text-white font-medium">2026-08-10</p>
+              <p className="text-sm style={{color: 'var(--color-text-primary)'}} font-medium">2026-08-10</p>
             </div>
             <div>
               <p className="text-xs text-muted">AI Providers</p>
-              <p className="text-sm text-white font-medium">4 Active</p>
+              <p className="text-sm style={{color: 'var(--color-text-primary)'}} font-medium">4 Active</p>
             </div>
             <div>
               <p className="text-xs text-muted">Database</p>
-              <p className="text-sm text-white font-medium">PostgreSQL</p>
+              <p className="text-sm style={{color: 'var(--color-text-primary)'}} font-medium">PostgreSQL</p>
             </div>
           </div>
         </section>

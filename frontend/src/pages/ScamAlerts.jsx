@@ -95,7 +95,7 @@ function ScamAlerts() {
     <div className="h-screen overflow-hidden pl-0 md:pl-[240px]">
       {/* Header */}
       <div className="px-6 py-4 pt-16 md:pt-4" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-        <h1 className="text-xl font-bold text-white mb-1">Scam Alerts</h1>
+        <h1 className="text-xl font-bold style={{color: 'var(--color-text-primary)'}} mb-1">Scam Alerts</h1>
         <p className="text-sm text-gray">
           Emails flagged by AI with elevated scam probability scores.
         </p>
@@ -149,7 +149,7 @@ function ScamAlerts() {
                   onClick={() => handleReanalyze(email.email_id)}
                   disabled={reanalyzing[email.email_id]}
                   className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray
-                             transition-all duration-200 hover:text-white hover:bg-surface
+                             transition-all duration-200 hover:style={{color: 'var(--color-text-primary)'}} hover:bg-surface
                              disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ border: '1px solid var(--border-default)' }}
                 >

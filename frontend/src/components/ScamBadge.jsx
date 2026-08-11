@@ -65,7 +65,7 @@ function ScamBadge({ score = 0, reason = '', indicators = [], expanded = false, 
               className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
               style={{
                 background: config.color,
-                color: '#FFFFFF',
+                color: 'var(--color-text-primary)',
               }}
             >
               <svg

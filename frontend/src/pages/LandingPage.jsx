@@ -132,7 +132,7 @@ function LandingPage() {
                 className="btn-primary"
                 style={{
                   backgroundColor: '#5B5CE2',
-                  color: '#FFFFFF',
+                  color: 'var(--color-text-primary)',
                   padding: '0.625rem 1.5rem',
                   borderRadius: '0.5rem',
                   textDecoration: 'none',
@@ -220,7 +220,7 @@ function LandingPage() {
               to="/login"
               style={{
                 backgroundColor: '#5B5CE2',
-                color: '#FFFFFF',
+                color: 'var(--color-text-primary)',
                 padding: '0.875rem 2rem',
                 borderRadius: '0.5rem',
                 textDecoration: 'none',
@@ -463,7 +463,7 @@ function LandingPage() {
 
           <div 
             style={{
-              backgroundColor: '#FFFFFF',
+              backgroundcolor: 'var(--color-text-primary)',
               borderRadius: '0.75rem',
               padding: '1.5rem',
               border: '1px solid #E1E5EB',
@@ -602,7 +602,7 @@ function LandingPage() {
             style={{ 
               fontSize: '2.5rem',
               fontWeight: 800,
-              color: '#FFFFFF',
+              color: 'var(--color-text-primary)',
               marginBottom: '1rem'
             }}
           >
@@ -623,7 +623,7 @@ function LandingPage() {
           <Link 
             to="/login"
             style={{
-              backgroundColor: '#FFFFFF',
+              backgroundcolor: 'var(--color-text-primary)',
               color: '#5B5CE2',
               padding: '1rem 2.5rem',
               borderRadius: '0.5rem',

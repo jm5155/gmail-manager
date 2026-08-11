@@ -86,7 +86,7 @@ function Quarantine() {
             </svg>
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white">Quarantine</h1>
+            <h1 className="text-xl font-bold style={{color: 'var(--color-text-primary)'}}">Quarantine</h1>
             <p className="text-sm text-gray">
               {emails.length} email{emails.length !== 1 ? 's' : ''} flagged as suspicious
             </p>
@@ -136,7 +136,7 @@ function Quarantine() {
                 </div>
 
                 {/* Email Info */}
-                <h3 className="text-sm font-semibold text-white mb-1">{email.subject || '(No Subject)'}</h3>
+                <h3 className="text-sm font-semibold style={{color: 'var(--color-text-primary)'}} mb-1">{email.subject || '(No Subject)'}</h3>
                 <p className="text-xs text-gray mb-2">From: {email.sender}</p>
 
                 {/* Threat Reason */}

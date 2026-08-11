@@ -123,7 +123,7 @@ function Sidebar({ userEmail, mobileMenuOpen = false, onCloseMobileMenu = () => 
             className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
             style={{
               background: 'var(--color-primary)',
-              color: '#FFFFFF',
+              color: 'var(--color-text-primary)',
               boxShadow: '2px 2px 4px rgba(91, 92, 226, 0.2)',
             }}
           >
