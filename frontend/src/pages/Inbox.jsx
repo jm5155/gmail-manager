@@ -490,7 +490,7 @@ function Inbox() {
               style={{
                 background: showBatchDelete ? 'var(--danger-bg)' : 'var(--color-border)',
                 border: '1px solid var(--border-default)',
-                color: showBatchDelete ? 'var(--danger)' : 'var(--style={{ color: 'var(--color-text-muted)' }})',
+                color: showBatchDelete ? 'var(--danger)' : 'var(--color-text-muted)',
               }}
             >
               🗑 Batch Delete
