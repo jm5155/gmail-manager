@@ -12,77 +12,139 @@
 /* ---------- DESIGN TOKENS ---------- */
 @layer base {
   :root {
-    /* === DARK MODERN PROFESSIONAL COLOR SYSTEM === */
+    /* === LIGHT MODERN MINIMALIST + SOFT NEUMORPHISM === */
     
-    /* BASE BACKGROUNDS - Dark Slate */
-    --bg-dark: #0A0E1A;           /* Deep navy background - main surface */
-    --bg-elevated: #131827;        /* Slightly lighter for cards/panels */
-    --bg-hover: #1C2333;          /* Hover state for interactive elements */
+    /* BASE BACKGROUNDS - Light Neutral */
+    --color-background: #F1F3F6;   /* Primary application canvas */
+    --color-surface: #F8F9FB;      /* Cards, panels, sidebar, modals, elevated surfaces */
+    --color-surface-hover: #ECEEF2; /* Hover state for interactive surfaces */
     
-    /* TEXT HIERARCHY - Clean & Readable */
-    --text-primary: #F1F5F9;      /* Bright white for headings/important text */
-    --text-secondary: #94A3B8;    /* Medium gray for body text */
-    --text-tertiary: #64748B;     /* Muted gray for captions/labels */
+    /* TEXT HIERARCHY - Dark on Light */
+    --color-text-primary: #20242C;   /* Headings, important labels, email subjects */
+    --color-text-secondary: #687386; /* Body text, descriptions, metadata */
+    --color-text-muted: #9AA3B2;     /* Placeholders, disabled text, tertiary info */
     
-    /* BRAND PRIMARY - Vibrant Blue */
-    --primary: #3B82F6;           /* Bright blue - primary action color */
-    --primary-hover: #2563EB;     /* Darker blue on hover */
-    --primary-light: #60A5FA;     /* Lighter blue for accents */
-    --primary-dark: #1E40AF;      /* Darker for active states */
+    /* BORDERS */
+    --color-border: #E1E5EB;         /* Subtle borders throughout */
+    --color-border-light: #EBEEF3;   /* Even lighter borders */
+    
+    /* PRIMARY ACCENT - Indigo */
+    --color-primary: #5B5CE2;        /* Primary buttons, links, active states */
+    --color-primary-hover: #4F50CC;  /* Hover state */
+    --color-primary-active: #4142B5; /* Active/pressed state */
+    --color-primary-light: #7A7BEC;  /* Lighter variant for backgrounds */
     
     /* SEMANTIC COLORS - Status Indicators */
-    --success: #10B981;           /* Green - success/connected states */
-    --success-bg: rgba(16, 185, 129, 0.1);
-    --success-border: rgba(16, 185, 129, 0.2);
+    --color-success: #27AE72;        /* Success states, connected status */
+    --color-success-bg: #ECFDF3;     /* Success background */
+    --color-success-border: #B8E6CF; /* Success border */
     
-    --warning: #F59E0B;           /* Amber - warning states */
-    --warning-bg: rgba(245, 158, 11, 0.1);
-    --warning-border: rgba(245, 158, 11, 0.2);
+    --color-warning: #E5A23C;        /* Warning states */
+    --color-warning-bg: #FFFAEB;     /* Warning background */
+    --color-warning-border: #F5D8A0; /* Warning border */
     
-    --danger: #EF4444;            /* Red - danger/error states */
-    --danger-bg: rgba(239, 68, 68, 0.1);
-    --danger-border: rgba(239, 68, 68, 0.2);
+    --color-danger: #E05A67;         /* Error/danger states */
+    --color-danger-bg: #FFF1F2;      /* Danger background */
+    --color-danger-border: #F5B8BE;  /* Danger border */
     
-    --info: #06B6D4;              /* Cyan - info states */
-    --info-bg: rgba(6, 182, 212, 0.1);
-    --info-border: rgba(6, 182, 212, 0.2);
+    --color-info: #3B82F6;           /* Info states */
+    --color-info-bg: #EFF6FF;        /* Info background */
+    --color-info-border: #BFDBFE;    /* Info border */
     
     /* BORDERS & DIVIDERS */
-    --border: #1E293B;            /* Subtle dark border */
-    --border-light: #334155;      /* Slightly lighter border */
+    /* SOFT NEUMORPHIC SHADOWS - Light Mode */
+    --shadow-neumorphic-sm: 
+      4px 4px 10px rgba(170, 178, 190, 0.22),
+      -4px -4px 10px rgba(255, 255, 255, 0.85);
     
-    /* SHADOWS - Simple, Flat (NO NEUMORPHISM) */
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
-    --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.4);
-    --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.5);
+    --shadow-neumorphic-md: 
+      7px 7px 16px rgba(170, 178, 190, 0.25),
+      -7px -7px 16px rgba(255, 255, 255, 0.90);
     
-    /* RADIUS */
+    --shadow-neumorphic-lg: 
+      12px 12px 28px rgba(170, 178, 190, 0.28),
+      -12px -12px 28px rgba(255, 255, 255, 0.95);
+    
+    --shadow-neumorphic-inset: 
+      inset 3px 3px 7px rgba(170, 178, 190, 0.22),
+      inset -3px -3px 7px rgba(255, 255, 255, 0.80);
+    
+    /* FLAT SHADOWS (for non-neumorphic elements) */
+    --shadow-flat-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+    --shadow-flat-md: 0 4px 6px rgba(0, 0, 0, 0.10);
+    --shadow-flat-lg: 0 10px 20px rgba(0, 0, 0, 0.12);
+    
+    /* BORDER RADIUS */
     --radius-sm: 8px;
-    --radius-md: 12px;
-    --radius-lg: 16px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-xl: 16px;
+    --radius-2xl: 20px;
+    --radius-3xl: 24px;
+    
+    /* SPACING SCALE */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 12px;
+    --spacing-lg: 16px;
+    --spacing-xl: 20px;
+    --spacing-2xl: 24px;
+    --spacing-3xl: 32px;
+    --spacing-4xl: 40px;
+    --spacing-5xl: 48px;
+    --spacing-6xl: 64px;
+    
+    /* TRANSITIONS */
+    --transition-fast: 150ms ease;
+    --transition-base: 180ms ease;
+    --transition-slow: 250ms ease;
     
     /* LEGACY ALIASES (for backward compatibility) */
-    --bg-base: var(--bg-dark);
-    --bg-card: var(--bg-elevated);
-    --bg-section: var(--bg-elevated);
-    --text-heading: var(--text-primary);
-    --text-body: var(--text-secondary);
-    --text-muted: var(--text-tertiary);
-    --secondary: #8B5CF6;         /* Purple for secondary accents */
+    --bg-base: var(--color-background);
+    --bg-card: var(--color-surface);
+    --bg-dark: var(--color-background);
+    --bg-elevated: var(--color-surface);
+    --bg-hover: var(--color-surface-hover);
+    --text-heading: var(--color-text-primary);
+    --text-body: var(--color-text-secondary);
+    --text-muted: var(--color-text-muted);
+    --text-primary: var(--color-text-primary);
+    --text-secondary: var(--color-text-secondary);
+    --text-tertiary: var(--color-text-muted);
+    --primary: var(--color-primary);
+    --primary-hover: var(--color-primary-hover);
+    --primary-active: var(--color-primary-active);
+    --success: var(--color-success);
+    --success-bg: var(--color-success-bg);
+    --success-border: var(--color-success-border);
+    --warning: var(--color-warning);
+    --warning-bg: var(--color-warning-bg);
+    --warning-border: var(--color-warning-border);
+    --danger: var(--color-danger);
+    --danger-bg: var(--color-danger-bg);
+    --danger-border: var(--color-danger-border);
+    --info: var(--color-info);
+    --info-bg: var(--color-info-bg);
+    --info-border: var(--color-info-border);
+    --border: var(--color-border);
+    --border-light: var(--color-border-light);
+    --secondary: #8B5CF6;
     --secondary-hover: #7C3AED;
     
-    /* REMOVE NEUMORPHIC SHADOWS */
-    --neu-raised: var(--shadow-md);
-    --neu-pressed: var(--shadow-sm);
-    --neu-inset: var(--shadow-sm);
-    --neu-flat: var(--shadow-sm);
-    --neu-hover: var(--shadow-lg);
+    /* NEUMORPHIC SHADOW ALIASES */
+    --neu-raised: var(--shadow-neumorphic-sm);
+    --neu-pressed: var(--shadow-neumorphic-inset);
+    --neu-inset: var(--shadow-neumorphic-inset);
+    --neu-flat: var(--shadow-neumorphic-sm);
+    --neu-hover: var(--shadow-neumorphic-md);
+    --shadow-sm: var(--shadow-flat-sm);
+    --shadow-md: var(--shadow-flat-md);
+    --shadow-lg: var(--shadow-flat-lg);
   }
   
   /* Base styles */
   * {
-    -webkit-tap-highlight-color: rgba(59, 130, 246, 0.1);
+    -webkit-tap-highlight-color: rgba(91, 92, 226, 0.1);
   }
 
   html {
@@ -95,78 +157,87 @@
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background: var(--bg-dark);
-    color: var(--text-secondary);
+    background: var(--color-background);
+    color: var(--color-text-secondary);
     overflow-x: hidden;
     overflow-y: auto;
   }
 
   #root {
     min-height: 100vh;
-    background: var(--bg-dark);
+    background: var(--color-background);
     overflow-x: hidden;
     overflow-y: auto;
+  }
+  
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 
 /* ---------- COMPONENT CLASSES ---------- */
 @layer components {
-  /* CARDS — raised, popped off the page */
+  /* CARDS — Soft neumorphic elevation */
   .neu-card {
-    background: var(--surface);
-    border-radius: var(--radius-md);
-    box-shadow: var(--neu-raised);
-    border: 1px solid var(--border-subtle);
-    transition: box-shadow 0.2s ease;
+    background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-neumorphic-sm);
+    border: 1px solid var(--color-border);
+    transition: box-shadow var(--transition-base), transform var(--transition-base);
   }
   .neu-card:hover {
-    box-shadow: var(--neu-hover);
+    box-shadow: var(--shadow-neumorphic-md);
+    transform: translateY(-1px);
   }
 
-  /* INPUTS / DROPDOWNS / TEXTAREAS — inset, pressed into surface */
+  /* INPUTS / DROPDOWNS / TEXTAREAS — Soft inset */
   .neu-input {
-    background: var(--surface);
-    box-shadow: var(--neu-inset);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-sm);
-    color: var(--text-primary);
-    padding: 8px 12px;
+    background: var(--color-surface);
+    box-shadow: var(--shadow-neumorphic-inset);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text-primary);
+    padding: 10px 14px;
     font-size: 14px;
-    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    font-family: 'Inter', sans-serif;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
   }
   .neu-input:focus {
-    border-color: var(--primary);
-    box-shadow: var(--neu-inset), 0 0 0 3px rgba(76, 111, 255, 0.15);
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-neumorphic-inset), 0 0 0 3px rgba(91, 92, 226, 0.12);
     outline: none;
   }
   .neu-input::placeholder {
-    color: var(--text-tertiary);
+    color: var(--color-text-muted);
   }
 
-  /* INPUT/TEXTAREA/SELECT - KILL ALL WHITE BACKGROUNDS */
+  /* GLOBAL INPUT STYLING - Light mode */
   input,
   textarea,
-  select,
-  input.neu-input,
-  textarea.neu-input,
-  select.neu-input {
-    background: var(--surface) !important;
-    color: var(--text-primary) !important;
-    box-shadow: var(--neu-inset) !important;
-    border: 1px solid var(--border-subtle) !important;
-  }
-  
-  input:focus,
-  textarea:focus,
-  select:focus,
-  input.neu-input:focus,
-  textarea.neu-input:focus,
-  select.neu-input:focus {
-    border-color: var(--primary) !important;
-    box-shadow: var(--neu-inset), 0 0 0 3px rgba(76, 111, 255, 0.15) !important;
+  select {
+    background: var(--color-surface) !important;
+    color: var(--color-text-primary) !important;
+    border: 1px solid var(--color-border) !important;
+    border-radius: var(--radius-md) !important;
+    font-family: 'Inter', sans-serif !important;
   }
 
-  /* Kill browser autofill white flash on ALL form elements */
+  input:focus,
+  textarea:focus,
+  select:focus {
+    border-color: var(--color-primary) !important;
+    box-shadow: 0 0 0 3px rgba(91, 92, 226, 0.12) !important;
+    outline: none !important;
+  }
+
+  /* Autofill styling - Light mode */
   input:-webkit-autofill,
   input:-webkit-autofill:hover,
   input:-webkit-autofill:focus,
@@ -176,15 +247,15 @@
   select:-webkit-autofill,
   select:-webkit-autofill:hover,
   select:-webkit-autofill:focus {
-    -webkit-box-shadow: 0 0 0px 1000px var(--surface) inset !important;
-    -webkit-text-fill-color: var(--text-primary) !important;
-    box-shadow: var(--neu-inset) !important;
+    -webkit-box-shadow: 0 0 0px 1000px var(--color-surface) inset !important;
+    -webkit-text-fill-color: var(--color-text-primary) !important;
+    box-shadow: var(--shadow-neumorphic-inset) !important;
   }
 
-  /* Placeholder text visibility */
+  /* Placeholder visibility */
   input::placeholder,
   textarea::placeholder {
-    color: var(--text-tertiary) !important;
+    color: var(--color-text-muted) !important;
     opacity: 1 !important;
   }
 
