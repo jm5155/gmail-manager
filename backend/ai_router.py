@@ -165,6 +165,19 @@ class AIRouter:
         # httpx client with 30-second timeout for all requests
         self.client = httpx.Client(timeout=30.0)
         self.async_client = httpx.AsyncClient(timeout=30.0)
+        self._tokenrouter_key_index = 0
+        
+        valid_tokenrouter_keys = [k for k in TOKENROUTER_API_KEYS if k]
+        print(
+            f"[AI ROUTER] Providers loaded: "
+            f"groq={bool(GROQ_API_KEY)}, "
+            f"gemini={bool(GEMINI_API_KEY)}, "
+            f"cohere={bool(COHERE_API_KEY)}, "
+            f"tokenrouter={bool(TOKENROUTER_BASE_URL and valid_tokenrouter_keys)}"
+            f"({len(valid_tokenrouter_keys)} keys), "
+            f"nvidia={bool(NVIDIA_API_KEY)}",
+            flush=True,
+        )
 
     # ---------- PROVIDER: NVIDIA (PLACEHOLDER — NOT IN ACTIVE CASCADE) ----------
 
@@ -385,10 +398,13 @@ class AIRouter:
         if not TOKENROUTER_BASE_URL or not any(TOKENROUTER_API_KEYS):
             raise ProviderError("TokenRouter API not configured")
 
-        # Round-robin key selection based on timestamp
-        import time
-        key_index = int(time.time()) % len([k for k in TOKENROUTER_API_KEYS if k])
-        api_key = [k for k in TOKENROUTER_API_KEYS if k][key_index]
+        valid_keys = [k for k in TOKENROUTER_API_KEYS if k]
+        if not valid_keys:
+            raise ProviderError("TokenRouter API not configured")
+
+        key_index = self._tokenrouter_key_index % len(valid_keys)
+        api_key = valid_keys[key_index]
+        self._tokenrouter_key_index += 1
 
         url = f"{TOKENROUTER_BASE_URL}/chat/completions"
         headers = {
@@ -612,6 +628,7 @@ class AIRouter:
         Returns:
             Dict with provider names and their configuration status
         """
+        valid_tokenrouter_keys = [k for k in TOKENROUTER_API_KEYS if k]
         return {
             "groq": {
                 "configured": bool(GROQ_API_KEY and GROQ_API_KEY != "your_key_here"),
@@ -627,6 +644,12 @@ class AIRouter:
                 "configured": bool(COHERE_API_KEY and COHERE_API_KEY != "your_key_here"),
                 "model": "command-a-03-2025",
                 "role": "tertiary",
+            },
+            "tokenrouter": {
+                "configured": bool(TOKENROUTER_BASE_URL and valid_tokenrouter_keys),
+                "model": "gpt-4o-mini",
+                "role": "quaternary",
+                "keys_loaded": len(valid_tokenrouter_keys),
             },
             "nvidia": {
                 "configured": bool(NVIDIA_API_KEY and NVIDIA_API_KEY != "your_key_here"),
