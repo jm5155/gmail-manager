@@ -15,6 +15,12 @@ function Login() {
   const [error, setError] = useState('');
   const [checkingAuth, setCheckingAuth] = useState(true);
 
+  // DEBUG: Log API_BASE on component mount
+  useEffect(() => {
+    console.log('[LOGIN DEBUG] API_BASE:', API_BASE);
+    console.log('[LOGIN DEBUG] VITE_API_BASE env var:', import.meta.env.VITE_API_BASE);
+  }, []);
+
   // Check if already logged in on mount
   useEffect(() => {
     checkExistingAuth();
@@ -36,18 +42,29 @@ function Login() {
 
   // Trigger Google login
   async function handleLogin() {
+    console.log('[LOGIN DEBUG] handleLogin called');
+    console.log('[LOGIN DEBUG] API_BASE:', API_BASE);
+    
     setIsLoading(true);
     setError('');
 
     try {
+      console.log('[LOGIN DEBUG] Fetching auth URL from:', `${API_BASE}/auth/login`);
+      
       const res = await fetch(`${API_BASE}/auth/login`, { credentials: 'include' });
+      console.log('[LOGIN DEBUG] Response status:', res.status);
+      
       const data = await res.json();
+      console.log('[LOGIN DEBUG] Response data:', data);
 
       if (!res.ok) {
+        console.error('[LOGIN DEBUG] Response not OK:', data);
         setError(data.error || 'Failed to initiate login. Please try again.');
         setIsLoading(false);
         return;
       }
+
+      console.log('[LOGIN DEBUG] Opening popup with URL:', data.auth_url);
 
       // Open Google OAuth in popup
       const width = 600;
@@ -60,6 +77,15 @@ function Login() {
         'GoogleAuth',
         `width=${width},height=${height},left=${left},top=${top}`
       );
+
+      console.log('[LOGIN DEBUG] Popup opened:', authWindow ? 'Success' : 'Failed');
+
+      if (!authWindow) {
+        console.error('[LOGIN DEBUG] Popup blocked by browser');
+        setError('Popup blocked. Please allow popups for this site and try again.');
+        setIsLoading(false);
+        return;
+      }
 
       // Poll for auth completion
       const pollInterval = setInterval(async () => {
