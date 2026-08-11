@@ -15,14 +15,15 @@
  * - Danger: #E05A67
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  Mail, Shield, Zap, Brain, Lock, Server, CheckCircle, 
-  TrendingUp, Clock, Activity, Database, Eye, AlertCircle 
+import {
+  Mail, Shield, Zap, Brain, Lock, Server, CheckCircle,
+  TrendingUp, Clock, Activity, Database, Eye, AlertCircle, Menu, X
 } from 'lucide-react';
 
 function LandingPage() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const features = [
     {
       icon: Brain,
@@ -109,37 +110,39 @@ function LandingPage() {
       >
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
+            {/* Logo */}
             <div className="flex items-center gap-2">
               <Mail size={28} style={{ color: '#5B5CE2' }} strokeWidth={1.8} />
-              <span style={{ 
-                fontSize: '1.5rem', 
+              <span style={{
+                fontSize: '1.5rem',
                 fontWeight: 700,
                 color: '#20242C'
               }}>
                 Gmail Manager
               </span>
             </div>
-            <div className="flex items-center gap-4">
-              <a 
-                href="#features" 
+
+            {/* Desktop Navigation - Hidden on Mobile */}
+            <div className="hidden md:flex items-center gap-4">
+              <a
+                href="#features"
                 style={{ color: '#687386', textDecoration: 'none' }}
                 className="hover:opacity-80"
               >
                 Features
               </a>
-              <a 
-                href="#security" 
+              <a
+                href="#security"
                 style={{ color: '#687386', textDecoration: 'none' }}
                 className="hover:opacity-80"
               >
                 Security
               </a>
-              <Link 
-                to="/login" 
-                className="btn-primary"
+              <Link
+                to="/login"
                 style={{
                   backgroundColor: '#5B5CE2',
-                  color: 'var(--color-text-primary)',
+                  color: '#FFFFFF',
                   padding: '0.625rem 1.5rem',
                   borderRadius: '0.5rem',
                   textDecoration: 'none',
@@ -153,7 +156,77 @@ function LandingPage() {
                 Get Started
               </Link>
             </div>
+
+            {/* Mobile Hamburger Button - Visible on Mobile Only */}
+            <button
+              type="button"
+              aria-label="Open navigation menu"
+              aria-expanded={isMenuOpen}
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="md:hidden w-10 h-10 flex items-center justify-center rounded-lg transition-colors"
+              style={{
+                color: '#20242C',
+                backgroundColor: isMenuOpen ? '#E1E5EB' : 'transparent'
+              }}
+            >
+              {isMenuOpen ? <X size={24} strokeWidth={2} /> : <Menu size={24} strokeWidth={2} />}
+            </button>
           </div>
+
+          {/* Mobile Menu - Dropdown */}
+          {isMenuOpen && (
+            <div
+              className="md:hidden mt-4 pb-4 flex flex-col gap-3"
+              style={{
+                borderTop: '1px solid #E1E5EB',
+                paddingTop: '1rem'
+              }}
+            >
+              <a
+                href="#features"
+                onClick={() => setIsMenuOpen(false)}
+                style={{
+                  color: '#20242C',
+                  textDecoration: 'none',
+                  padding: '0.75rem 1rem',
+                  borderRadius: '0.5rem',
+                  backgroundColor: '#F1F3F6',
+                  fontWeight: 500
+                }}
+              >
+                Features
+              </a>
+              <a
+                href="#security"
+                onClick={() => setIsMenuOpen(false)}
+                style={{
+                  color: '#20242C',
+                  textDecoration: 'none',
+                  padding: '0.75rem 1rem',
+                  borderRadius: '0.5rem',
+                  backgroundColor: '#F1F3F6',
+                  fontWeight: 500
+                }}
+              >
+                Security
+              </a>
+              <Link
+                to="/login"
+                onClick={() => setIsMenuOpen(false)}
+                style={{
+                  backgroundColor: '#5B5CE2',
+                  color: '#FFFFFF',
+                  padding: '0.75rem 1rem',
+                  borderRadius: '0.5rem',
+                  textDecoration: 'none',
+                  fontWeight: 600,
+                  textAlign: 'center'
+                }}
+              >
+                Get Started
+              </Link>
+            </div>
+          )}
         </div>
       </nav>
 
