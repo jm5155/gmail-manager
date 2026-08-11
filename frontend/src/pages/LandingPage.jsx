@@ -598,18 +598,18 @@ function LandingPage() {
             textAlign: 'center'
           }}
         >
-          <h2 
-            style={{ 
+          <h2
+            style={{
               fontSize: '2.5rem',
               fontWeight: 800,
-              color: 'var(--color-text-primary)',
+              color: '#FFFFFF',
               marginBottom: '1rem'
             }}
           >
             Ready to Transform Your Email Management?
           </h2>
-          <p 
-            style={{ 
+          <p
+            style={{
               fontSize: '1.25rem',
               color: 'rgba(255,255,255,0.9)',
               marginBottom: '2.5rem',
@@ -620,10 +620,10 @@ function LandingPage() {
             Start analyzing your emails with AI-powered intelligence in minutes.
             No credit card required.
           </p>
-          <Link 
+          <Link
             to="/login"
             style={{
-              backgroundcolor: 'var(--color-text-primary)',
+              backgroundColor: '#FFFFFF',
               color: '#5B5CE2',
               padding: '1rem 2.5rem',
               borderRadius: '0.5rem',
