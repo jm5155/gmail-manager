@@ -32,6 +32,7 @@ from database import (
     get_delete_mode, set_delete_mode,
 )
 from ai_router import ai_router, REWRITE_PROMPT
+from jwt_auth import create_access_token, require_auth, get_user_from_token
 
 # ---------- APP INITIALIZATION ----------
 
@@ -143,88 +144,123 @@ async def auth_login():
 async def auth_callback(request: Request):
     """
     GET /auth/callback
-    Google redirects here after the user grants permissions.
-    Stores user_id and gmail_address in the session AND creates a legacy token.json
-    for backward compatibility with existing code.
+    Google redirects here after user grants permissions.
+    Generates JWT token for cross-domain authentication.
+    Also stores in session and creates legacy token.json for backward compatibility.
     """
     code = request.query_params.get("code")
-
+    
     if not code:
         return JSONResponse(
             status_code=400,
             content={"error": "No authorization code received from Google"},
         )
-
+    
     result = handle_callback(code)
-
-    # Store user_id and gmail_address in session
+    
+    # Store user_id and gmail_address in session (for backward compatibility)
     if result.get("success") and result.get("user_id"):
-        request.session["user_id"] = result["user_id"]
-        request.session["gmail_address"] = result["gmail_address"]
+        user_id = result["user_id"]
+        user_email = result["gmail_address"]
         
-        # CRITICAL FIX: Also create legacy token.json for backward compatibility
+        request.session["user_id"] = user_id
+        request.session["gmail_address"] = user_email
+        
+        # Generate JWT token for cross-domain authentication
+        jwt_token = create_access_token(user_id, user_email)
+        print(f"[AUTH CALLBACK] Generated JWT token for {user_email}")
+        
+        # CRITICAL FIX: also create legacy token.json for backward compatibility
         # This ensures all existing endpoints work without session cookies
         from auth import load_token, save_token
-        user_email = result["gmail_address"]
         creds = load_token(user_email)
         if creds:
             # Copy user-specific token to legacy token.json
             save_token(creds, user_email=None)
             print(f"[AUTH] Created legacy token.json for {user_email} for backward compatibility")
-    
-    print(f"[AUTH CALLBACK] Session set: user_id={result.get('user_id')}, email={result.get('gmail_address')}")
-
-    html_content = """
-    <html>
-    <head>
-        <title>Gmail Manager — Login Success</title>
-        <meta http-equiv="refresh" content="2;url=https://gmail-manager-gamma.vercel.app/inbox">
-        <script>
-            // Automatic redirect after 2 seconds
-            setTimeout(function() {
-                window.location.href = 'https://gmail-manager-gamma.vercel.app/inbox';
-            }, 2000);
-        </script>
-    </head>
-    <body style="display:flex;justify-content:center;align-items:center;height:100vh;
-                 font-family:Inter,sans-serif;background:#F1F3F6;color:#20242C;">
-        <div style="text-align:center;">
-            <h1 style="color:#27AE72;font-size:2.5rem;margin-bottom:1rem;">✓ Login Successful</h1>
-            <p style="color:#687386;font-size:1.1rem;">Redirecting you to the Inbox...</p>
-            <div style="margin-top:2rem;">
-                <div style="width:200px;height:4px;background:#E1E5EB;border-radius:999px;overflow:hidden;margin:0 auto;">
-                    <div style="width:0;height:100%;background:#5B5CE2;border-radius:999px;animation:progress 2s ease-out forwards;"></div>
+        
+        print(f"[AUTH CALLBACK] Session set: user_id={user_id}, email={user_email}")
+        
+        # Redirect to frontend with JWT token as URL parameter
+        frontend_url = os.getenv("FRONTEND_URL", "https://gmail-manager-gamma.vercel.app")
+        redirect_url = f"{frontend_url}/inbox?token={jwt_token}"
+        
+        html_content = f"""
+        <html>
+        <head>
+            <title>Gmail Manager - Login Success</title>
+            <meta http-equiv="refresh" content="1;url={redirect_url}" />
+            <script>
+            // Automatic redirect after 1 second
+            setTimeout(function() {{
+                window.location.href = '{redirect_url}';
+            }}, 1000);
+            </script>
+        </head>
+        <body style="display:flex;justify-content:center;align-items:center;height:100vh;
+            font-family:Inter,sans-serif;background:#F1F3F6;color:#20242C;">
+            <div style="text-align:center;">
+                <h1 style="color:#27AE72;font-size:2.5rem;margin-bottom:1rem;">✓ Login Successful</h1>
+                <p style="color:#687386;font-size:1.1rem;">Redirecting to Inbox...</p>
+                <div style="margin-top:2rem;">
+                    <div style="width:200px;height:4px;background:#E1E5EB;border-radius:999px;overflow:hidden;margin:0 auto;">
+                        <div style="width:0;height:100%;background:#5B5CE2;border-radius:999px;animation:progress 1s ease-out forwards;"></div>
+                    </div>
                 </div>
             </div>
-        </div>
-        <style>
-            @keyframes progress {
-                from { width: 0%; }
-                to { width: 100%; }
-            }
-        </style>
-    </body>
-    </html>
-    """
-    return HTMLResponse(content=html_content)
+            <style>
+            @keyframes progress {{
+                from {{ width: 0%; }}
+                to {{ width: 100%; }}
+            }}
+            </style>
+        </body>
+        </html>
+        """
+        return HTMLResponse(content=html_content)
+    
+    # If authentication failed
+    return JSONResponse(
+        status_code=401,
+        content={"error": "Authentication failed"}
+    )
 
 
 @app.get("/auth/status")
 async def auth_status(request: Request):
-    """GET /auth/status — Returns login status and user email."""
-    # DEBUG: Log session contents
+    """GET /auth/status — Returns login status and user email. Supports JWT and session auth."""
+    # DEBUG: Log authentication headers
+    auth_header = request.headers.get("Authorization")
+    print(f"[AUTH/STATUS DEBUG] Authorization header: {auth_header[:50] if auth_header else 'None'}...")
     print(f"[AUTH/STATUS DEBUG] Session data: {dict(request.session)}")
-    print(f"[AUTH/STATUS DEBUG] Cookies: {request.cookies}")
     
-    # Check session first for multi-user support
+    # Try JWT authentication first (for cross-domain)
+    user_data = get_user_from_token(request)
+    
+    if user_data:
+        # User authenticated via JWT token
+        user_email = user_data["email"]
+        user_id = user_data["user_id"]
+        print(f"[AUTH/STATUS DEBUG] JWT auth successful: {user_email}")
+        
+        # Verify the Gmail token is still valid
+        logged_in = is_logged_in(user_email)
+        
+        if logged_in:
+            return {
+                "logged_in": True,
+                "email": user_email,
+                "user_id": user_id
+            }
+    
+    # Fallback to session authentication (for backward compatibility)
     user_email = request.session.get("gmail_address")
     user_id = request.session.get("user_id")
     
-    print(f"[AUTH/STATUS DEBUG] user_email from session: {user_email}")
-    print(f"[AUTH/STATUS DEBUG] user_id from session: {user_id}")
+    print(f"[AUTH/STATUS DEBUG] Session auth: user_email={user_email}, user_id={user_id}")
     
     if user_email:
-        # User has active session, check if their token is still valid
+        # User has active session, check if token is valid
         logged_in = is_logged_in(user_email)
         print(f"[AUTH/STATUS DEBUG] Token valid for {user_email}: {logged_in}")
     else:

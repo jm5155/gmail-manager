@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
 import Inbox from './pages/Inbox';
@@ -16,7 +16,8 @@ import Rewriter from './pages/Rewriter';
 import Settings from './pages/Settings';
 import Sidebar from './components/Sidebar';
 import AnimatedBackground from './components/AnimatedBackground';
-import { ToastProvider } from './components/ToastNotification';
+import ToastProvider from './components/ToastNotification';
+import { apiGet, setAuthToken, getAuthToken } from './lib/api';
 
 // API Base URL - reads from environment variable or defaults to localhost
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
@@ -26,9 +27,28 @@ const SIDEBAR_ROUTES = ['/inbox', '/scam-alerts', '/quarantine', '/rewriter', '/
 
 function AppContent() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [userEmail, setUserEmail] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const showSidebar = SIDEBAR_ROUTES.some((r) => location.pathname.startsWith(r));
+
+  // Extract JWT token from URL parameters after OAuth callback
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const token = params.get('token');
+    
+    if (token) {
+      console.log('[AUTH] JWT token received from OAuth callback');
+      setAuthToken(token);
+      
+      // Remove token from URL for security
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+      
+      // Fetch user info with new token
+      fetchUserEmail();
+    }
+  }, [location.search]);
 
   // Fetch user email on mount (for sidebar display)
   useEffect(() => {
@@ -44,12 +64,17 @@ function AppContent() {
 
   async function fetchUserEmail() {
     try {
-      const res = await fetch(`${API_BASE}/auth/status`, { credentials: 'include' });
+      const res = await apiGet('/auth/status');
       const data = await res.json();
       if (data.logged_in) {
         setUserEmail(data.email || 'user@gmail.com');
+      } else {
+        setUserEmail('');
       }
-    } catch { /* ignore */ }
+    } catch (error) {
+      console.error('[AUTH] Failed to fetch user email:', error);
+      setUserEmail('');
+    }
   }
 
   return (
