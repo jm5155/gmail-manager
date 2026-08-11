@@ -89,11 +89,28 @@ def _get_user_id(request: Request) -> int | None:
     return request.session.get("user_id")
 
 
+def _is_authenticated(request: Request) -> bool:
+    """Return True when the request has a valid JWT or legacy session/token auth."""
+    user_data = get_user_from_token(request)
+    if user_data and user_data.get("user_id"):
+        return True
+
+    return is_logged_in()
+
+
 def _require_user_id(request: Request) -> int:
     """
-    Extract user_id from session, raising an error if not found.
+    Extract user_id from JWT/session, raising an error if not found.
     Falls back to fetching from database if session is empty but user is logged in.
     """
+    user_data = get_user_from_token(request)
+    if user_data and user_data.get("user_id"):
+        user_id = user_data["user_id"]
+        request.session["user_id"] = user_id
+        if user_data.get("email"):
+            request.session["gmail_address"] = user_data["email"]
+        return user_id
+
     user_id = request.session.get("user_id")
     if user_id:
         return user_id
@@ -119,6 +136,18 @@ def _require_user_id(request: Request) -> int:
             return user_id
 
     return None
+
+
+PENDING_GMAIL_SYNC_CONDITION = """
+          AND status = 'labeled'
+          AND label_id IS NOT NULL
+          AND (
+              applied_to_gmail = 0
+              OR applied_to_gmail IS NULL
+              OR last_applied_label_id IS NULL
+              OR last_applied_label_id <> label_id
+          )
+"""
 
 
 # ---------- STARTUP EVENT ----------
@@ -291,7 +320,7 @@ async def auth_logout(request: Request):
 @app.get("/emails/fetch")
 async def emails_fetch(request: Request, limit: int = 50, page_token: str = None):
     """GET /emails/fetch — Fetches emails from Gmail."""
-    if not is_logged_in():
+    if not _is_authenticated(request):
         return JSONResponse(status_code=401, content={"error": "Not logged in."})
 
     result = fetch_emails(limit=limit, page_token=page_token)
@@ -305,7 +334,7 @@ async def emails_fetch(request: Request, limit: int = 50, page_token: str = None
 @app.get("/emails")
 async def emails_get(request: Request):
     """GET /emails — Returns all cached analyzed emails from SQLite."""
-    if not is_logged_in():
+    if not _is_authenticated(request):
         return JSONResponse(status_code=401, content={"error": "Not logged in."})
 
     user_id = _require_user_id(request)
@@ -319,7 +348,7 @@ async def emails_get(request: Request):
 @app.get("/emails/analyzed")
 async def emails_analyzed(request: Request):
     """GET /emails/analyzed — Alias for GET /emails for backward compatibility."""
-    if not is_logged_in():
+    if not _is_authenticated(request):
         return JSONResponse(status_code=401, content={"error": "Not logged in."})
 
     user_id = _require_user_id(request)
@@ -339,7 +368,7 @@ async def emails_analyze_bulk(request: Request, limit: int = 50):
     Runs the AI-only bulk analysis pipeline.
     Streams results back as Server-Sent Events (SSE).
     """
-    if not is_logged_in():
+    if not _is_authenticated(request):
         return JSONResponse(status_code=401, content={"error": "Not logged in."})
 
     user_id = _require_user_id(request)
@@ -377,7 +406,7 @@ async def emails_analyze_bulk(request: Request, limit: int = 50):
 @app.post("/emails/fetch-only")
 async def emails_fetch_only(request: Request, limit: int = 50):
     """POST /emails/fetch-only - Fetch emails from Gmail, save as status='fetched' (no AI)"""
-    if not is_logged_in():
+    if not _is_authenticated(request):
         return JSONResponse(status_code=401, content={"error": "Not logged in."})
     
     user_id = _require_user_id(request)
@@ -397,7 +426,7 @@ async def emails_fetch_only(request: Request, limit: int = 50):
 @app.post("/emails/label-only")
 async def emails_label_only(request: Request, limit: int = None):
     """POST /emails/label-only - Run AI analysis on status='fetched' emails"""
-    if not is_logged_in():
+    if not _is_authenticated(request):
         return JSONResponse(status_code=401, content={"error": "Not logged in."})
     
     user_id = _require_user_id(request)
@@ -520,10 +549,16 @@ def _sync_label_to_gmail(email_id: str, user_id: int, service) -> dict:
         current_label_id = row['label_id']
         last_applied_label_id = row['last_applied_label_id']
 
-        # If already synced, no-op
+        # If already synced, ensure the legacy applied flag is also correct.
         if last_applied_label_id == current_label_id and current_label_id is not None:
+            cursor.execute("""
+                UPDATE analyzed_emails
+                SET applied_to_gmail = 1
+                WHERE email_id = %s AND user_id = %s
+            """, (email_id, user_id))
+            conn.commit()
             conn.close()
-            return {"success": True}  # Already synced, nothing to do
+            return {"success": True}  # Already synced, nothing else to do
 
         # Get label names
         labels = get_labels(user_id)
@@ -581,7 +616,7 @@ async def update_email_label(request: Request, email_id: str):
     Does NOT touch scam_score, scam_indicators, or is_quarantined.
     Atomically updates both database and Gmail, with rollback on Gmail failure.
     """
-    if not is_logged_in():
+    if not _is_authenticated(request):
         return JSONResponse(status_code=401, content={"error": "Not logged in."})
 
     user_id = _require_user_id(request)
@@ -622,7 +657,7 @@ async def batch_label_update(request: Request):
     Does NOT touch scam_score, scam_indicators, or is_quarantined.
     Processes changes sequentially, returns partial success results.
     """
-    if not is_logged_in():
+    if not _is_authenticated(request):
         return JSONResponse(status_code=401, content={"error": "Not logged in."})
 
     user_id = _require_user_id(request)
@@ -687,7 +722,7 @@ async def get_pending_count(request: Request):
     GET /emails/pending-count — Count emails needing Gmail sync.
     Returns count of emails where status='labeled' AND applied_to_gmail=0.
     """
-    if not is_logged_in():
+    if not _is_authenticated(request):
         return JSONResponse(status_code=401, content={"error": "Not logged in."})
 
     user_id = _require_user_id(request)
@@ -698,12 +733,11 @@ async def get_pending_count(request: Request):
 
     conn = _get_connection()
     cursor = conn.cursor()
-    cursor.execute("""
+    cursor.execute(f"""
         SELECT COUNT(*) as count
         FROM analyzed_emails
         WHERE user_id = %s
-          AND status = 'labeled'
-          AND applied_to_gmail = 0
+{PENDING_GMAIL_SYNC_CONDITION}
     """, (user_id,))
 
     result = cursor.fetchone()
@@ -720,7 +754,7 @@ async def apply_all_pending(request: Request):
     Processes all emails where status='labeled' AND applied_to_gmail=0.
     Uses _sync_label_to_gmail() which handles label removal correctly.
     """
-    if not is_logged_in():
+    if not _is_authenticated(request):
         return JSONResponse(status_code=401, content={"error": "Not logged in."})
 
     user_id = _require_user_id(request)
@@ -731,12 +765,11 @@ async def apply_all_pending(request: Request):
     from database import _get_connection
     conn = _get_connection()
     cursor = conn.cursor()
-    cursor.execute("""
+    cursor.execute(f"""
         SELECT email_id
         FROM analyzed_emails
         WHERE user_id = %s
-          AND status = 'labeled'
-          AND applied_to_gmail = 0
+{PENDING_GMAIL_SYNC_CONDITION}
     """, (user_id,))
 
     pending_emails = [row['email_id'] for row in cursor.fetchall()]
@@ -775,7 +808,7 @@ async def apply_all_pending(request: Request):
 @app.get("/labels")
 async def get_custom_labels(request: Request):
     """GET /labels — Returns all labels for the current user."""
-    if not is_logged_in():
+    if not _is_authenticated(request):
         return JSONResponse(status_code=401, content={"error": "Not logged in."})
 
     user_id = _require_user_id(request)
@@ -788,7 +821,7 @@ async def get_custom_labels(request: Request):
 @app.get("/settings/labels")
 async def get_settings_labels(request: Request):
     """GET /settings/labels — Alias for GET /labels for backward compatibility."""
-    if not is_logged_in():
+    if not _is_authenticated(request):
         return JSONResponse(status_code=401, content={"error": "Not logged in."})
 
     user_id = _require_user_id(request)
@@ -801,7 +834,7 @@ async def get_settings_labels(request: Request):
 @app.post("/labels")
 async def create_label(request: Request):
     """POST /labels — Create a new custom label."""
-    if not is_logged_in():
+    if not _is_authenticated(request):
         return JSONResponse(status_code=401, content={"error": "Not logged in."})
 
     user_id = _require_user_id(request)
@@ -831,7 +864,7 @@ async def create_label(request: Request):
 @app.post("/settings/labels")
 async def create_settings_label(request: Request):
     """POST /settings/labels — Alias for POST /labels for backward compatibility."""
-    if not is_logged_in():
+    if not _is_authenticated(request):
         return JSONResponse(status_code=401, content={"error": "Not logged in."})
 
     user_id = _require_user_id(request)
@@ -861,7 +894,7 @@ async def create_settings_label(request: Request):
 @app.delete("/labels/{label_id}")
 async def remove_label(label_id: int, request: Request):
     """DELETE /labels/{label_id} — Delete a custom label."""
-    if not is_logged_in():
+    if not _is_authenticated(request):
         return JSONResponse(status_code=401, content={"error": "Not logged in."})
 
     user_id = _require_user_id(request)
@@ -875,7 +908,7 @@ async def remove_label(label_id: int, request: Request):
 @app.delete("/settings/labels/{label_name}")
 async def remove_settings_label(label_name: str, request: Request):
     """DELETE /settings/labels/{label_name} — Backward compat delete by name."""
-    if not is_logged_in():
+    if not _is_authenticated(request):
         return JSONResponse(status_code=401, content={"error": "Not logged in."})
 
     user_id = _require_user_id(request)
@@ -896,7 +929,7 @@ async def remove_settings_label(label_name: str, request: Request):
 @app.post("/settings/reset-database")
 async def reset_database_endpoint(request: Request):
     """POST /settings/reset-database — Wipes analysis data for the current user."""
-    if not is_logged_in():
+    if not _is_authenticated(request):
         return JSONResponse(status_code=401, content={"error": "Not logged in."})
 
     user_id = _require_user_id(request)
@@ -912,7 +945,7 @@ async def reset_database_endpoint(request: Request):
 @app.get("/settings/delete-mode")
 async def get_delete_mode_endpoint(request: Request):
     """GET /settings/delete-mode — Returns current delete mode ('trash' or 'permanent')."""
-    if not is_logged_in():
+    if not _is_authenticated(request):
         return JSONResponse(status_code=401, content={"error": "Not logged in."})
 
     user_id = _require_user_id(request)
@@ -926,7 +959,7 @@ async def get_delete_mode_endpoint(request: Request):
 @app.put("/settings/delete-mode")
 async def update_delete_mode_endpoint(request: Request):
     """PUT /settings/delete-mode — Update delete mode to 'trash' or 'permanent'."""
-    if not is_logged_in():
+    if not _is_authenticated(request):
         return JSONResponse(status_code=401, content={"error": "Not logged in."})
 
     user_id = _require_user_id(request)
@@ -948,7 +981,7 @@ async def update_delete_mode_endpoint(request: Request):
 @app.patch("/emails/{email_id}/mark-safe")
 async def patch_mark_email_safe(email_id: str, request: Request):
     """PATCH /emails/{email_id}/mark-safe — Mark an email as safe."""
-    if not is_logged_in():
+    if not _is_authenticated(request):
         return JSONResponse(status_code=401, content={"error": "Not logged in."})
 
     user_id = _require_user_id(request)
@@ -997,7 +1030,7 @@ async def ai_status():
 @app.post("/security/scan-email")
 async def security_scan_email(request: Request):
     """POST /security/scan-email — Scan email URLs for threats."""
-    if not is_logged_in():
+    if not _is_authenticated(request):
         return JSONResponse(status_code=401, content={"error": "Not logged in."})
 
     from security import extract_urls, scan_url
@@ -1031,7 +1064,7 @@ async def security_scan_email(request: Request):
 @app.get("/quarantine")
 async def quarantine_list(request: Request):
     """GET /quarantine — Returns all quarantined emails."""
-    if not is_logged_in():
+    if not _is_authenticated(request):
         return JSONResponse(status_code=401, content={"error": "Not logged in."})
 
     user_id = _require_user_id(request)
@@ -1046,7 +1079,7 @@ async def quarantine_list(request: Request):
 @app.post("/quarantine/{email_id}/safe")
 async def quarantine_mark_safe(email_id: str, request: Request):
     """POST /quarantine/{email_id}/safe — Removes quarantine flag."""
-    if not is_logged_in():
+    if not _is_authenticated(request):
         return JSONResponse(status_code=401, content={"error": "Not logged in."})
 
     user_id = _require_user_id(request)
@@ -1060,7 +1093,7 @@ async def quarantine_mark_safe(email_id: str, request: Request):
 @app.delete("/quarantine/{email_id}")
 async def quarantine_delete(email_id: str, request: Request):
     """DELETE /quarantine/{email_id} — Delete email using user's preferred mode."""
-    if not is_logged_in():
+    if not _is_authenticated(request):
         return JSONResponse(status_code=401, content={"error": "Not logged in."})
 
     user_id = _require_user_id(request)
@@ -1081,7 +1114,7 @@ async def quarantine_delete(email_id: str, request: Request):
 @app.get("/scam/alerts")
 async def scam_alerts(request: Request, min_score: int = 30):
     """GET /scam/alerts?min_score=30 — Returns flagged emails sorted by scam score."""
-    if not is_logged_in():
+    if not _is_authenticated(request):
         return JSONResponse(status_code=401, content={"error": "Not logged in."})
 
     user_id = _require_user_id(request)
@@ -1099,7 +1132,7 @@ async def scam_alerts(request: Request, min_score: int = 30):
 @app.post("/emails/batch-delete")
 async def emails_batch_delete(request: Request):
     """POST /emails/batch-delete — Trash and delete matching emails."""
-    if not is_logged_in():
+    if not _is_authenticated(request):
         return JSONResponse(status_code=401, content={"error": "Not logged in."})
 
     user_id = _require_user_id(request)
@@ -1141,7 +1174,7 @@ async def emails_batch_delete(request: Request):
 @app.get("/emails/stats")
 async def emails_stats(request: Request):
     """GET /emails/stats — Returns summary statistics."""
-    if not is_logged_in():
+    if not _is_authenticated(request):
         return JSONResponse(status_code=401, content={"error": "Not logged in."})
 
     user_id = _require_user_id(request)
