@@ -310,8 +310,29 @@ async def auth_status(request: Request):
 @app.post("/auth/logout")
 async def auth_logout(request: Request):
     """POST /auth/logout — Deletes the stored token and clears session."""
+    # Try to get user email from JWT first, then session
+    user_email = None
+    user_data = get_user_from_token(request)
+    if user_data and user_data.get("email"):
+        user_email = user_data["email"]
+    else:
+        user_email = request.session.get("gmail_address")
+    
+    # Delete user-specific token if we have the email
+    if user_email:
+        try:
+            from auth import delete_token as delete_user_token
+            delete_user_token(user_email)
+            print(f"[AUTH] Deleted user-specific token for {user_email}")
+        except Exception as e:
+            print(f"[AUTH] Error deleting user token: {e}")
+    
+    # Delete legacy token.json
     delete_token()
+    
+    # Clear session
     request.session.clear()
+    
     return {"logged_in": False, "message": "Logged out successfully"}
 
 

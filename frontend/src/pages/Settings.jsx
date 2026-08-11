@@ -10,7 +10,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../components/ToastNotification';
 import ConfirmModal from '../components/ConfirmModal';
-import { apiGet, apiRequest } from '../lib/api';
+import { apiGet, apiRequest, clearAuthToken } from '../lib/api';
 
 // API key field definitions
 const API_FIELDS = [
@@ -119,6 +119,7 @@ function Settings() {
         method: 'POST',
       });
       toast.success('Logged out', 'Redirecting to login...');
+      clearAuthToken();
       setTimeout(() => navigate('/login'), 500);
     } catch (err) {
       toast.error('Logout failed', err.message);

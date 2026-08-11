@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { apiRequest } from '../lib/api';
+import { apiRequest, clearAuthToken } from '../lib/api';
 
 // Navigation items with icons and paths
 const NAV_ITEMS = [
@@ -70,6 +70,7 @@ function Sidebar({ userEmail, mobileMenuOpen = false, onCloseMobileMenu = () => 
         method: 'POST',
       });
     } catch (err) { /* proceed anyway */ }
+    clearAuthToken();
     navigate('/login');
   }
 
