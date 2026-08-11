@@ -130,7 +130,7 @@ function Sidebar({ userEmail, mobileMenuOpen = false, onCloseMobileMenu = () => 
             {initials}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate" style={{ color: 'var(--color-text-primary)' }}>{userEmail || 'User'}</p>
+            <p className="text-sm font-medium truncate" style={{ color: '#000000' }}>{userEmail || 'User'}</p>
             <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Active</p>
           </div>
         </div>
