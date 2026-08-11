@@ -134,9 +134,9 @@ function Rewriter() {
                   className="px-3.5 py-2 rounded-lg text-xs font-medium transition-all duration-200
                              hover:scale-[1.03] active:scale-[0.97] disabled:opacity-50"
                   style={{
-                    background: activeCommand === cmd.label ? 'rgba(37, 99, 235, 0.2)' : 'rgba(30, 41, 59, 0.8)',
-                    border: `1px solid ${activeCommand === cmd.label ? 'rgba(37, 99, 235, 0.4)' : '#334155'}`,
-                    color: activeCommand === cmd.label ? '#60A5FA' : '#94A3B8',
+                    background: activeCommand === cmd.label ? 'rgba(37, 99, 235, 0.2)' : 'var(--color-surface)',
+                    border: `1px solid ${activeCommand === cmd.label ? 'rgba(37, 99, 235, 0.4)' : 'var(--color-border)'}`,
+                    color: activeCommand === cmd.label ? '#60A5FA' : 'var(--color-text-muted)',
                   }}
                 >
                   {cmd.label}
@@ -267,7 +267,7 @@ function Rewriter() {
                 onClick={handleCopy}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium text-white transition-all duration-200"
                 style={{
-                  background: 'linear-gradient(135deg, #2563EB 0%, #7C3AED 100%)',
+                  background: 'linear-gradient(135deg, var(--color-primary) 0%, #7C3AED 100%)',
                 }}
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -321,7 +321,7 @@ function Rewriter() {
               disabled={loading || !originalText.trim()}
               className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 disabled:opacity-50"
               style={{
-                background: originalText.trim() && !loading ? 'linear-gradient(135deg, #2563EB 0%, #7C3AED 100%)' : '#475569',
+                background: originalText.trim() && !loading ? 'linear-gradient(135deg, var(--color-primary) 0%, #7C3AED 100%)' : '#475569',
               }}
             >
               <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>

@@ -119,7 +119,7 @@ function Quarantine() {
                 key={email.email_id}
                 className="rounded-xl p-5"
                 style={{
-                  background: 'rgba(30, 41, 59, 0.6)',
+                  background: 'var(--color-surface)',
                   border: '1px solid rgba(239, 68, 68, 0.2)',
                 }}
               >
@@ -142,7 +142,7 @@ function Quarantine() {
                 {/* Threat Reason */}
                 {email.scam_reason && (
                   <p className="text-xs text-gray mb-2 p-2 rounded-lg"
-                     style={{ background: 'rgba(15, 23, 42, 0.5)' }}>
+                     style={{ background: 'var(--color-surface)' }}>
                     💡 {email.scam_reason}
                   </p>
                 )}

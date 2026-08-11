@@ -109,8 +109,8 @@ function ScamAlerts() {
               className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 min-w-[85px] flex items-center justify-center gap-1"
               style={{
                 background: activeFilter === filter.value ? 'rgba(37, 99, 235, 0.15)' : 'transparent',
-                color: activeFilter === filter.value ? '#60A5FA' : '#94A3B8',
-                border: `1px solid ${activeFilter === filter.value ? 'rgba(37, 99, 235, 0.3)' : '#334155'}`,
+                color: activeFilter === filter.value ? '#60A5FA' : 'var(--color-text-muted)',
+                border: `1px solid ${activeFilter === filter.value ? 'rgba(37, 99, 235, 0.3)' : 'var(--color-border)'}`,
               }}
             >
               {filter.label}
