@@ -187,13 +187,13 @@ async def auth_callback(request: Request):
         </script>
     </head>
     <body style="display:flex;justify-content:center;align-items:center;height:100vh;
-                 font-family:Inter,sans-serif;background:#1B1F30;color:#F5F6FA;">
+                 font-family:Inter,sans-serif;background:#F1F3F6;color:#20242C;">
         <div style="text-align:center;">
-            <h1 style="color:#22C55E;font-size:2.5rem;margin-bottom:1rem;">✓ Login Successful</h1>
-            <p style="color:#9CA3C2;font-size:1.1rem;">Redirecting you to the Inbox...</p>
+            <h1 style="color:#27AE72;font-size:2.5rem;margin-bottom:1rem;">✓ Login Successful</h1>
+            <p style="color:#687386;font-size:1.1rem;">Redirecting you to the Inbox...</p>
             <div style="margin-top:2rem;">
-                <div style="width:200px;height:4px;background:#2D3E5F;border-radius:999px;overflow:hidden;margin:0 auto;">
-                    <div style="width:0;height:100%;background:linear-gradient(90deg,#4C6FFF,#8B5CF6);border-radius:999px;animation:progress 2s ease-out forwards;"></div>
+                <div style="width:200px;height:4px;background:#E1E5EB;border-radius:999px;overflow:hidden;margin:0 auto;">
+                    <div style="width:0;height:100%;background:#5B5CE2;border-radius:999px;animation:progress 2s ease-out forwards;"></div>
                 </div>
             </div>
         </div>
