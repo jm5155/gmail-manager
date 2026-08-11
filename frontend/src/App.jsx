@@ -61,10 +61,15 @@ function AppContent() {
       {showSidebar && (
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="fixed top-4 left-4 z-40 w-8 h-8 flex items-center justify-center rounded-lg bg-bg-card border border-border-subtle md:hidden hover:bg-bg-hover transition-colors"
+          className="fixed top-4 left-4 z-40 w-10 h-10 flex items-center justify-center rounded-lg md:hidden transition-colors"
+          style={{
+            backgroundColor: '#F8F9FB',
+            border: '1px solid #E1E5EB'
+          }}
           aria-label="Open menu"
         >
-          <svg className="w-5 h-5 text-style={{color: 'var(--color-text-primary)'}}" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
+               style={{ color: '#20242C' }}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
@@ -91,8 +96,10 @@ function AppContent() {
       {/* Page Content with fade transition */}
       <div
         key={location.pathname}
+        className={showSidebar ? 'md:ml-[240px]' : ''}
         style={{
           animation: 'fadeIn 0.2s ease-out',
+          minHeight: '100vh'
         }}
       >
         <Routes>
