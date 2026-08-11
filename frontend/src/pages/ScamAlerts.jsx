@@ -10,8 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import EmailCard from '../components/EmailCard';
 import ScamBadge from '../components/ScamBadge';
 import { useToast } from '../components/ToastNotification';
-
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+import { apiGet, apiRequest } from '../lib/api';
 
 const RISK_FILTERS = [
   { label: 'All Alerts', value: 'all', minScore: 30 },
@@ -35,11 +34,11 @@ function ScamAlerts() {
 
   async function fetchAlerts() {
     try {
-      const authRes = await fetch(`${API_BASE}/auth/status`, { credentials: 'include' });
+      const authRes = await apiGet('/auth/status');
       const authData = await authRes.json();
       if (!authData.logged_in) { navigate('/login'); return; }
 
-      const res = await fetch(`${API_BASE}/scam/alerts?min_score=30`, { credentials: 'include' });
+      const res = await apiGet('/scam/alerts?min_score=30');
       const data = await res.json();
       setEmails(data.emails || []);
     } catch (err) {
@@ -52,7 +51,9 @@ function ScamAlerts() {
   async function handleReanalyze(emailId) {
     setReanalyzing((prev) => ({ ...prev, [emailId]: true }));
     try {
-      const res = await fetch(`${API_BASE}/scam/reanalyze/${emailId}`, { method: 'POST', credentials: 'include' });
+      const res = await apiRequest(`/scam/reanalyze/${emailId}`, {
+        method: 'POST',
+      });
       const data = await res.json();
 
       if (res.ok) {

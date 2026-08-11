@@ -8,17 +8,17 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import ScamBadge from './ScamBadge';
+import { apiGet, apiRequest } from '../lib/api';
 
 function EmailDetailPanel({ email, isOpen, onClose, onLabelChange }) {
   const [selectedLabel, setSelectedLabel] = useState(email?.label_name || '');
   const [savedLabel, setSavedLabel] = useState(email?.label_name || '');
   const [isUpdating, setIsUpdating] = useState(false);
   const [labels, setLabels] = useState([]);
-  const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 
   // Fetch available labels
   useEffect(() => {
-    fetch(`${API_BASE}/settings/labels`, { credentials: 'include' })
+    apiGet('/settings/labels')
       .then(r => r.json())
       .then(d => setLabels(d.labels || []))
       .catch(err => console.error('Failed to fetch labels:', err));
@@ -45,10 +45,9 @@ function EmailDetailPanel({ email, isOpen, onClose, onLabelChange }) {
     try {
       setIsUpdating(true);
 
-      const response = await fetch(`${API_BASE}/emails/${email.email_id}/label`, {
+      const response = await apiRequest(`/emails/${email.email_id}/label`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ label_name: selectedLabel }),
       });
 

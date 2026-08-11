@@ -6,8 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+import { apiGet, API_BASE } from '../lib/api';
 
 function Login() {
   const navigate = useNavigate();
@@ -28,7 +27,7 @@ function Login() {
 
   async function checkExistingAuth() {
     try {
-      const res = await fetch(`${API_BASE}/auth/status`, { credentials: 'include' });
+      const res = await apiGet('/auth/status');
       const data = await res.json();
       if (data.logged_in) {
         navigate('/inbox');
@@ -51,7 +50,7 @@ function Login() {
     try {
       console.log('[LOGIN DEBUG] Fetching auth URL from:', `${API_BASE}/auth/login`);
       
-      const res = await fetch(`${API_BASE}/auth/login`, { credentials: 'include' });
+      const res = await apiGet('/auth/login');
       console.log('[LOGIN DEBUG] Response status:', res.status);
       
       const data = await res.json();

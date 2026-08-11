@@ -10,8 +10,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../components/ToastNotification';
 import ConfirmModal from '../components/ConfirmModal';
-
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+import { apiGet, apiRequest } from '../lib/api';
 
 // API key field definitions
 const API_FIELDS = [
@@ -84,25 +83,25 @@ function Settings() {
 
   async function loadSettings() {
     try {
-      const authRes = await fetch(`${API_BASE}/auth/status`, { credentials: 'include' });
+      const authRes = await apiGet('/auth/status');
       const authData = await authRes.json();
       if (!authData.logged_in) { navigate('/login'); return; }
       setUserEmail(authData.email || '');
 
       // Fetch AI provider status
-      const aiRes = await fetch(`${API_BASE}/ai/status`, { credentials: 'include' });
+      const aiRes = await apiGet('/ai/status');
       const aiData = await aiRes.json();
       setProviderStatus(aiData.providers || {});
 
       // Fetch custom labels
-      const labelRes = await fetch(`${API_BASE}/settings/labels`, { credentials: 'include' });
+      const labelRes = await apiGet('/settings/labels');
       if (labelRes.ok) {
         const labelData = await labelRes.json();
         setCustomLabels(labelData.labels || []);
       }
 
       // Fetch delete mode
-      const dmRes = await fetch(`${API_BASE}/settings/delete-mode`, { credentials: 'include' });
+      const dmRes = await apiGet('/settings/delete-mode');
       if (dmRes.ok) {
         const dmData = await dmRes.json();
         setDeleteMode(dmData.delete_mode || 'trash');
@@ -116,7 +115,9 @@ function Settings() {
 
   async function handleLogout() {
     try {
-      await fetch(`${API_BASE}/auth/logout`, { method: 'POST', credentials: 'include' });
+      await apiRequest('/auth/logout', {
+        method: 'POST',
+      });
       toast.success('Logged out', 'Redirecting to login...');
       setTimeout(() => navigate('/login'), 500);
     } catch (err) {
@@ -128,11 +129,10 @@ function Settings() {
     if (!newLabelName.trim()) return;
     setLabelLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/settings/labels`, {
+      const res = await apiRequest('/settings/labels', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newLabelName.trim() }),
-        credentials: 'include',
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to add label');
@@ -141,7 +141,7 @@ function Settings() {
       setNewLabelName('');
       
       // Refresh labels
-      const labelRes = await fetch(`${API_BASE}/settings/labels`, { credentials: 'include' });
+      const labelRes = await apiGet('/settings/labels');
       if (labelRes.ok) {
         const labelData = await labelRes.json();
         setCustomLabels(labelData.labels || []);
@@ -160,9 +160,8 @@ function Settings() {
       confirmText: 'Delete',
       onConfirm: async () => {
         try {
-          const res = await fetch(`${API_BASE}/labels/${label.label_id}`, {
+          const res = await apiRequest(`/labels/${label.label_id}`, {
             method: 'DELETE',
-            credentials: 'include',
           });
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || 'Failed to delete label');
@@ -186,10 +185,9 @@ function Settings() {
       isDangerous: true,
       onConfirm: async () => {
         try {
-          const res = await fetch(`${API_BASE}/settings/reset-database`, {
-            method: 'POST',
-            credentials: 'include',
-          });
+          const res = await apiRequest('/settings/reset-database', {
+        method: 'POST',
+      });
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || 'Failed to reset database');
           
@@ -205,11 +203,10 @@ function Settings() {
 
   async function handleSetDeleteMode(mode) {
     try {
-      const res = await fetch(`${API_BASE}/settings/delete-mode`, {
+      const res = await apiRequest('/settings/delete-mode', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ delete_mode: mode }),
-        credentials: 'include',
       });
       if (!res.ok) throw new Error('Failed to set delete mode');
       

@@ -9,8 +9,7 @@
 
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+import { apiRequest } from '../lib/api';
 
 // Navigation items with icons and paths
 const NAV_ITEMS = [
@@ -67,7 +66,9 @@ function Sidebar({ userEmail, mobileMenuOpen = false, onCloseMobileMenu = () => 
 
   async function handleLogout() {
     try {
-      await fetch(`${API_BASE}/auth/logout`, { method: 'POST', credentials: 'include' });
+      await apiRequest('/auth/logout', {
+        method: 'POST',
+      });
     } catch (err) { /* proceed anyway */ }
     navigate('/login');
   }

@@ -8,8 +8,7 @@
  */
 
 import React, { createContext, useContext, useState, useRef, useCallback, useEffect } from 'react';
-
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+import { apiRequest } from '../lib/api';
 
 const AnalysisContext = createContext(null);
 
@@ -62,10 +61,9 @@ export function AnalysisProvider({ children }) {
 
     try {
       // Step 1: Fetch-only (fast)
-      const fetchResponse = await fetch(`${API_BASE}/emails/fetch-only?limit=${limit}`, {
+      const fetchResponse = await apiRequest(`/emails/fetch-only?limit=${limit}`, {
         method: 'POST',
         signal: controller.signal,
-        credentials: 'include',
       });
 
       const fetchReader = fetchResponse.body.getReader();
@@ -100,10 +98,9 @@ export function AnalysisProvider({ children }) {
       }
 
       // Step 2: Label-only (AI analysis)
-      const labelResponse = await fetch(`${API_BASE}/emails/label-only?limit=${limit}`, {
+      const labelResponse = await apiRequest(`/emails/label-only?limit=${limit}`, {
         method: 'POST',
         signal: controller.signal,
-        credentials: 'include',
       });
 
       const labelReader = labelResponse.body.getReader();

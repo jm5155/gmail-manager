@@ -14,8 +14,7 @@ import EmailCard from '../components/EmailCard';
 import ProgressBar from '../components/ProgressBar';
 import { useToast } from '../components/ToastNotification';
 import { useAnalysis } from '../context/AnalysisContext';
-
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+import { apiGet, apiPost, apiDelete, apiRequest } from '../lib/api';
 
 const SORT_OPTIONS = [
   { value: 'newest', label: 'Newest First' },
@@ -94,11 +93,11 @@ function Inbox() {
 
   async function verifyAndFetch() {
     try {
-      const authRes = await fetch(`${API_BASE}/auth/status`, { credentials: 'include' });
+      const authRes = await apiGet('/auth/status');
       const authData = await authRes.json();
       if (!authData.logged_in) { navigate('/login'); return; }
 
-      const labelRes = await fetch(`${API_BASE}/settings/labels`, { credentials: 'include' });
+      const labelRes = await apiGet('/settings/labels');
       if (labelRes.ok) {
         const labelData = await labelRes.json();
         if (labelData.labels) {
@@ -119,7 +118,7 @@ function Inbox() {
 
   async function fetchUnappliedCount() {
     try {
-      const res = await fetch(`${API_BASE}/emails/pending-count`, { credentials: 'include' });
+      const res = await apiGet('/emails/pending-count');
       if (res.ok) {
         const data = await res.json();
         setUnappliedCount(data.pending_count || 0);
@@ -132,7 +131,7 @@ function Inbox() {
   // ---------- FETCH FILTERED EMAILS (Phase 7) ----------
   const fetchFilteredEmails = useCallback(async (search = '', label = 'All', sort = 'newest') => {
     try {
-      const res = await fetch(`${API_BASE}/emails`, { credentials: 'include' });
+      const res = await apiGet('/emails');
       const data = await res.json();
 
       if (res.ok) {
@@ -170,7 +169,7 @@ function Inbox() {
 
   async function fetchStats() {
     try {
-      const res = await fetch(`${API_BASE}/emails/stats`, { credentials: 'include' });
+      const res = await apiGet('/emails/stats');
       const data = await res.json();
       setEmailStats(data);
     } catch { /* ignore */ }
@@ -227,10 +226,9 @@ function Inbox() {
 
     // Update database immediately (but don't push to Gmail yet)
     try {
-      const response = await fetch(`${API_BASE}/emails/${emailId}/label`, {
+      const response = await apiRequest(`/emails/${emailId}/label`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ label_name: newLabel }),
       });
 
@@ -270,9 +268,8 @@ function Inbox() {
     setIsApplying(true);
 
     try {
-      const response = await fetch(`${API_BASE}/emails/apply-all-pending`, {
+      const response = await apiRequest('/emails/apply-all-pending', {
         method: 'POST',
-        credentials: 'include',
       });
 
       const result = await response.json();
@@ -309,7 +306,7 @@ function Inbox() {
   async function handleAnalyze() {
     // Item 1: Check for labels before starting analysis
     try {
-      const labelRes = await fetch(`${API_BASE}/settings/labels`, { credentials: 'include' });
+      const labelRes = await apiGet('/settings/labels');
       if (labelRes.ok) {
         const labelData = await labelRes.json();
         if (!labelData.labels || labelData.labels.length === 0) {
@@ -338,11 +335,10 @@ function Inbox() {
 
     setBatchDeleting(true);
     try {
-      const res = await fetch(`${API_BASE}/emails/batch-delete`, {
+      const res = await apiRequest('/emails/batch-delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mode: batchMode, value: batchValue }),
-        credentials: 'include',
       });
       const data = await res.json();
       if (res.ok) {

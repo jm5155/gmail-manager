@@ -7,8 +7,7 @@
 
 import React, { useState } from 'react';
 import { useToast } from '../components/ToastNotification';
-
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+import { apiRequest } from '../lib/api';
 
 // Preset rewrite commands
 const COMMANDS = [
@@ -56,11 +55,10 @@ function Rewriter() {
     setProviderUsed('');
 
     try {
-      const res = await fetch(`${API_BASE}/ai/rewrite`, {
+      const res = await apiRequest('/ai/rewrite', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: originalText, instruction }),
-        credentials: 'include',
       });
 
       const data = await res.json();

@@ -9,8 +9,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ConfirmModal from '../components/ConfirmModal';
 import { useToast } from '../components/ToastNotification';
-
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+import { apiGet, apiRequest, apiDelete } from '../lib/api';
 
 function Quarantine() {
   const navigate = useNavigate();
@@ -26,11 +25,11 @@ function Quarantine() {
 
   async function fetchQuarantined() {
     try {
-      const authRes = await fetch(`${API_BASE}/auth/status`, { credentials: 'include' });
+      const authRes = await apiGet('/auth/status');
       const authData = await authRes.json();
       if (!authData.logged_in) { navigate('/login'); return; }
 
-      const res = await fetch(`${API_BASE}/quarantine`, { credentials: 'include' });
+      const res = await apiGet('/quarantine');
       const data = await res.json();
       setEmails(data.emails || []);
     } catch (err) {
@@ -42,7 +41,9 @@ function Quarantine() {
 
   async function handleMarkSafe(emailId) {
     try {
-      const res = await fetch(`${API_BASE}/quarantine/${emailId}/safe`, { method: 'POST', credentials: 'include' });
+      const res = await apiRequest(`/quarantine/${emailId}/safe`, {
+        method: 'POST',
+      });
       if (res.ok) {
         setEmails((prev) => prev.filter((e) => e.email_id !== emailId));
         toast.success('Email marked as safe', 'Removed from quarantine.');
@@ -54,7 +55,7 @@ function Quarantine() {
 
   async function handleDelete(emailId) {
     try {
-      const res = await fetch(`${API_BASE}/quarantine/${emailId}`, { method: 'DELETE', credentials: 'include' });
+      const res = await apiRequest(`/quarantine/${emailId}`, { method: 'DELETE' });
       if (res.ok) {
         setEmails((prev) => prev.filter((e) => e.email_id !== emailId));
         toast.success('Email moved to trash', 'Email was not permanently deleted.');
