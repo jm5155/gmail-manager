@@ -1,15 +1,14 @@
 /**
- * EmailCard.jsx — Email List Card Component (Unified Neumorphic Design)
+ * EmailCard.jsx — Email List Card Component (Light Design System)
  * Reusable card for displaying email in Inbox and Scam Alerts.
  * Shows sender avatar, name, subject, date, label chip, and scam badge.
  * Click to expand email snippet and scam analysis (inline accordion).
  * 
- * Updated: 2026-08-10 - Unified neumorphic design system
+ * Updated: 2026-08-11 - Light design system with clean, modern aesthetics
  */
 
 import React, { useState } from 'react';
 import ScamBadge from './ScamBadge';
-import { getAvatarProps } from '../utils/avatarColors';
 import { decodeHTMLEntities } from '../utils/htmlDecode';
 
 function EmailCard({ 
@@ -27,9 +26,38 @@ function EmailCard({
   // Get the label display name from API field
   const labelName = email.label_name || email.label || 'Uncategorized';
 
-  // Get sender name and avatar props
+  // Get sender name
   const senderName = email.sender?.split('<')[0]?.trim()?.replace(/"/g, '') || 'Unknown';
-  const avatar = getAvatarProps(senderName);
+  
+  // Deterministic avatar color selection
+  const getAvatarColor = (name) => {
+    const colors = [
+      { bg: '#5B5CE2', name: 'primary' },    // Primary indigo
+      { bg: '#27AE72', name: 'success' },    // Success green
+      { bg: '#E5A23C', name: 'warning' },    // Warning orange
+      { bg: '#3B82F6', name: 'info' }        // Info blue
+    ];
+    
+    // Simple hash function for deterministic color
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    
+    return colors[Math.abs(hash) % colors.length];
+  };
+  
+  // Get avatar initials and color
+  const getAvatarInitials = (name) => {
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
+  
+  const avatarColor = getAvatarColor(senderName);
+  const avatarInitials = getAvatarInitials(senderName);
 
   // Decode HTML entities in subject and snippet (fixes &#39; bug)
   const decodedSubject = decodeHTMLEntities(email.subject) || '(No Subject)';
@@ -60,7 +88,22 @@ function EmailCard({
     : [];
 
   return (
-    <div className="neu-card p-0 overflow-visible">
+    <div 
+      className="bg-surface rounded-xl overflow-visible transition-all duration-200"
+      style={{
+        backgroundColor: 'var(--color-surface, #F8F9FB)',
+        border: '1px solid var(--color-border, #E1E5EB)',
+        boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02)',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'translateY(-1px)';
+        e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.05), 0 2px 4px rgba(0, 0, 0, 0.03)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02)';
+      }}
+    >
       {/* Main Card Content */}
       <div
         onClick={() => setExpanded(!expanded)}
@@ -70,22 +113,43 @@ function EmailCard({
         <div className="hidden md:flex items-center gap-4">
           {/* Sender Avatar */}
           <div
-            className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-semibold flex-shrink-0 bg-gradient-to-br ${avatar.gradient.tailwind.from} ${avatar.gradient.tailwind.to}`}
+            className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-semibold flex-shrink-0"
+            style={{
+              backgroundColor: avatarColor.bg,
+            }}
           >
-            {avatar.initials}
+            {avatarInitials}
           </div>
 
           {/* Email Content */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-4">
-              <span className="text-sm font-medium text-white truncate">{senderName}</span>
-              <span className="text-xs text-muted flex-shrink-0">{formatDate(email.analyzed_at || email.date)}</span>
+              <span 
+                className="text-sm font-medium truncate"
+                style={{ color: 'var(--color-text-primary, #20242C)' }}
+              >
+                {senderName}
+              </span>
+              <span 
+                className="text-xs flex-shrink-0"
+                style={{ color: 'var(--color-text-muted, #9AA3B2)' }}
+              >
+                {formatDate(email.analyzed_at || email.date)}
+              </span>
             </div>
-            <p className="text-sm text-white truncate mt-0.5">
+            <p 
+              className="text-sm truncate mt-0.5"
+              style={{ color: 'var(--color-text-primary, #20242C)' }}
+            >
               {decodedSubject}
             </p>
             {!expanded && (
-              <p className="text-xs text-gray truncate mt-0.5">{decodedSnippet}</p>
+              <p 
+                className="text-xs truncate mt-0.5"
+                style={{ color: 'var(--color-text-secondary, #687386)' }}
+              >
+                {decodedSnippet}
+              </p>
             )}
           </div>
 
@@ -99,7 +163,13 @@ function EmailCard({
                   if (onLabelChange) onLabelChange(email.email_id, e.target.value);
                 }}
                 onClick={(e) => e.stopPropagation()}
-                className="neu-input text-xs px-3 py-1.5 cursor-pointer"
+                className="text-xs px-3 py-1.5 cursor-pointer rounded-lg transition-all"
+                style={{
+                  backgroundColor: 'var(--color-surface, #F8F9FB)',
+                  border: '1px solid var(--color-border, #E1E5EB)',
+                  color: 'var(--color-text-primary, #20242C)',
+                  boxShadow: 'inset 0 1px 2px rgba(0, 0, 0, 0.04)',
+                }}
               >
                 {combinedLabels.map(label => (
                   <option key={label.label_id} value={label.label_name}>
@@ -108,20 +178,30 @@ function EmailCard({
                 ))}
               </select>
               {pendingLabel && (
-                <span className="text-warning text-xs">●</span>
+                <span style={{ color: 'var(--color-warning, #E5A23C)' }} className="text-xs">●</span>
               )}
             </div>
           )}
 
           {/* Status Badges */}
           {email.status === 'fetched' && (
-            <span className="badge badge-warning">
+            <span 
+              className="text-xs px-3 py-1 rounded-full font-medium"
+              style={{
+                backgroundColor: 'rgba(229, 162, 60, 0.1)',
+                color: 'var(--color-warning, #E5A23C)',
+              }}
+            >
               ⏳ Analyzing...
             </span>
           )}
           {email.status === 'failed' && (
             <span 
-              className="badge badge-danger cursor-help"
+              className="text-xs px-3 py-1 rounded-full font-medium cursor-help"
+              style={{
+                backgroundColor: 'rgba(224, 90, 103, 0.1)',
+                color: 'var(--color-danger, #E05A67)',
+              }}
               title={email.error_reason ? `Failed: ${email.error_reason}` : 'Analysis failed - will retry automatically'}
             >
               ⚠ Analysis Failed {email.retry_count > 0 && `(${email.retry_count} retries)`}
@@ -135,23 +215,42 @@ function EmailCard({
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5 flex-1 min-w-0">
               <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0 bg-gradient-to-br ${avatar.gradient.tailwind.from} ${avatar.gradient.tailwind.to}`}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0"
+                style={{
+                  backgroundColor: avatarColor.bg,
+                }}
               >
-                {avatar.initials}
+                {avatarInitials}
               </div>
-              <span className="text-sm font-medium text-white truncate">{senderName}</span>
+              <span 
+                className="text-sm font-medium truncate"
+                style={{ color: 'var(--color-text-primary, #20242C)' }}
+              >
+                {senderName}
+              </span>
             </div>
-            <span className="text-xs text-muted flex-shrink-0">{formatDate(email.analyzed_at || email.date)}</span>
+            <span 
+              className="text-xs flex-shrink-0"
+              style={{ color: 'var(--color-text-muted, #9AA3B2)' }}
+            >
+              {formatDate(email.analyzed_at || email.date)}
+            </span>
           </div>
 
           {/* Row 2: Subject */}
-          <p className="text-sm text-white line-clamp-2 leading-snug">
+          <p 
+            className="text-sm line-clamp-2 leading-snug"
+            style={{ color: 'var(--color-text-primary, #20242C)' }}
+          >
             {decodedSubject}
           </p>
 
           {/* Row 3: Snippet */}
           {!expanded && (
-            <p className="text-xs text-gray truncate leading-relaxed">
+            <p 
+              className="text-xs truncate leading-relaxed"
+              style={{ color: 'var(--color-text-secondary, #687386)' }}
+            >
               {decodedSnippet}
             </p>
           )}
@@ -168,7 +267,13 @@ function EmailCard({
                       if (onLabelChange) onLabelChange(email.email_id, e.target.value);
                     }}
                     onClick={(e) => e.stopPropagation()}
-                    className="neu-input text-xs px-2.5 py-1 cursor-pointer"
+                    className="text-xs px-2.5 py-1 cursor-pointer rounded-lg transition-all"
+                    style={{
+                      backgroundColor: 'var(--color-surface, #F8F9FB)',
+                      border: '1px solid var(--color-border, #E1E5EB)',
+                      color: 'var(--color-text-primary, #20242C)',
+                      boxShadow: 'inset 0 1px 2px rgba(0, 0, 0, 0.04)',
+                    }}
                   >
                     {combinedLabels.map(label => (
                       <option key={label.label_id} value={label.label_name}>
@@ -177,20 +282,30 @@ function EmailCard({
                     ))}
                   </select>
                   {pendingLabel && (
-                    <span className="text-warning text-xs">●</span>
+                    <span style={{ color: 'var(--color-warning, #E5A23C)' }} className="text-xs">●</span>
                   )}
                 </div>
               )}
 
               {/* Status Badges */}
               {email.status === 'fetched' && (
-                <span className="badge badge-warning text-[10px] md:text-xs">
+                <span 
+                  className="text-[10px] md:text-xs px-2.5 py-1 rounded-full font-medium"
+                  style={{
+                    backgroundColor: 'rgba(229, 162, 60, 0.1)',
+                    color: 'var(--color-warning, #E5A23C)',
+                  }}
+                >
                   ⏳ Analyzing...
                 </span>
               )}
               {email.status === 'failed' && (
                 <span 
-                  className="badge badge-danger text-[10px] md:text-xs cursor-help"
+                  className="text-[10px] md:text-xs px-2.5 py-1 rounded-full font-medium cursor-help"
+                  style={{
+                    backgroundColor: 'rgba(224, 90, 103, 0.1)',
+                    color: 'var(--color-danger, #E05A67)',
+                  }}
                   title={email.error_reason ? `Failed: ${email.error_reason}` : 'Analysis failed - will retry automatically'}
                 >
                   ⚠ Failed {email.retry_count > 0 && `(${email.retry_count}x)`}
@@ -216,10 +331,16 @@ function EmailCard({
 
       {/* Expanded Content (Full Email Snippet) */}
       {expanded && (
-        <div className="px-5 pb-5 pt-2 border-t border-subtle">
+        <div 
+          className="px-5 pb-5 pt-2"
+          style={{
+            borderTop: '1px solid var(--color-border, #E1E5EB)',
+          }}
+        >
           <p 
-            className="text-sm text-gray leading-relaxed"
+            className="text-sm leading-relaxed"
             style={{
+              color: 'var(--color-text-secondary, #687386)',
               whiteSpace: 'pre-wrap',
               wordBreak: 'break-word',
               overflowWrap: 'anywhere',
@@ -232,7 +353,12 @@ function EmailCard({
 
       {/* Custom Actions (e.g., delete, move) */}
       {actions && (
-        <div className="px-5 pb-4 flex gap-2 border-t border-subtle pt-3">
+        <div 
+          className="px-5 pb-4 flex gap-2 pt-3"
+          style={{
+            borderTop: '1px solid var(--color-border, #E1E5EB)',
+          }}
+        >
           {actions}
         </div>
       )}
