@@ -60,94 +60,42 @@ export function AnalysisProvider({ children }) {
     abortRef.current = controller;
 
     try {
-      // Step 1: Fetch-only (fast)
+      setCurrentEmail('Fetching emails from Gmail...');
+
       const fetchResponse = await apiRequest(`/emails/fetch-only?limit=${limit}`, {
         method: 'POST',
         signal: controller.signal,
       });
 
-      const fetchReader = fetchResponse.body.getReader();
-      readerRef.current = fetchReader;
-      const decoder = new TextDecoder();
-      let buffer = '';
+      const fetchData = await fetchResponse.json();
+      setCurrentEmail(`Fetched ${fetchData.fetched || 0} emails. Starting analysis...`);
 
-      while (true) {
-        const { done, value } = await fetchReader.read();
-        if (done) break;
+      setCurrentEmail('Running AI analysis...');
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          if (line.startsWith('data:')) {
-            try {
-              const data = JSON.parse(line.slice(5).trim());
-              if (data.type === 'initializing') {
-                setCurrentEmail(data.message || 'Fetching emails...');
-              } else if (data.type === 'progress') {
-                setCurrentEmail(`Fetched ${data.current || 0} emails...`);
-              } else if (data.type === 'complete') {
-                setCurrentEmail(`Fetched ${data.fetched || 0} emails. Starting analysis...`);
-              }
-            } catch (e) {
-              console.error('Failed to parse fetch SSE:', e);
-            }
-          }
-        }
-      }
-
-      // Step 2: Label-only (AI analysis)
       const labelResponse = await apiRequest(`/emails/label-only?limit=${limit}`, {
         method: 'POST',
         signal: controller.signal,
       });
 
-      const labelReader = labelResponse.body.getReader();
-      readerRef.current = labelReader;
-      buffer = '';
+      const labelData = await labelResponse.json();
 
-      while (true) {
-        const { done, value } = await labelReader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          if (line.startsWith('data:')) {
-            try {
-              const data = JSON.parse(line.slice(5).trim());
-
-              if (data.type === 'initializing') {
-                setCurrentEmail(data.message || 'Fetching emails from Gmail...');
-              } else if (data.type === 'progress') {
-                if (data.total > 0) setIsInitializing(false);
-                setProgress(data.progress || data.current || 0);
-                setTotal(data.total);
-                setCurrentEmail(data.subject || data.email_subject || '');
-              } else if (data.type === 'email_done') {
-                if (data.total > 0) setIsInitializing(false);
-                setProgress(data.progress || data.current || 0);
-                setTotal(data.total);
-                setCurrentEmail(`Done: ${data.subject || data.email_subject || ''}`);
-                setResults((prev) => [...prev, data]);
-              } else if (data.type === 'complete') {
-                setStats({
-                  analyzed: data.analyzed || 0,
-                  skipped: data.skipped || 0,
-                  failed: data.failed || 0,
-                  retried: data.retried || 0,
-                });
-              }
-            } catch { /* skip parse errors */ }
-          }
-        }
+      if (labelData.analyzed > 0 || labelData.failed > 0) {
+        setIsInitializing(false);
+        setStats({
+          analyzed: labelData.analyzed || 0,
+          skipped: labelData.skipped || 0,
+          failed: labelData.failed || 0,
+          retried: 0,
+        });
+        setResults(labelData.results || []);
+        setProgress(labelData.analyzed || 0);
+        setTotal(labelData.analyzed || 0);
+        setCurrentEmail('Analysis complete');
       }
     } catch (err) {
       if (err.name !== 'AbortError') {
-        console.error('[AnalysisContext] SSE error:', err);
+        console.error('[AnalysisContext] Analysis error:', err);
+        setCurrentEmail('Analysis failed');
       }
     } finally {
       setIsAnalyzing(false);

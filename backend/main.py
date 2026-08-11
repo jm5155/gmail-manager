@@ -413,14 +413,13 @@ async def emails_fetch_only(request: Request, limit: int = 50):
     if not user_id:
         return JSONResponse(status_code=401, content={"error": "User session not found."})
     
-    from starlette.responses import StreamingResponse
     from gmail import fetch_only_pipeline
     
-    async def sse_stream():
-        async for event in fetch_only_pipeline(limit=limit, user_id=user_id):
-            yield f"data: {json.dumps(event)}\n\n"
+    final_event = {"fetched": 0, "skipped": 0}
+    async for event in fetch_only_pipeline(limit=limit, user_id=user_id):
+        final_event = event
     
-    return StreamingResponse(sse_stream(), media_type="text/event-stream")
+    return JSONResponse(content=final_event)
 
 
 @app.post("/emails/label-only")
@@ -437,14 +436,14 @@ async def emails_label_only(request: Request, limit: int = None):
     if not user_labels:
         return JSONResponse(status_code=400, content={"error": "no_labels"})
     
-    from starlette.responses import StreamingResponse
     from gmail import label_only_pipeline
     
-    async def sse_stream():
-        async for event in label_only_pipeline(limit=limit, user_id=user_id):
-            yield f"data: {json.dumps(event)}\n\n"
+    final_event = {"analyzed": 0, "failed": 0}
+    async for event in label_only_pipeline(limit=limit, user_id=user_id):
+        final_event = event
+    
+    return JSONResponse(content=final_event)
 
-    return StreamingResponse(sse_stream(), media_type="text/event-stream")
 
 
 def _apply_label_change(email_id: str, new_label_name: str, user_id: int, service) -> dict:
