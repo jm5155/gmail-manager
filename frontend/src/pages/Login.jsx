@@ -66,53 +66,15 @@ function Login() {
 
       console.log('[LOGIN DEBUG] Opening popup with URL:', data.auth_url);
 
-      // Open Google OAuth in popup
-      const width = 600;
-      const height = 700;
-      const left = window.screen.width / 2 - width / 2;
-      const top = window.screen.height / 2 - height / 2;
-
-      const authWindow = window.open(
-        data.auth_url,
-        'GoogleAuth',
-        `width=${width},height=${height},left=${left},top=${top}`
-      );
-
-      console.log('[LOGIN DEBUG] Popup opened:', authWindow ? 'Success' : 'Failed');
-
-      if (!authWindow) {
-        console.error('[LOGIN DEBUG] Popup blocked by browser');
-        setError('Popup blocked. Please allow popups for this site and try again.');
-        setIsLoading(false);
-        return;
-      }
-
-      // Poll for auth completion
-      const pollInterval = setInterval(async () => {
-        try {
-          const statusRes = await fetch(`${API_BASE}/auth/status`, { credentials: 'include' });
-          const statusData = await statusRes.json();
-
-          if (statusData.logged_in) {
-            clearInterval(pollInterval);
-            if (authWindow && !authWindow.closed) {
-              authWindow.close();
-            }
-            navigate('/inbox');
-          }
-        } catch (err) {
-          console.log('[LOGIN] Polling error:', err);
-        }
-      }, 2000);
-
-      // Stop polling if popup closed
-      const popupCheck = setInterval(() => {
-        if (authWindow && authWindow.closed) {
-          clearInterval(popupCheck);
-          clearInterval(pollInterval);
-          setIsLoading(false);
-        }
-      }, 500);
+      // CHANGE: Use redirect instead of popup to avoid popup blockers
+      // Store a flag that we're in OAuth flow
+      sessionStorage.setItem('oauth_in_progress', 'true');
+      
+      // Redirect to Google OAuth (same tab, more reliable)
+      window.location.href = data.auth_url;
+      
+      // Note: After OAuth completes, backend will redirect back to frontend
+      // The frontend will detect oauth_in_progress and navigate to /inbox
 
     } catch (err) {
       console.error('[LOGIN] Error:', err);
