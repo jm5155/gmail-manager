@@ -448,9 +448,10 @@ function Inbox() {
                 disabled={unappliedCount === 0 || isApplying}
                 className="btn-secondary px-4 py-1.5 text-sm min-w-[120px] flex items-center justify-center gap-2"
                 style={{
-                  background: (unappliedCount > 0 && !isApplying) ? undefined : '#475569',
+                  background: (unappliedCount > 0 && !isApplying) ? undefined : 'var(--color-border)',
                   boxShadow: (unappliedCount > 0 && !isApplying) ? undefined : 'none',
                   cursor: (unappliedCount > 0 && !isApplying) ? 'pointer' : 'not-allowed',
+                  color: (unappliedCount > 0 && !isApplying) ? undefined : 'var(--color-text-muted)',
                 }}
                 title={
                   unappliedCount === 0 
@@ -474,7 +475,11 @@ function Inbox() {
                   <span className="flex items-center gap-2">
                     📧 Apply to Gmail
                     {unappliedCount > 0 && (
-                      <span className="px-2 py-0.5 bg-white/20 rounded-full text-xs font-semibold">
+                      <span className="px-2 py-0.5 rounded-full text-xs font-semibold"
+                            style={{ 
+                              background: 'var(--color-primary)', 
+                              color: '#FFFFFF' 
+                            }}>
                         {unappliedCount}
                       </span>
                     )}

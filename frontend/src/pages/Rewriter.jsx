@@ -209,10 +209,11 @@ function Rewriter() {
               <p className="style={{color: 'var(--color-text-primary)'}} whitespace-pre-wrap leading-relaxed">{rewrittenText}</p>
             ) : (
               <div className="flex flex-col items-center justify-center h-full gap-2 opacity-40">
-                <svg className="w-10 h-10 text-gray" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}
+                     style={{ color: '#20242C' }}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
                 </svg>
-                <p className="text-gray text-sm">Rewritten text will appear here</p>
+                <p className="text-sm" style={{ color: '#20242C' }}>Rewritten text will appear here</p>
               </div>
             )}
           </div>
@@ -252,10 +253,11 @@ function Rewriter() {
               <div className="style={{color: 'var(--color-text-primary)'}} whitespace-pre-wrap">{rewrittenText}</div>
             ) : (
               <div className="flex flex-col items-center justify-center h-full gap-3 opacity-50">
-                <svg className="w-12 h-12 text-gray" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}
+                     style={{ color: '#20242C' }}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
                 </svg>
-                <p className="text-gray text-sm">Rewritten text will appear here</p>
+                <p className="text-sm" style={{ color: '#20242C' }}>Rewritten text will appear here</p>
               </div>
             )}
           </div>
