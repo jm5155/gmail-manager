@@ -507,7 +507,8 @@ function Inbox() {
         {showBatchDelete && (
           <div className="flex items-center gap-2 mt-2 p-3 rounded-lg"
                style={{ background: 'var(--surface)', border: '1px solid var(--border-default)' }}>
-            <span className="text-xs style={{ color: 'var(--color-text-secondary)' }} whitespace-nowrap">Delete by:</span>
+            <span className="text-xs whitespace-nowrap" 
+                  style={{ color: 'var(--color-text-secondary)' }}>Delete by:</span>
 
             {/* Mode toggle */}
             <div className="flex rounded-md overflow-hidden" style={{ border: '1px solid var(--border-default)' }}>
@@ -518,7 +519,7 @@ function Inbox() {
                   className="px-3 py-1.5 text-xs capitalize transition-colors"
                   style={{
                     background: batchMode === mode ? 'var(--color-primary)' : 'transparent',
-                    color: batchMode === mode ? '#fff' : 'var(--color-text-muted)',
+                    color: batchMode === mode ? '#FFFFFF' : 'var(--color-text-muted)',
                   }}
                 >
                   {mode}
@@ -531,8 +532,12 @@ function Inbox() {
               <select
                 value={batchValue}
                 onChange={e => setBatchValue(e.target.value)}
-                className="px-3 py-1.5 rounded-lg text-sm style={{ color: 'var(--color-text-primary)' }} outline-none"
-                style={{ background: 'var(--surface)', border: '1px solid var(--border-default)' }}
+                className="px-3 py-1.5 rounded-lg text-sm outline-none"
+                style={{ 
+                  background: 'var(--surface)', 
+                  border: '1px solid var(--border-default)',
+                  color: 'var(--color-text-primary)'
+                }}
               >
                 <option value="">Select label...</option>
                 {availableLabels.filter(l => l !== 'All').map(l => (
@@ -554,8 +559,11 @@ function Inbox() {
             <button
               onClick={handleBatchDelete}
               disabled={!batchValue || batchDeleting}
-              className="px-4 py-1.5 rounded-lg text-xs font-semibold style={{ color: 'var(--color-text-primary)' }} transition-all disabled:opacity-50"
-              style={{ background: '#DC2626' }}
+              className="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all disabled:opacity-50"
+              style={{ 
+                background: '#DC2626',
+                color: '#FFFFFF'
+              }}
             >
               {batchDeleting ? 'Deleting...' : 'Delete All Matching'}
             </button>
@@ -563,7 +571,12 @@ function Inbox() {
             {/* Cancel */}
             <button
               onClick={() => { setShowBatchDelete(false); setBatchValue(''); }}
-              className="style={{ color: 'var(--color-text-secondary)' }} hover:style={{ color: 'var(--color-text-primary)' }} text-lg leading-none"
+              className="text-lg leading-none transition-colors"
+              style={{ 
+                color: 'var(--color-text-secondary)'
+              }}
+              onMouseEnter={(e) => e.target.style.color = 'var(--color-text-primary)'}
+              onMouseLeave={(e) => e.target.style.color = 'var(--color-text-secondary)'}
             >×</button>
           </div>
         )}
