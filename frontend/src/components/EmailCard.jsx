@@ -113,8 +113,9 @@ function EmailCard({
         <div className="hidden md:flex items-center gap-4">
           {/* Sender Avatar */}
           <div
-            className="w-10 h-10 rounded-full flex items-center justify-center style={{color: 'var(--color-text-primary)'}} text-sm font-semibold flex-shrink-0"
+            className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0"
             style={{
+              color: 'var(--color-text-primary)',
               backgroundColor: avatarColor.bg,
             }}
           >
@@ -215,8 +216,9 @@ function EmailCard({
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5 flex-1 min-w-0">
               <div
-                className="w-8 h-8 rounded-full flex items-center justify-center style={{color: 'var(--color-text-primary)'}} text-xs font-semibold flex-shrink-0"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0"
                 style={{
+                  color: 'var(--color-text-primary)',
                   backgroundColor: avatarColor.bg,
                 }}
               >

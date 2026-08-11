@@ -87,7 +87,7 @@ function Quarantine() {
             </svg>
           </div>
           <div>
-            <h1 className="text-xl font-bold style={{color: 'var(--color-text-primary)'}}">Quarantine</h1>
+            <h1 className="text-xl font-bold" style={{ color: 'var(--color-text-primary)' }}>Quarantine</h1>
             <p className="text-sm text-gray">
               {emails.length} email{emails.length !== 1 ? 's' : ''} flagged as suspicious
             </p>
@@ -99,7 +99,7 @@ function Quarantine() {
       <div className="px-3 py-6 md:px-6 overflow-y-auto" style={{ height: 'calc(100vh - 100px)' }}>
         {loading && (
           <div className="flex flex-col items-center justify-center h-64 gap-4">
-            <div className="w-10 h-10 border-3 border-danger border-t-transparent rounded-full animate-spin" style={{ borderWidth: '3px' }}></div>
+            <div className="w-10 h-10 rounded-full animate-spin" style={{ borderWidth: '3px', borderStyle: 'solid', borderColor: 'var(--color-danger)', borderTopColor: 'transparent' }}></div>
             <p className="text-gray">Loading quarantined emails...</p>
           </div>
         )}
@@ -137,7 +137,7 @@ function Quarantine() {
                 </div>
 
                 {/* Email Info */}
-                <h3 className="text-sm font-semibold style={{color: 'var(--color-text-primary)'}} mb-1">{email.subject || '(No Subject)'}</h3>
+                <h3 className="text-sm font-semibold mb-1" style={{ color: 'var(--color-text-primary)' }}>{email.subject || '(No Subject)'}</h3>
                 <p className="text-xs text-gray mb-2">From: {email.sender}</p>
 
                 {/* Threat Reason */}

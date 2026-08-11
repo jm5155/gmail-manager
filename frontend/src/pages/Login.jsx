@@ -1,5 +1,5 @@
 /**
- * Login.jsx — Google OAuth Login Page
+ * Login.jsx - Google OAuth Login Page
  * Modern Minimalism + Soft Neumorphism + Premium SaaS
  * Light mode with subtle depth and clean typography
  */
@@ -43,16 +43,16 @@ function Login() {
   async function handleLogin() {
     console.log('[LOGIN DEBUG] handleLogin called');
     console.log('[LOGIN DEBUG] API_BASE:', API_BASE);
-    
+
     setIsLoading(true);
     setError('');
 
     try {
       console.log('[LOGIN DEBUG] Fetching auth URL from:', `${API_BASE}/auth/login`);
-      
+
       const res = await apiGet('/auth/login');
       console.log('[LOGIN DEBUG] Response status:', res.status);
-      
+
       const data = await res.json();
       console.log('[LOGIN DEBUG] Response data:', data);
 
@@ -63,17 +63,13 @@ function Login() {
         return;
       }
 
-      console.log('[LOGIN DEBUG] Opening popup with URL:', data.auth_url);
+      console.log('[LOGIN DEBUG] Opening popup URL:', data.auth_url);
 
-      // CHANGE: Use redirect instead of popup to avoid popup blockers
-      // Store a flag that we're in OAuth flow
+      // Store flag that we're in OAuth flow
       sessionStorage.setItem('oauth_in_progress', 'true');
-      
+
       // Redirect to Google OAuth (same tab, more reliable)
       window.location.href = data.auth_url;
-      
-      // Note: After OAuth completes, backend will redirect back to frontend
-      // The frontend will detect oauth_in_progress and navigate to /inbox
 
     } catch (err) {
       console.error('[LOGIN] Error:', err);
@@ -85,12 +81,14 @@ function Login() {
   if (checkingAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center"
-           style={{ background: 'var(--color-background)' }}>
-        <div className="w-8 h-8 border-3 rounded-full animate-spin"
-             style={{ 
-               borderColor: 'var(--color-primary)',
-               borderTopColor: 'transparent'
-             }}>
+        style={{ background: 'var(--color-background)' }}>
+        <div className="w-8 h-8 rounded-full animate-spin"
+          style={{
+            borderWidth: '3px',
+            borderStyle: 'solid',
+            borderColor: 'var(--color-primary)',
+            borderTopColor: 'transparent',
+          }}>
         </div>
       </div>
     );
@@ -98,52 +96,52 @@ function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4"
-         style={{ background: 'var(--color-background)' }}>
+      style={{ background: 'var(--color-background)' }}>
 
       {/* Login Card - Soft Neumorphic Surface */}
       <div className="w-full max-w-md">
         <div className="p-10 text-center"
-             style={{
-               background: 'var(--color-surface)',
-               borderRadius: 'var(--radius-3xl)',
-               boxShadow: 'var(--shadow-neumorphic-lg)',
-               border: '1px solid var(--color-border)',
-             }}>
+          style={{
+            background: 'var(--color-surface)',
+            borderRadius: 'var(--radius-3xl)',
+            boxShadow: 'var(--shadow-neumorphic-lg)',
+            border: '1px solid var(--color-border)',
+          }}>
 
-          {/* App Logo - Envelope icon with neumorphic container */}
+          {/* App Logo - Envelope icon in neumorphic container */}
           <div className="mb-6 flex justify-center">
             <div className="w-20 h-20 flex items-center justify-center"
-                 style={{
-                   background: 'var(--color-surface)',
-                   borderRadius: 'var(--radius-2xl)',
-                   boxShadow: 'var(--shadow-neumorphic-sm)',
-                 }}>
-              <svg className="w-10 h-10" 
-                   style={{ color: 'var(--color-primary)' }} 
-                   fill="none" 
-                   viewBox="0 0 24 24" 
-                   stroke="currentColor" 
-                   strokeWidth={1.8}>
+              style={{
+                background: 'var(--color-surface)',
+                borderRadius: 'var(--radius-2xl)',
+                boxShadow: 'var(--shadow-neumorphic-sm)',
+              }}>
+              <svg className="w-10 h-10"
+                style={{ color: 'var(--color-primary)' }}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.8}>
                 <path strokeLinecap="round" strokeLinejoin="round"
-                      d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                  d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"/>
               </svg>
             </div>
           </div>
 
           {/* App Title */}
-          <h1 className="text-3xl font-bold mb-2" 
-              style={{ color: 'var(--color-text-primary)' }}>
+          <h1 className="text-3xl font-bold mb-2"
+            style={{ color: 'var(--color-text-primary)' }}>
             Gmail Manager
           </h1>
-          
+
           {/* Subtitle */}
-          <p className="mb-8 text-sm leading-relaxed" 
-             style={{ color: 'var(--color-text-secondary)' }}>
+          <p className="mb-8 text-sm leading-relaxed"
+            style={{ color: 'var(--color-text-secondary)' }}>
             AI-powered email management. Smart labeling,<br />
-            scam detection, and intelligent sorting.
+            scam detection, & intelligent sorting.
           </p>
 
-          {/* Sign in Button */}
+          {/* Sign In Button */}
           <button
             onClick={handleLogin}
             disabled={isLoading}
@@ -173,19 +171,19 @@ function Login() {
           {/* Error Message */}
           {error && (
             <div className="mt-4 p-3 rounded-lg text-sm"
-                 style={{
-                   background: 'var(--color-danger-bg)',
-                   color: 'var(--color-danger)',
-                   border: '1px solid var(--color-danger-border)',
-                 }}>
+              style={{
+                background: 'var(--color-danger-bg)',
+                color: 'var(--color-danger)',
+                border: '1px solid var(--color-danger-border)',
+              }}>
               {error}
             </div>
           )}
 
           {/* Trust Badge */}
-          <p className="mt-6 text-xs" 
-             style={{ color: 'var(--color-text-muted)' }}>
-            Secure OAuth 2.0 authentication via Google
+          <p className="mt-6 text-xs"
+            style={{ color: 'var(--color-text-muted)' }}>
+            Secure OAuth 2.0 authentication with Google
           </p>
         </div>
       </div>

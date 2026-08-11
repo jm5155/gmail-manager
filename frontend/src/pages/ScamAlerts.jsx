@@ -96,7 +96,7 @@ function ScamAlerts() {
     <div className="h-screen overflow-hidden">
       {/* Header */}
       <div className="px-6 py-4 pt-16 md:pt-4" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-        <h1 className="text-xl font-bold style={{color: 'var(--color-text-primary)'}} mb-1">Scam Alerts</h1>
+        <h1 className="text-xl font-bold mb-1" style={{ color: 'var(--color-text-primary)' }}>Scam Alerts</h1>
         <p className="text-sm text-gray">
           Emails flagged by AI with elevated scam probability scores.
         </p>
@@ -125,7 +125,7 @@ function ScamAlerts() {
       <div className="px-3 py-6 md:px-6 overflow-y-auto" style={{ height: 'calc(100vh - 160px)' }}>
         {loading && (
           <div className="flex flex-col items-center justify-center h-64 gap-4">
-            <div className="w-10 h-10 border-3 border-primary border-t-transparent rounded-full animate-spin" style={{ borderWidth: '3px' }}></div>
+            <div className="w-10 h-10 rounded-full animate-spin" style={{ borderWidth: '3px', borderStyle: 'solid', borderColor: 'var(--color-primary)', borderTopColor: 'transparent' }}></div>
             <p className="text-gray">Loading scam alerts...</p>
           </div>
         )}
@@ -150,9 +150,9 @@ function ScamAlerts() {
                   onClick={() => handleReanalyze(email.email_id)}
                   disabled={reanalyzing[email.email_id]}
                   className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray
-                             transition-all duration-200 hover:style={{color: 'var(--color-text-primary)'}} hover:bg-surface
+                             transition-all duration-200 hover: hover:bg-surface
                              disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ border: '1px solid var(--border-default)' }}
+                  style={{ color: 'var(--color-text-primary)', border: '1px solid var(--border-default)' }}
                 >
                   {reanalyzing[email.email_id] ? (
                     <span className="flex items-center gap-1.5">

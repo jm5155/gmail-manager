@@ -122,7 +122,7 @@ function LandingPage() {
           text-decoration: none;
           font-size: 0.9375rem;
           font-weight: 500;
-          transition: color var(--transition-fast);
+          transition: color 'var(--transition-fast)';
         }
         .nav-link-underline::after {
           content: '';
@@ -132,12 +132,12 @@ function LandingPage() {
           height: 2px;
           bottom: -4px;
           left: 0;
-          background-color: var(--color-primary);
+          background-color: 'var(--color-primary)';
           transform-origin: bottom right;
           transition: transform 0.25s ease-out;
         }
         .nav-link-underline:hover {
-          color: var(--color-text-primary);
+          color: 'var(--color-text-primary)';
         }
         .nav-link-underline:hover::after {
           transform: scaleX(1);
@@ -146,11 +146,11 @@ function LandingPage() {
 
         /* CARD HOVER: lift + shadow, border glow blue, icon scales */
         .feature-card {
-          background-color: var(--color-surface);
-          border-radius: var(--radius-lg);
+          background-color: 'var(--color-surface)';
+          border-radius: 'var(--radius-lg)';
           padding: 2rem;
-          border: 1px solid var(--color-border);
-          box-shadow: var(--shadow-sm);
+          border: 1px solid 'var(--color-border)';
+          box-shadow: 'var(--shadow-sm)';
           transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
           display: flex;
           flex-direction: column;
@@ -159,8 +159,8 @@ function LandingPage() {
         }
         .feature-card:hover {
           transform: translateY(-4px);
-          box-shadow: var(--shadow-md);
-          border-color: var(--color-primary);
+          box-shadow: 'var(--shadow-md)';
+          border-color: 'var(--color-primary)';
         }
         .feature-card:hover .feature-icon-container {
           transform: scale(1.1);
@@ -935,7 +935,7 @@ function LandingPage() {
           maxWidth: '100%'
         }}
       >
-        <div className="container mx-auto px-4 sm:px-6 py-12 max-w-7xl style={{ width: '100%', maxWidth: '100%' }}">
+          <div className="container mx-auto px-4 sm:px-6 py-12 max-w-7xl" style={{ width: '100%', maxWidth: '100%' }}>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-12">
             {/* Brand */}
             <div className="min-w-0" style={{ width: '100%' }}>

@@ -95,7 +95,7 @@ function Rewriter() {
     <div className="h-screen overflow-hidden">
       {/* Header */}
       <div className="px-6 py-4 pt-16 md:pt-4" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-        <h1 className="text-xl font-bold style={{color: 'var(--color-text-primary)'}} mb-1">AI Email Rewriter</h1>
+        <h1 className="text-xl font-bold mb-1" style={{ color: 'var(--color-text-primary)' }}>AI Email Rewriter</h1>
         <p className="text-sm text-gray">
           Paste an email and let AI transform it. Works independently of Gmail.
         </p>
@@ -106,7 +106,7 @@ function Rewriter() {
         {/* LEFT COLUMN — Original (Desktop) */}
         <div className="flex-1 flex flex-col">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-semibold style={{color: 'var(--color-text-primary)'}}">Original</h2>
+            <h2 className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>Original</h2>
             <span className="text-xs text-gray">{originalText.length} / 5000 chars</span>
           </div>
 
@@ -153,9 +153,9 @@ function Rewriter() {
                   setActiveCommand(null);
                 }}
                 onKeyDown={(e) => e.key === 'Enter' && handleCustomSubmit()}
-                className="flex-1 px-4 py-2 rounded-lg text-sm style={{color: 'var(--color-text-primary)'}} placeholder-text-gray
+                className="flex-1 px-4 py-2 rounded-lg text-sm placeholder-text-gray
                            outline-none transition-all duration-200 focus:ring-2 focus:ring-primary"
-                style={{ background: 'var(--surface)', border: '1px solid var(--border-default)' }}
+                style={{ color: 'var(--color-text-primary)', background: 'var(--surface)', border: '1px solid var(--border-default)' }}
               />
               <button
                 onClick={handleCustomSubmit}
@@ -174,13 +174,13 @@ function Rewriter() {
         {/* RIGHT COLUMN — Rewritten (Desktop) */}
         <div className="flex-1 flex flex-col">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-semibold style={{color: 'var(--color-text-primary)'}}">Rewritten</h2>
+            <h2 className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>Rewritten</h2>
             {rewrittenText && (
               <button
                 onClick={handleCopy}
                 className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium text-gray
-                           transition-all duration-200 hover:style={{color: 'var(--color-text-primary)'}} hover:bg-surface"
-                style={{ border: '1px solid var(--border-default)' }}
+                           transition-all duration-200 hover: hover:bg-surface"
+                style={{ color: 'var(--color-text-primary)', border: '1px solid var(--border-default)' }}
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9.75a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
@@ -200,11 +200,11 @@ function Rewriter() {
           >
             {loading ? (
               <div className="flex flex-col items-center justify-center h-full gap-3">
-                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-8 h-8 rounded-full animate-spin" style={{ borderWidth: '2px', borderStyle: 'solid', borderColor: 'var(--color-primary)', borderTopColor: 'transparent' }}></div>
                 <p className="text-gray text-sm">AI is rewriting...</p>
               </div>
             ) : rewrittenText ? (
-              <p className="style={{color: 'var(--color-text-primary)'}} whitespace-pre-wrap leading-relaxed">{rewrittenText}</p>
+              <p className="whitespace-pre-wrap leading-relaxed" style={{ color: 'var(--color-text-primary)' }}>{rewrittenText}</p>
             ) : (
               <div className="flex flex-col items-center justify-center h-full gap-2 opacity-40">
                 <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}
@@ -220,7 +220,7 @@ function Rewriter() {
           {providerUsed && (
             <div className="flex items-center justify-between mt-2">
               <span className="text-xs text-gray">
-                Provider: <span className="style={{color: 'var(--color-text-primary)'}} font-medium">{providerUsed}</span>
+                Provider: <span className="font-medium" style={{ color: 'var(--color-text-primary)' }}>{providerUsed}</span>
               </span>
               <span className="text-xs text-gray">
                 {charCounts.original} → {charCounts.rewritten} chars
@@ -244,11 +244,11 @@ function Rewriter() {
           >
             {loading ? (
               <div className="flex flex-col items-center justify-center h-full gap-3">
-                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-8 h-8 rounded-full animate-spin" style={{ borderWidth: '2px', borderStyle: 'solid', borderColor: 'var(--color-primary)', borderTopColor: 'transparent' }}></div>
                 <p className="text-gray text-sm">Rewriting...</p>
               </div>
             ) : rewrittenText ? (
-              <div className="style={{color: 'var(--color-text-primary)'}} whitespace-pre-wrap">{rewrittenText}</div>
+              <div className="whitespace-pre-wrap" style={{ color: 'var(--color-text-primary)' }}>{rewrittenText}</div>
             ) : (
               <div className="flex flex-col items-center justify-center h-full gap-3 opacity-50">
                 <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}
@@ -264,11 +264,12 @@ function Rewriter() {
           {rewrittenText && (
             <div className="flex justify-end mt-3">
               <button
-                onClick={handleCopy}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium style={{color: 'var(--color-text-primary)'}} transition-all duration-200"
-                style={{
-                  background: 'linear-gradient(135deg, var(--color-primary) 0%, #7C3AED 100%)',
-                }}
+              onClick={handleCopy}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium transition-all duration-200"
+              style={{
+                color: 'var(--color-text-primary)',
+                background: 'linear-gradient(135deg, var(--color-primary) 0%, #7C3AED 100%)',
+              }}
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9.75a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
@@ -282,7 +283,7 @@ function Rewriter() {
           {providerUsed && (
             <div className="flex items-center justify-between mt-3 text-xs text-gray">
               <span>
-                Provider: <span className="style={{color: 'var(--color-text-primary)'}} font-medium">{providerUsed}</span>
+                Provider: <span className="font-medium" style={{ color: 'var(--color-text-primary)' }}>{providerUsed}</span>
               </span>
               <span>
                 {charCounts.original} → {charCounts.rewritten} chars
@@ -306,7 +307,7 @@ function Rewriter() {
               value={originalText}
               onChange={(e) => setOriginalText(e.target.value.slice(0, 5000))}
               placeholder="Paste your email..."
-              className="flex-1 bg-transparent text-sm style={{color: 'var(--color-text-primary)'}} placeholder-text-gray outline-none"
+              className="flex-1 bg-transparent text-sm placeholder-text-gray outline-none" style={{ color: 'var(--color-text-primary)' }}
             />
 
             {/* Submit button (up-arrow in circle) */}
@@ -324,7 +325,7 @@ function Rewriter() {
                 background: originalText.trim() && !loading ? 'linear-gradient(135deg, var(--color-primary) 0%, #7C3AED 100%)' : '#475569',
               }}
             >
-              <svg className="w-4 h-4 style={{color: 'var(--color-text-primary)'}}" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <svg className="w-4 h-4" style={{ color: 'var(--color-text-primary)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" />
               </svg>
             </button>

@@ -78,7 +78,7 @@ function AnimatedBackground() {
             transform: translate(0, 0);
           }
           50% {
-            transform: translate(var(--x-move), var(--y-move));
+            transform: translate('var(--x-move)', 'var(--y-move)');
           }
         }
       `}</style>

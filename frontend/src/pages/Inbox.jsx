@@ -380,8 +380,8 @@ function Inbox() {
       <div className="px-6 py-4 pt-16 md:pt-4" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
           <div>
-            <h1 className="text-xl font-bold style={{ color: 'var(--color-text-primary)' }}">Inbox</h1>
-            <p className="text-sm style={{ color: 'var(--color-text-secondary)' }} mt-0.5">
+            <h1 className="text-xl font-bold" style={{ color: 'var(--color-text-primary)' }}>Inbox</h1>
+            <p className="text-sm mt-0.5" style={{ color: 'var(--color-text-secondary)' }}>
               {emailStats.total_analyzed} analyzed · {emailStats.total_flagged || 0} flagged
             </p>
           </div>
@@ -400,8 +400,8 @@ function Inbox() {
                   <option key={n} value={n}>{n} emails</option>
                 ))}
               </select>
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-navy-700 style={{ color: 'var(--color-text-primary)' }} text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10"
-                   style={{ border: '1px solid var(--border-default)' }}>
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-navy-700 text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10"
+                   style={{ color: 'var(--color-text-primary)', border: '1px solid var(--border-default)' }}>
                 Batch size for analysis
               </div>
             </div>
@@ -546,8 +546,8 @@ function Inbox() {
                 placeholder="Sender name or email..."
                 value={batchValue}
                 onChange={e => setBatchValue(e.target.value)}
-                className="flex-1 px-3 py-1.5 rounded-lg text-sm style={{ color: 'var(--color-text-primary)' }} outline-none"
-                style={{ background: 'var(--surface)', border: '1px solid var(--border-default)' }}
+                className="flex-1 px-3 py-1.5 rounded-lg text-sm outline-none"
+                style={{ color: 'var(--color-text-primary)', background: 'var(--surface)', border: '1px solid var(--border-default)' }}
               />
             )}
 
@@ -591,20 +591,21 @@ function Inbox() {
             </svg>
             <div className="flex-1">
               <p className="text-sm font-semibold" style={{ color: '#FBBF24' }}>No labels found</p>
-              <p className="text-xs style={{ color: 'var(--color-text-secondary)' }} mt-0.5">
+              <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-secondary)' }}>
                 You must create at least one label before running analysis. The AI needs labels to classify your emails.
               </p>
             </div>
             <button
               onClick={() => navigate('/settings')}
-              className="px-4 py-2 rounded-lg text-xs font-semibold style={{ color: 'var(--color-text-primary)' }} flex-shrink-0 transition-all hover:scale-[1.02]"
-              style={{ background: 'linear-gradient(135deg, #F59E0B, #D97706)' }}
+              className="px-4 py-2 rounded-lg text-xs font-semibold flex-shrink-0 transition-all hover:scale-[1.02]"
+              style={{ color: 'var(--color-text-primary)', background: 'linear-gradient(135deg, #F59E0B, #D97706)' }}
             >
               Go to Settings
             </button>
             <button
               onClick={() => setShowNoLabelsWarning(false)}
-              className="style={{ color: 'var(--color-text-secondary)' }} hover:style={{ color: 'var(--color-text-primary)' }} text-lg leading-none flex-shrink-0 ml-1"
+              className="text-lg leading-none flex-shrink-0 ml-1"
+              style={{ color: 'var(--color-text-secondary)' }}
             >×</button>
           </div>
         )}
@@ -628,7 +629,7 @@ function Inbox() {
                     }}
                   />
                 </div>
-                <span className="text-xs style={{ color: 'var(--color-text-secondary)' }} whitespace-nowrap">
+                <span className="text-xs whitespace-nowrap" style={{ color: 'var(--color-text-secondary)' }}>
                   Initializing...
                 </span>
               </div>
@@ -636,7 +637,7 @@ function Inbox() {
               <ProgressBar current={progress} total={total} />
             )}
             {currentEmail && (
-              <p className="text-xs style={{ color: 'var(--color-text-secondary)' }} mt-1.5 truncate">{currentEmail}</p>
+              <p className="text-xs mt-1.5 truncate" style={{ color: 'var(--color-text-secondary)' }}>{currentEmail}</p>
             )}
           </div>
         )}
@@ -645,7 +646,7 @@ function Inbox() {
         <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
           {/* Search Input */}
           <div className="relative flex-1">
-            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 style={{ color: 'var(--color-text-secondary)' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--color-text-secondary)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
             </svg>
             <input
@@ -686,8 +687,8 @@ function Inbox() {
         {/* Loading */}
         {loading && (
           <div className="flex flex-col items-center justify-center h-64 gap-4">
-            <div className="w-10 h-10 border-3 style={{ borderColor: 'var(--color-primary)' }} border-t-transparent rounded-full animate-spin" style={{ borderWidth: '3px' }}></div>
-            <p className="style={{ color: 'var(--color-text-secondary)' }}">Loading emails...</p>
+            <div className="w-10 h-10 rounded-full animate-spin" style={{ borderWidth: '3px', borderStyle: 'solid', borderColor: 'var(--color-primary)', borderTopColor: 'transparent' }}></div>
+            <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Loading emails...</p>
           </div>
         )}
 
@@ -703,12 +704,12 @@ function Inbox() {
         {!loading && !error && emails.length === 0 && (
           <div className="flex flex-col items-center justify-center h-64 gap-3">
             <div className="text-5xl opacity-30">📭</div>
-            <p className="style={{ color: 'var(--color-text-secondary)' }} text-center">
+            <p className="text-center" style={{ color: 'var(--color-text-secondary)' }}>
               {searchQuery || labelFilter !== 'All'
                 ? 'No emails match your filters.'
                 : 'No analyzed emails yet. Click "Analyze Emails" to get started!'}
             </p>
-            <p className="style={{ color: 'var(--color-text-secondary)' }} text-xs">
+            <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
               Showing {emails.length} of {totalCount} emails
             </p>
           </div>
@@ -716,7 +717,7 @@ function Inbox() {
 
         {/* Result Count */}
         {!loading && emails.length > 0 && (
-          <p className="text-xs style={{ color: 'var(--color-text-secondary)' }} mb-3">
+          <p className="text-xs mb-3" style={{ color: 'var(--color-text-secondary)' }}>
             Showing {emails.length} of {totalCount} emails
           </p>
         )}
