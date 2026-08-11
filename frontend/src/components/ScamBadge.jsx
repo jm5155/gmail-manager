@@ -1,5 +1,5 @@
 /**
- * ScamBadge.jsx — Scam Score Badge Component (Unified Neumorphic Design)
+ * ScamBadge.jsx — Scam Score Badge Component (Light Design System)
  * Color-coded risk badge with inline accordion expansion for score details.
  * 
  * Props:
@@ -12,98 +12,146 @@
 
 import React from 'react';
 
-// Risk level configuration based on score ranges
-function getRiskLevel(score) {
-  if (score === 0) return { label: 'Safe', badge: 'badge-success', icon: '✅' };
-  if (score >= 70) return { label: 'High Risk', badge: 'badge-danger', icon: '🚨' };
-  if (score >= 30) return { label: 'Medium Risk', badge: 'badge-warning', icon: '⚠️' };
-  return { label: 'Low Risk', badge: 'badge-success', icon: '✅' };
-}
+function ScamBadge({ score = 0, reason = '', indicators = [], expanded = false, onToggle = () => {} }) {
+  const getRiskLevel = (score) => {
+    if (score >= 70) return 'high';
+    if (score >= 40) return 'medium';
+    return 'low';
+  };
 
-// Truncate URL to domain + path only, no query strings
-function truncateUrl(url) {
-  try {
-    const urlObj = new URL(url);
-    const domain = urlObj.hostname;
-    const path = urlObj.pathname;
-    return `${domain}${path}`;
-  } catch {
-    // If URL parsing fails, truncate to 50 chars
-    return url.length > 50 ? url.substring(0, 50) + '...' : url;
-  }
-}
+  const getRiskConfig = (level) => {
+    const configs = {
+      low: {
+        label: 'Safe',
+        color: '#27AE72',
+        bg: 'rgba(39, 174, 114, 0.1)',
+        border: 'rgba(39, 174, 114, 0.2)',
+      },
+      medium: {
+        label: 'Suspicious',
+        color: '#E5A23C',
+        bg: 'rgba(229, 162, 60, 0.1)',
+        border: 'rgba(229, 162, 60, 0.2)',
+      },
+      high: {
+        label: 'Dangerous',
+        color: '#E05A67',
+        bg: 'rgba(224, 90, 103, 0.1)',
+        border: 'rgba(224, 90, 103, 0.2)',
+      },
+    };
+    return configs[level];
+  };
 
-function ScamBadge({ score, reason, indicators = [], expanded = false, onToggle }) {
-  const risk = getRiskLevel(score);
+  const riskLevel = getRiskLevel(score);
+  const config = getRiskConfig(riskLevel);
 
   return (
-    <div className="flex flex-col gap-2">
-      {/* Badge Button */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          if (onToggle) onToggle();
+    <div className="w-full">
+      <div
+        onClick={onToggle}
+        className="w-full rounded-xl transition-all cursor-pointer"
+        style={{
+          background: config.bg,
+          border: `1px solid ${config.border}`,
+          padding: '12px 16px',
         }}
-        className={`badge ${risk.badge} cursor-pointer transition-all hover:scale-105 active:scale-95`}
       >
-        <span>{risk.icon}</span>
-        <span>{risk.label}</span>
-        <span className="font-bold">{score}%</span>
-        <span className="text-xs">{expanded ? '▲' : '▼'}</span>
-      </button>
-
-      {/* Inline Accordion Content */}
-      <div 
-        className="accordion-content"
-        data-expanded={expanded}
-      >
-        {expanded && (
-          <div className="neu-card p-4 space-y-3 animate-fadeIn">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-semibold text-white">Scam Analysis</h4>
-              <span className="text-lg">{risk.icon}</span>
+        {/* Badge Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {/* Risk Icon */}
+            <div
+              className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{
+                background: config.color,
+                color: '#FFFFFF',
+              }}
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.8}
+              >
+                {riskLevel === 'low' ? (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z"
+                  />
+                ) : (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+                  />
+                )}
+              </svg>
             </div>
 
-            {/* Score Bar */}
+            {/* Label + Score */}
             <div>
-              <div className="flex justify-between text-xs text-gray mb-1.5">
-                <span>Risk Score</span>
-                <span className="font-semibold" style={{ color: `var(--${score >= 70 ? 'danger' : score >= 30 ? 'warning' : 'success'})` }}>
-                  {score}%
-                </span>
+              <div className="text-sm font-semibold" style={{ color: '#20242C' }}>
+                {config.label}
               </div>
-              <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: 'var(--surface-light)' }}>
-                <div
-                  className="h-full rounded-full transition-all duration-500"
-                  style={{
-                    width: `${score}%`,
-                    background: score >= 70 ? 'var(--danger)' : score >= 30 ? 'var(--warning)' : 'var(--success)',
-                  }}
-                />
+              <div className="text-xs" style={{ color: '#687386' }}>
+                Risk Score: {score}/100
               </div>
             </div>
+          </div>
 
-            {/* Indicators */}
-            {indicators.length > 0 && (
-              <div>
-                <h5 className="text-xs font-medium text-white mb-1.5">Detected Indicators:</h5>
-                <ul className="space-y-1">
+          {/* Expand Arrow */}
+          <svg
+            className="w-5 h-5 transition-transform flex-shrink-0"
+            style={{
+              color: config.color,
+              transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+            }}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={1.8}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+
+        {/* Expanded Details */}
+        {expanded && (
+          <div
+            className="mt-4 pt-4"
+            style={{
+              borderTop: `1px solid ${config.border}`,
+            }}
+          >
+            {/* Detected Indicators */}
+            {indicators && indicators.length > 0 && (
+              <div className="mb-4">
+                <h5 className="text-xs font-medium mb-2" style={{ color: '#20242C' }}>
+                  Detected Indicators:
+                </h5>
+                <ul className="space-y-1.5">
                   {indicators.map((indicator, idx) => (
-                    <li key={idx} className="text-xs text-gray flex items-start gap-1.5">
-                      <span className="text-danger mt-0.5">•</span>
-                      <span className="truncate-url">{truncateUrl(indicator)}</span>
+                    <li key={idx} className="flex items-start gap-2 text-xs" style={{ color: '#687386' }}>
+                      <span style={{ color: config.color, marginTop: '2px' }}>•</span>
+                      <span>{indicator}</span>
                     </li>
                   ))}
                 </ul>
               </div>
             )}
 
-            {/* Reason */}
+            {/* AI Analysis */}
             {reason && (
               <div>
-                <h5 className="text-xs font-medium text-white mb-1.5">Analysis:</h5>
-                <p className="text-xs text-gray leading-relaxed">{reason}</p>
+                <h5 className="text-xs font-medium mb-1.5" style={{ color: '#20242C' }}>
+                  Analysis:
+                </h5>
+                <p className="text-xs leading-relaxed" style={{ color: '#687386' }}>
+                  {reason}
+                </p>
               </div>
             )}
           </div>

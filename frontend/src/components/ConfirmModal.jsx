@@ -1,5 +1,5 @@
 /**
- * ConfirmModal.jsx — Confirmation Modal Component (Unified Neumorphic Design)
+ * ConfirmModal.jsx — Confirmation Modal Component (Light Design System)
  * Centered overlay modal with title, message, Cancel + Confirm buttons.
  * Used before destructive actions (e.g., deleting emails, resetting database).
  * 
@@ -11,7 +11,7 @@
  *   onConfirm (fn): Callback when confirmed
  *   onCancel (fn): Callback when cancelled
  * 
- * Updated: 2026-08-10 - Unified neumorphic design system
+ * Updated: 2026-08-11 - Light design system
  */
 
 import React from 'react';
@@ -27,10 +27,20 @@ function ConfirmModal({
   return (
     <div
       className="modal-overlay fixed inset-0 z-[200] flex items-center justify-center"
+      style={{
+        background: 'rgba(32, 36, 44, 0.4)',
+        backdropFilter: 'blur(4px)',
+      }}
       onClick={onCancel}
     >
       <div
         className="modal-content w-full max-w-md mx-4 animate-fadeIn"
+        style={{
+          background: '#F8F9FB',
+          borderRadius: '20px',
+          padding: '32px',
+          boxShadow: '0 20px 60px -10px rgba(32, 36, 44, 0.2), 0 0 0 1px rgba(225, 229, 235, 0.8)',
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Warning Icon */}
@@ -38,8 +48,8 @@ function ConfirmModal({
           <div
             className="w-14 h-14 rounded-full flex items-center justify-center"
             style={{
-              background: isDangerous ? 'var(--danger-bg)' : 'var(--warning-bg)',
-              border: `2px solid ${isDangerous ? 'var(--danger-border)' : 'var(--warning-border)'}`,
+              background: isDangerous ? 'rgba(224, 90, 103, 0.1)' : 'rgba(229, 162, 60, 0.1)',
+              border: `2px solid ${isDangerous ? 'rgba(224, 90, 103, 0.2)' : 'rgba(229, 162, 60, 0.2)'}`,
             }}
           >
             <svg
@@ -47,8 +57,8 @@ function ConfirmModal({
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
-              strokeWidth={1.5}
-              style={{ color: isDangerous ? 'var(--danger)' : 'var(--warning)' }}
+              strokeWidth={1.8}
+              style={{ color: isDangerous ? '#E05A67' : '#E5A23C' }}
             >
               <path
                 strokeLinecap="round"
@@ -60,10 +70,18 @@ function ConfirmModal({
         </div>
 
         {/* Title */}
-        <h3 className="text-lg font-semibold text-white text-center mb-2">{title}</h3>
+        <h3
+          className="text-lg font-semibold text-center mb-2"
+          style={{ color: '#20242C' }}
+        >
+          {title}
+        </h3>
 
         {/* Message */}
-        <p className="text-sm text-gray text-center mb-6 leading-relaxed whitespace-pre-line">
+        <p
+          className="text-sm text-center mb-6 leading-relaxed whitespace-pre-line"
+          style={{ color: '#687386' }}
+        >
           {message}
         </p>
 
@@ -83,6 +101,16 @@ function ConfirmModal({
           </button>
         </div>
       </div>
+
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: scale(0.95); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.2s ease-out;
+        }
+      `}</style>
     </div>
   );
 }

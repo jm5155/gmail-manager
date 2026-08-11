@@ -1,6 +1,6 @@
 /**
- * ToastNotification.jsx — Toast Notification Component (Phase 9)
- * Top-right corner auto-dismiss toasts with success/warning/error types.
+ * ToastNotification.jsx — Toast Notification Component (Light Design System)
+ * Top-right corner auto-dismiss toasts with success/warning/error/info types.
  * 
  * Usage: import { ToastProvider, useToast } from './ToastNotification';
  * Wrap app in <ToastProvider>, then call toast.success('message') anywhere.
@@ -14,32 +14,42 @@ const ToastContext = createContext(null);
 // Toast type configurations
 const TOAST_TYPES = {
   success: {
-    color: '#22C55E',
-    bg: 'rgba(34, 197, 94, 0.12)',
-    border: 'rgba(34, 197, 94, 0.25)',
+    color: '#27AE72',
+    bg: '#ECFDF3',
+    border: '#27AE72',
     icon: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
     ),
   },
   warning: {
-    color: '#F59E0B',
-    bg: 'rgba(245, 158, 11, 0.12)',
-    border: 'rgba(245, 158, 11, 0.25)',
+    color: '#E5A23C',
+    bg: '#FFFAEB',
+    border: '#E5A23C',
     icon: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
       </svg>
     ),
   },
   error: {
-    color: '#EF4444',
-    bg: 'rgba(239, 68, 68, 0.12)',
-    border: 'rgba(239, 68, 68, 0.25)',
+    color: '#E05A67',
+    bg: '#FFF1F2',
+    border: '#E05A67',
     icon: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+  },
+  info: {
+    color: '#3B82F6',
+    bg: '#EFF6FF',
+    border: '#3B82F6',
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
       </svg>
     ),
   },
@@ -75,6 +85,7 @@ export function ToastProvider({ children }) {
     success: (msg, sub) => addToast('success', msg, sub),
     warning: (msg, sub) => addToast('warning', msg, sub),
     error: (msg, sub) => addToast('error', msg, sub),
+    info: (msg, sub) => addToast('info', msg, sub),
   };
 
   return (
@@ -92,8 +103,7 @@ export function ToastProvider({ children }) {
               style={{
                 background: config.bg,
                 border: `1px solid ${config.border}`,
-                backdropFilter: 'blur(20px)',
-                boxShadow: '0 10px 30px -5px rgba(0, 0, 0, 0.4)',
+                boxShadow: '0 4px 16px -2px rgba(32, 36, 44, 0.1)',
                 animation: 'slideIn 0.3s ease-out',
               }}
             >
@@ -101,16 +111,23 @@ export function ToastProvider({ children }) {
                 {config.icon}
               </span>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-text-white">{t.message}</p>
+                <p className="text-sm font-medium" style={{ color: '#20242C' }}>
+                  {t.message}
+                </p>
                 {t.subtext && (
-                  <p className="text-xs text-text-gray mt-0.5">{t.subtext}</p>
+                  <p className="text-xs mt-0.5" style={{ color: '#687386' }}>
+                    {t.subtext}
+                  </p>
                 )}
               </div>
               <button
                 onClick={() => removeToast(t.id)}
-                className="text-text-gray hover:text-text-white transition-colors flex-shrink-0"
+                className="flex-shrink-0 transition-colors"
+                style={{ color: '#9AA3B2' }}
+                onMouseEnter={(e) => e.currentTarget.style.color = '#687386'}
+                onMouseLeave={(e) => e.currentTarget.style.color = '#9AA3B2'}
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
