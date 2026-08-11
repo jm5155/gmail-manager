@@ -513,7 +513,7 @@ function Inbox() {
                   className="px-3 py-1.5 text-xs capitalize transition-colors"
                   style={{
                     background: batchMode === mode ? 'var(--color-primary)' : 'transparent',
-                    color: batchMode === mode ? '#fff' : 'var(--style={{ color: 'var(--color-text-muted)' }})',
+                    color: batchMode === mode ? '#fff' : 'var(--color-text-muted)',
                   }}
                 >
                   {mode}
