@@ -191,13 +191,11 @@ function LandingPage() {
           </div>
 
           {/* Headline */}
-          <h1 
-            style={{ 
-              fontSize: '3.75rem',
-              fontWeight: 800,
+          <h1
+            className="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-6"
+            style={{
               lineHeight: 1.1,
               color: '#20242C',
-              marginBottom: '1.5rem',
               letterSpacing: '-0.02em'
             }}
           >
@@ -207,12 +205,11 @@ function LandingPage() {
           </h1>
 
           {/* Subheading */}
-          <p 
-            style={{ 
-              fontSize: '1.25rem',
+          <p
+            className="text-base md:text-lg lg:text-xl mb-10"
+            style={{
               lineHeight: 1.6,
               color: '#687386',
-              marginBottom: '2.5rem',
               maxWidth: '42rem',
               margin: '0 auto 2.5rem'
             }}
@@ -222,7 +219,7 @@ function LandingPage() {
           </p>
 
           {/* CTA Buttons */}
-          <div className="flex items-center justify-center gap-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link 
               to="/login"
               style={{
@@ -277,7 +274,7 @@ function LandingPage() {
             boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
           }}
         >
-          <div className="grid grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
               <div key={index} className="text-center">
                 <div 
@@ -512,7 +509,7 @@ function LandingPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-6 mb-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-12">
             {securityFeatures.map((feature, index) => {
               const IconComponent = feature.icon;
               return (
@@ -659,7 +656,7 @@ function LandingPage() {
         }}
       >
         <div className="container mx-auto px-6 py-12">
-          <div className="grid grid-cols-4 gap-8 mb-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-12">
             {/* Brand */}
             <div>
               <div className="flex items-center gap-2 mb-4">
