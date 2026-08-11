@@ -431,25 +431,33 @@
   }
 
   /* SIDEBAR NAV ITEM */
+  /* NAVIGATION ITEMS - Sidebar */
   .nav-item {
-    color: var(--text-secondary);
-    border-radius: var(--radius-sm);
+    color: var(--color-text-secondary);
+    border-radius: var(--radius-md);
     padding: 10px 14px;
-    transition: background 0.2s ease, color 0.2s ease;
+    transition: background var(--transition-fast), 
+                color var(--transition-fast),
+                transform var(--transition-fast);
     cursor: pointer;
     text-decoration: none;
     display: flex;
     align-items: center;
     gap: 12px;
+    font-weight: 500;
   }
   .nav-item:hover {
-    background: var(--surface-light);
-    color: var(--text-primary);
+    background: var(--color-surface-hover);
+    color: var(--color-text-primary);
+    transform: translateX(2px);
   }
   .nav-item.active {
-    background: var(--surface-light);
-    color: var(--primary);
-    box-shadow: var(--neu-inset);
+    background: rgba(91, 92, 226, 0.08);
+    color: var(--color-primary);
+    font-weight: 600;
+  }
+  .nav-item.active svg {
+    color: var(--color-primary);
   }
 
   /* SETTINGS GRID — responsive panel layout */
