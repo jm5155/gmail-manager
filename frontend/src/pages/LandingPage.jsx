@@ -1,465 +1,795 @@
 /**
- * LandingPage.jsx — Complete Professional Landing Page
- * Based on exact specifications from GMAIL MANAGER Website Content Structure
+ * LandingPage.jsx — Professional Marketing Page
+ * Light Design System
  * 
- * Sections:
- * 1. Sticky Header/Navbar
- * 2. Hero Section with badge, headline, CTAs
- * 3. Stats Strip (4 metrics)
- * 4. Features Section (7 cards)
- * 5. AI Cascade Provider Status
- * 6. Architecture / How It Works
- * 7. Security Section
- * 8. Final CTA Section
- * 9. Footer
+ * Color Palette:
+ * - Background: #F1F3F6
+ * - Surface: #F8F9FB
+ * - Text Primary: #20242C
+ * - Text Secondary: #687386
+ * - Text Muted: #9AA3B2
+ * - Border: #E1E5EB
+ * - Primary: #5B5CE2
+ * - Success: #27AE72
+ * - Warning: #E5A23C
+ * - Danger: #E05A67
  */
 
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { 
+  Mail, Shield, Zap, Brain, Lock, Server, CheckCircle, 
+  TrendingUp, Clock, Activity, Database, Eye, AlertCircle 
+} from 'lucide-react';
 
 function LandingPage() {
-  const navigate = useNavigate();
-  const [scrolled, setScrolled] = useState(false);
-
-  // Sticky navbar scroll detection
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
   const features = [
     {
-      icon: '🏷️',
-      title: 'Auto Labels',
-      description: 'AI analyzes every email and applies colored Gmail labels — Work, Finance, Newsletter, and more — automatically.',
+      icon: Brain,
+      color: '#5B5CE2',
+      title: 'AI-Powered Analysis',
+      description: 'Extract insights from your emails using advanced AI models with automatic failover across providers.'
     },
     {
-      icon: '🛡️',
-      title: 'Scam Shield',
-      description: 'Detects phishing indicators and scam patterns, then assigns a 0–100 risk score to every email.',
+      icon: Shield,
+      color: '#27AE72',
+      title: 'Complete Privacy',
+      description: 'Your emails never leave your machine. All processing happens locally with zero cloud storage.'
     },
     {
-      icon: '🔗',
-      title: 'URL Scanner',
-      description: 'Every link in every email is checked against the Google Safe Browsing API for malware and phishing.',
+      icon: Zap,
+      color: '#E5A23C',
+      title: 'Lightning Fast',
+      description: 'Process thousands of emails in minutes with optimized batch operations and parallel processing.'
     },
     {
-      icon: '🔒',
-      title: 'Quarantine',
-      description: 'Suspicious emails are auto-isolated with one-click Safe / Delete actions.',
+      icon: Database,
+      color: '#3B82F6',
+      title: 'Smart Organization',
+      description: 'Automatically categorize, tag, and structure your email data for easy retrieval and analysis.'
     },
     {
-      icon: '✏️',
-      title: 'AI Rewriter',
-      description: 'Transform any email with presets — Professional, Shorten, Friendly — or a custom instruction.',
+      icon: TrendingUp,
+      color: '#27AE72',
+      title: 'Analytics Dashboard',
+      description: 'Visualize email patterns, trends, and insights with comprehensive charts and statistics.'
     },
     {
-      icon: '📊',
-      title: 'Smart Filters',
-      description: 'Server-side filtering by sender, label, or scam score, with debounced search.',
+      icon: Lock,
+      color: '#E05A67',
+      title: 'Secure by Design',
+      description: 'Built with security-first architecture. OAuth2 authentication with encrypted local storage.'
     },
     {
-      icon: '🔄',
-      title: 'AI Failover',
-      description: 'Cascading fallback across Groq → Gemini → Cohere — automatic switch on rate limits. NVIDIA reserved for future use.',
-    },
+      icon: Server,
+      color: '#687386',
+      title: 'Self-Hosted',
+      description: 'Run everything on your own infrastructure. Full control over your data and processing.'
+    }
+  ];
+
+  const stats = [
+    { value: '100%', label: 'Local Processing' },
+    { value: '3', label: 'AI Providers' },
+    { value: '<2s', label: 'Avg Analysis Time' },
+    { value: '∞', label: 'Email Capacity' }
   ];
 
   const providers = [
-    { icon: '🟢', name: 'Groq API Key', desc: 'Primary AI provider — Groq LLaMA 3', status: 'Connected · Primary' },
-    { icon: '🔵', name: 'Gemini API Key', desc: 'Secondary AI provider — Google Gemini Flash', status: 'Connected · Secondary' },
-    { icon: '🟡', name: 'Cohere API Key', desc: 'Tertiary AI provider — Cohere Command-R', status: 'Connected · Tertiary' },
-    { icon: '⚪', name: 'NVIDIA API Key', desc: 'Reserved provider (inactive, future use)', status: 'Reserved · Inactive' },
+    { name: 'Groq', status: 'Primary', color: '#5B5CE2' },
+    { name: 'Gemini', status: 'Secondary', color: '#27AE72' },
+    { name: 'Cohere', status: 'Tertiary', color: '#E5A23C' }
   ];
 
-  const steps = [
-    { num: '1', title: 'Connect', desc: 'Google OAuth 2.0 login, secure token flow' },
-    { num: '2', title: 'Fetch & Scan', desc: 'Gmail API pulls inbox, bulk AI analysis via SSE (live progress %)' },
-    { num: '3', title: 'Classify', desc: 'AI cascade labels + scores every email in real time' },
-    { num: '4', title: 'Protect', desc: 'High-risk emails auto-quarantined, links checked vs Safe Browsing' },
-    { num: '5', title: 'Act', desc: 'Rewrite, relabel, restore, or delete — all from one dashboard' },
+  const securityFeatures = [
+    { icon: Lock, text: 'OAuth2 Authentication' },
+    { icon: Shield, text: 'Zero Cloud Storage' },
+    { icon: Eye, text: 'No Data Tracking' },
+    { icon: CheckCircle, text: 'Open Source Code' }
   ];
-
-  const scrollToSection = (id) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
-  };
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--surface)' }}>
-      {/* 1. STICKY HEADER / NAVBAR */}
-      <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled ? 'py-3' : 'py-5'
-        }`}
-        style={{
-          background: scrolled ? 'rgba(27, 31, 48, 0.95)' : 'transparent',
-          backdropFilter: scrolled ? 'blur(10px)' : 'none',
-          borderBottom: scrolled ? '1px solid var(--border-subtle)' : 'none',
+    <div style={{ backgroundColor: '#F1F3F6', minHeight: '100vh' }}>
+      {/* Sticky Navbar */}
+      <nav 
+        style={{ 
+          backgroundColor: '#F8F9FB',
+          borderBottom: '1px solid #E1E5EB',
+          position: 'sticky',
+          top: 0,
+          zIndex: 50
         }}
       >
-        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
-          {/* Logo */}
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.scrollTo(0, 0)}>
-            <span className="text-2xl">📧</span>
-            <span className="text-lg font-bold text-white">Gmail Manager</span>
-          </div>
-
-          {/* Nav Links */}
-          <nav className="hidden md:flex items-center gap-8">
-            {['Features', 'Architecture', 'Security', 'API'].map((link) => (
-              <button
-                key={link}
-                onClick={() => scrollToSection(link.toLowerCase())}
-                className="text-sm text-gray hover:text-white transition-colors relative group"
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Mail size={28} style={{ color: '#5B5CE2' }} strokeWidth={1.8} />
+              <span style={{ 
+                fontSize: '1.5rem', 
+                fontWeight: 700,
+                color: '#20242C'
+              }}>
+                Gmail Manager
+              </span>
+            </div>
+            <div className="flex items-center gap-4">
+              <a 
+                href="#features" 
+                style={{ color: '#687386', textDecoration: 'none' }}
+                className="hover:opacity-80"
               >
-                {link}
-                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full" />
-              </button>
-            ))}
-          </nav>
-
-          {/* CTA Button */}
-          <button
-            onClick={() => navigate('/login')}
-            className="px-6 py-2.5 rounded-lg font-semibold text-white text-sm transition-all duration-200 hover:scale-103"
-            style={{
-              background: 'var(--primary)',
-              boxShadow: '0 4px 12px rgba(76, 111, 255, 0.3)',
-            }}
-          >
-            Try Live Demo →
-          </button>
+                Features
+              </a>
+              <a 
+                href="#security" 
+                style={{ color: '#687386', textDecoration: 'none' }}
+                className="hover:opacity-80"
+              >
+                Security
+              </a>
+              <Link 
+                to="/login" 
+                className="btn-primary"
+                style={{
+                  backgroundColor: '#5B5CE2',
+                  color: '#FFFFFF',
+                  padding: '0.625rem 1.5rem',
+                  borderRadius: '0.5rem',
+                  textDecoration: 'none',
+                  fontWeight: 600,
+                  display: 'inline-block',
+                  transition: 'opacity 0.2s'
+                }}
+                onMouseEnter={(e) => e.target.style.opacity = '0.9'}
+                onMouseLeave={(e) => e.target.style.opacity = '1'}
+              >
+                Get Started
+              </Link>
+            </div>
+          </div>
         </div>
-      </header>
+      </nav>
 
-      {/* 2. HERO SECTION */}
-      <section className="relative min-h-screen flex items-center justify-center px-6 pt-32 pb-20">
-        <div className="max-w-5xl mx-auto text-center">
-          {/* Eyebrow Badge */}
-          <div
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6 text-xs font-medium"
+      {/* Hero Section */}
+      <section className="container mx-auto px-6 py-24">
+        <div className="max-w-4xl mx-auto text-center">
+          {/* Badge */}
+          <div 
             style={{
-              background: 'var(--info-bg)',
-              border: '1px solid var(--info-border)',
-              color: 'var(--info)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              backgroundColor: '#F8F9FB',
+              border: '1px solid #E1E5EB',
+              borderRadius: '9999px',
+              padding: '0.5rem 1rem',
+              marginBottom: '2rem'
             }}
           >
-            v1.0.0 · AI-Powered · Multi-Provider Cascade
+            <div 
+              style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                backgroundColor: '#27AE72'
+              }}
+            />
+            <span style={{ 
+              fontSize: '0.875rem', 
+              fontWeight: 600,
+              color: '#687386'
+            }}>
+              100% Private • AI-Powered • Self-Hosted
+            </span>
           </div>
 
           {/* Headline */}
-          <h1 className="text-6xl md:text-7xl font-bold text-white mb-6 leading-tight">
-            Your Inbox, <span className="text-primary">Guarded by AI.</span>
+          <h1 
+            style={{ 
+              fontSize: '3.75rem',
+              fontWeight: 800,
+              lineHeight: 1.1,
+              color: '#20242C',
+              marginBottom: '1.5rem',
+              letterSpacing: '-0.02em'
+            }}
+          >
+            Manage Your Gmail
+            <br />
+            <span style={{ color: '#5B5CE2' }}>With AI Intelligence</span>
           </h1>
 
-          {/* Subhead */}
-          <p className="text-xl md:text-2xl text-gray max-w-4xl mx-auto mb-8 leading-relaxed">
-            Smart labeling, phishing detection, and one-click email rewriting — powered by a self-healing AI cascade
-            (Groq → Gemini → Cohere) that never goes down.
+          {/* Subheading */}
+          <p 
+            style={{ 
+              fontSize: '1.25rem',
+              lineHeight: 1.6,
+              color: '#687386',
+              marginBottom: '2.5rem',
+              maxWidth: '42rem',
+              margin: '0 auto 2.5rem'
+            }}
+          >
+            Analyze, organize, and extract insights from thousands of emails using advanced AI.
+            Completely private, lightning fast, and fully self-hosted.
           </p>
 
-          {/* CTAs */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
-            <button
-              onClick={() => navigate('/login')}
-              className="px-8 py-4 rounded-lg font-semibold text-white text-lg transition-all duration-200"
+          {/* CTA Buttons */}
+          <div className="flex items-center justify-center gap-4">
+            <Link 
+              to="/login"
               style={{
-                background: 'var(--primary)',
-                boxShadow: 'var(--neu-flat)',
+                backgroundColor: '#5B5CE2',
+                color: '#FFFFFF',
+                padding: '0.875rem 2rem',
+                borderRadius: '0.5rem',
+                textDecoration: 'none',
+                fontWeight: 600,
+                fontSize: '1.125rem',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                transition: 'opacity 0.2s'
               }}
+              onMouseEnter={(e) => e.target.style.opacity = '0.9'}
+              onMouseLeave={(e) => e.target.style.opacity = '1'}
             >
-              Launch Live App →
-            </button>
-            <button
-              onClick={() => window.open('https://github.com/jm5155/gmail-manager', '_blank')}
-              className="btn-secondary px-8 py-4 text-lg flex items-center gap-2"
+              Start Analyzing
+              <Zap size={20} strokeWidth={1.8} />
+            </Link>
+            <a 
+              href="#features"
+              style={{
+                backgroundColor: '#F8F9FB',
+                color: '#20242C',
+                padding: '0.875rem 2rem',
+                borderRadius: '0.5rem',
+                textDecoration: 'none',
+                fontWeight: 600,
+                fontSize: '1.125rem',
+                border: '1px solid #E1E5EB',
+                display: 'inline-block',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#FFFFFF'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#F8F9FB'}
             >
-              <span>⭐</span>
-              View Source on GitHub
-            </button>
-          </div>
-
-          {/* Trust Row */}
-          <p className="text-sm text-muted">
-            Runs on your own API keys · Emails never leave your machine · MIT Licensed
-          </p>
-        </div>
-      </section>
-
-      {/* 3. STATS STRIP */}
-      <section className="py-12 px-6 border-t border-b" style={{ borderColor: 'var(--border-subtle)' }}>
-        <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-          <div>
-            <div className="text-4xl font-bold text-white mb-2">18</div>
-            <div className="text-sm text-gray">API Endpoints</div>
-          </div>
-          <div>
-            <div className="text-4xl font-bold text-white mb-2">4</div>
-            <div className="text-sm text-gray">AI Providers</div>
-          </div>
-          <div>
-            <div className="text-4xl font-bold text-white mb-2">0-100</div>
-            <div className="text-sm text-gray">Scam Risk Scoring</div>
-          </div>
-          <div>
-            <div className="text-4xl font-bold text-white mb-2">24hr</div>
-            <div className="text-sm text-gray">URL Safety Cache</div>
+              Learn More
+            </a>
           </div>
         </div>
       </section>
 
-      {/* 4. FEATURES SECTION */}
-      <section id="features" className="py-20 px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
-              Everything Your Inbox Needs
-            </h2>
-            <p className="text-xl text-gray">One dashboard. Full AI-powered protection and control.</p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((feature, idx) => (
-              <div
-                key={idx}
-                className="neu-card p-6 hover:scale-105 transition-all duration-200 cursor-pointer group"
-                style={{
-                  borderLeft: '3px solid transparent',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderLeftColor = 'var(--primary)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderLeftColor = 'transparent';
-                }}
-              >
-                <div className="text-4xl mb-4 group-hover:scale-110 transition-transform">{feature.icon}</div>
-                <h3 className="text-lg font-semibold text-white mb-2">{feature.title}</h3>
-                <p className="text-sm text-gray leading-relaxed">{feature.description}</p>
+      {/* Stats Strip */}
+      <section className="container mx-auto px-6 py-12">
+        <div 
+          style={{
+            backgroundColor: '#F8F9FB',
+            borderRadius: '1rem',
+            padding: '3rem',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+          }}
+        >
+          <div className="grid grid-cols-4 gap-8">
+            {stats.map((stat, index) => (
+              <div key={index} className="text-center">
+                <div 
+                  style={{ 
+                    fontSize: '2.5rem',
+                    fontWeight: 800,
+                    color: '#5B5CE2',
+                    marginBottom: '0.5rem'
+                  }}
+                >
+                  {stat.value}
+                </div>
+                <div 
+                  style={{ 
+                    fontSize: '0.875rem',
+                    color: '#687386',
+                    fontWeight: 500
+                  }}
+                >
+                  {stat.label}
+                </div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* 5. AI CASCADE / PROVIDER STATUS */}
-      <section id="api" className="py-20 px-6" style={{ background: 'rgba(76, 111, 255, 0.03)' }}>
-        <div className="max-w-4xl mx-auto">
+      {/* Features Section */}
+      <section id="features" className="container mx-auto px-6 py-24">
+        <div className="text-center mb-16">
+          <h2 
+            style={{ 
+              fontSize: '2.5rem',
+              fontWeight: 800,
+              color: '#20242C',
+              marginBottom: '1rem'
+            }}
+          >
+            Powerful Features
+          </h2>
+          <p style={{ fontSize: '1.125rem', color: '#687386' }}>
+            Everything you need to manage and analyze your emails
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {features.map((feature, index) => {
+            const IconComponent = feature.icon;
+            return (
+              <div 
+                key={index}
+                style={{
+                  backgroundColor: '#F8F9FB',
+                  borderRadius: '1rem',
+                  padding: '2rem',
+                  border: '1px solid #E1E5EB',
+                  transition: 'transform 0.2s, box-shadow 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-4px)';
+                  e.currentTarget.style.boxShadow = '0 8px 16px rgba(0,0,0,0.08)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              >
+                <div 
+                  style={{
+                    width: '3rem',
+                    height: '3rem',
+                    borderRadius: '0.75rem',
+                    backgroundColor: `${feature.color}15`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: '1.25rem'
+                  }}
+                >
+                  <IconComponent 
+                    size={24} 
+                    style={{ color: feature.color }} 
+                    strokeWidth={1.8}
+                  />
+                </div>
+                <h3 
+                  style={{ 
+                    fontSize: '1.25rem',
+                    fontWeight: 700,
+                    color: '#20242C',
+                    marginBottom: '0.75rem'
+                  }}
+                >
+                  {feature.title}
+                </h3>
+                <p style={{ color: '#687386', lineHeight: 1.6 }}>
+                  {feature.description}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* AI Cascade Section */}
+      <section className="container mx-auto px-6 py-24">
+        <div 
+          style={{
+            backgroundColor: '#F8F9FB',
+            borderRadius: '1.5rem',
+            padding: '4rem',
+            border: '1px solid #E1E5EB'
+          }}
+        >
           <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-white mb-4">Never Goes Down — AI Cascade</h2>
-            <p className="text-lg text-gray">
-              Automatic failover keeps analysis running even when a provider hits its limit.
+            <h2 
+              style={{ 
+                fontSize: '2.5rem',
+                fontWeight: 800,
+                color: '#20242C',
+                marginBottom: '1rem'
+              }}
+            >
+              Intelligent AI Failover
+            </h2>
+            <p style={{ fontSize: '1.125rem', color: '#687386' }}>
+              Automatic provider switching ensures uninterrupted analysis
             </p>
           </div>
 
-          <div className="space-y-4">
-            {providers.map((provider, idx) => (
-              <div key={idx} className="neu-card p-6 flex items-start gap-4">
-                <div className="text-3xl">{provider.icon}</div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-white mb-1">{provider.name}</h3>
-                  <p className="text-sm text-gray mb-2">{provider.desc}</p>
-                  <span
-                    className="text-xs px-3 py-1 rounded-full"
+          <div className="flex items-center justify-center gap-8 mb-8">
+            {providers.map((provider, index) => (
+              <React.Fragment key={index}>
+                <div className="text-center">
+                  <div 
                     style={{
-                      background: provider.icon === '⚪' ? 'var(--border-default)' : 'var(--success-bg)',
-                      color: provider.icon === '⚪' ? 'var(--text-tertiary)' : 'var(--success)',
+                      width: '5rem',
+                      height: '5rem',
+                      borderRadius: '1rem',
+                      backgroundColor: `${provider.color}15`,
+                      border: `2px solid ${provider.color}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginBottom: '0.75rem',
+                      marginLeft: 'auto',
+                      marginRight: 'auto'
+                    }}
+                  >
+                    <Activity 
+                      size={28} 
+                      style={{ color: provider.color }} 
+                      strokeWidth={1.8}
+                    />
+                  </div>
+                  <div 
+                    style={{ 
+                      fontSize: '1.125rem',
+                      fontWeight: 700,
+                      color: '#20242C',
+                      marginBottom: '0.25rem'
+                    }}
+                  >
+                    {provider.name}
+                  </div>
+                  <div 
+                    style={{
+                      fontSize: '0.875rem',
+                      color: '#687386',
+                      fontWeight: 500
                     }}
                   >
                     {provider.status}
-                  </span>
+                  </div>
                 </div>
-              </div>
+                {index < providers.length - 1 && (
+                  <div 
+                    style={{
+                      fontSize: '1.5rem',
+                      color: '#9AA3B2',
+                      marginTop: '-2rem'
+                    }}
+                  >
+                    →
+                  </div>
+                )}
+              </React.Fragment>
             ))}
           </div>
 
-          <div className="mt-8 text-center text-sm text-muted">
-            Flow: Groq (Primary) → Gemini (Secondary) → Cohere (Tertiary) → auto-switch on rate limit / failure
+          <div 
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '0.75rem',
+              padding: '1.5rem',
+              border: '1px solid #E1E5EB',
+              maxWidth: '48rem',
+              margin: '0 auto'
+            }}
+          >
+            <div className="flex items-start gap-3">
+              <CheckCircle 
+                size={20} 
+                style={{ color: '#27AE72', marginTop: '0.125rem' }} 
+                strokeWidth={1.8}
+              />
+              <p style={{ color: '#687386', lineHeight: 1.6, margin: 0 }}>
+                If Groq reaches rate limits, the system automatically switches to Gemini.
+                If Gemini fails, Cohere takes over. Zero manual intervention required.
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* 6. ARCHITECTURE / HOW IT WORKS */}
-      <section id="architecture" className="py-20 px-6">
-        <div className="max-w-6xl mx-auto">
+      {/* Security Section */}
+      <section id="security" className="container mx-auto px-6 py-24">
+        <div className="max-w-4xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-white mb-4">Built for Speed & Reliability</h2>
+            <h2 
+              style={{ 
+                fontSize: '2.5rem',
+                fontWeight: 800,
+                color: '#20242C',
+                marginBottom: '1rem'
+              }}
+            >
+              Security First
+            </h2>
+            <p style={{ fontSize: '1.125rem', color: '#687386' }}>
+              Your privacy is our priority. Built with enterprise-grade security.
+            </p>
           </div>
 
-          {/* Steps */}
-          <div className="space-y-8 mb-16">
-            {steps.map((step, idx) => (
-              <div key={idx} className="flex items-start gap-6">
-                <div
-                  className="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg"
+          <div className="grid grid-cols-2 gap-6 mb-12">
+            {securityFeatures.map((feature, index) => {
+              const IconComponent = feature.icon;
+              return (
+                <div 
+                  key={index}
                   style={{
-                    background: 'var(--primary)',
-                    color: '#fff',
+                    backgroundColor: '#F8F9FB',
+                    borderRadius: '0.75rem',
+                    padding: '1.5rem',
+                    border: '1px solid #E1E5EB',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '1rem'
                   }}
                 >
-                  {step.num}
+                  <div 
+                    style={{
+                      width: '2.5rem',
+                      height: '2.5rem',
+                      borderRadius: '0.5rem',
+                      backgroundColor: '#27AE7215',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}
+                  >
+                    <IconComponent 
+                      size={20} 
+                      style={{ color: '#27AE72' }} 
+                      strokeWidth={1.8}
+                    />
+                  </div>
+                  <span 
+                    style={{ 
+                      fontSize: '1rem',
+                      fontWeight: 600,
+                      color: '#20242C'
+                    }}
+                  >
+                    {feature.text}
+                  </span>
                 </div>
-                <div>
-                  <h3 className="text-xl font-semibold text-white mb-2">{step.title}</h3>
-                  <p className="text-gray">{step.desc}</p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
-          {/* Stack Breakdown */}
-          <div className="neu-card p-8">
-            <h3 className="text-2xl font-bold text-white mb-6">Stack Breakdown</h3>
-            <div className="grid md:grid-cols-2 gap-6 text-sm">
+          <div 
+            style={{
+              backgroundColor: '#5B5CE215',
+              borderRadius: '1rem',
+              padding: '2rem',
+              border: '1px solid #5B5CE230'
+            }}
+          >
+            <div className="flex items-start gap-3">
+              <AlertCircle 
+                size={24} 
+                style={{ color: '#5B5CE2', marginTop: '0.125rem', flexShrink: 0 }} 
+                strokeWidth={1.8}
+              />
               <div>
-                <span className="text-primary font-semibold">Frontend</span>
-                <span className="text-gray ml-4">React + Vite (port 5173)</span>
-              </div>
-              <div>
-                <span className="text-primary font-semibold">Backend</span>
-                <span className="text-gray ml-4">Python FastAPI (port 8000), 18 REST endpoints</span>
-              </div>
-              <div>
-                <span className="text-primary font-semibold">Database</span>
-                <span className="text-gray ml-4">SQLite3 — analyzed emails + URL cache</span>
-              </div>
-              <div>
-                <span className="text-primary font-semibold">Desktop</span>
-                <span className="text-gray ml-4">Electron wrapper (contextIsolation: true)</span>
-              </div>
-              <div>
-                <span className="text-primary font-semibold">Auth</span>
-                <span className="text-gray ml-4">Google OAuth 2.0, token auto-refresh</span>
-              </div>
-              <div>
-                <span className="text-primary font-semibold">AI Cascade</span>
-                <span className="text-gray ml-4">Groq → Gemini → Cohere · NVIDIA (Reserved)</span>
+                <h4 
+                  style={{ 
+                    fontSize: '1.125rem',
+                    fontWeight: 700,
+                    color: '#20242C',
+                    marginBottom: '0.5rem'
+                  }}
+                >
+                  Complete Data Privacy
+                </h4>
+                <p style={{ color: '#687386', lineHeight: 1.6, margin: 0 }}>
+                  All email processing happens locally on your machine. We never store, transmit,
+                  or have access to your email content. Your data stays yours, always.
+                </p>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 7. SECURITY SECTION */}
-      <section id="security" className="py-20 px-6" style={{ background: 'rgba(34, 197, 94, 0.03)' }}>
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="text-5xl mb-8">🛡️</div>
-          <h2 className="text-4xl font-bold text-white mb-8">Privacy-First by Design</h2>
-
-          <div className="space-y-4 text-left max-w-2xl mx-auto">
-            {[
-              'All credentials stored locally (.env) — never transmitted',
-              'OAuth tokens auto-refreshed, stored in token.json',
-              'URL safety results cached 24hrs in SQLite',
-              'Emails never leave your machine — analysis runs on your own API keys',
-              'Electron hardened: contextIsolation on, nodeIntegration off',
-            ].map((item, idx) => (
-              <div key={idx} className="flex items-start gap-3">
-                <span className="text-success text-xl flex-shrink-0">✓</span>
-                <span className="text-gray">{item}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 8. FINAL CTA SECTION */}
-      <section className="py-20 px-6">
-        <div className="max-w-4xl mx-auto neu-card p-12 text-center">
-          <h2 className="text-4xl font-bold text-white mb-4">See It in Action</h2>
-          <p className="text-lg text-gray mb-8">
-            No signup walls — connect your Gmail and see AI triage your inbox in seconds.
+      {/* Final CTA Section */}
+      <section className="container mx-auto px-6 py-24">
+        <div 
+          style={{
+            backgroundColor: '#5B5CE2',
+            borderRadius: '1.5rem',
+            padding: '4rem',
+            textAlign: 'center'
+          }}
+        >
+          <h2 
+            style={{ 
+              fontSize: '2.5rem',
+              fontWeight: 800,
+              color: '#FFFFFF',
+              marginBottom: '1rem'
+            }}
+          >
+            Ready to Transform Your Email Management?
+          </h2>
+          <p 
+            style={{ 
+              fontSize: '1.25rem',
+              color: 'rgba(255,255,255,0.9)',
+              marginBottom: '2.5rem',
+              maxWidth: '42rem',
+              margin: '0 auto 2.5rem'
+            }}
+          >
+            Start analyzing your emails with AI-powered intelligence in minutes.
+            No credit card required.
           </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <button
-              onClick={() => navigate('/login')}
-              className="px-8 py-4 rounded-lg font-semibold text-white text-lg"
-              style={{ background: 'var(--primary)', boxShadow: 'var(--neu-flat)' }}
-            >
-              Try Live Demo →
-            </button>
-            <button className="btn-secondary px-8 py-4 text-lg">Read the Docs</button>
-            <button
-              onClick={() => window.open('https://github.com/jm5155/gmail-manager', '_blank')}
-              className="btn-secondary px-8 py-4 text-lg"
-            >
-              ⭐ Star on GitHub
-            </button>
-          </div>
+          <Link 
+            to="/login"
+            style={{
+              backgroundColor: '#FFFFFF',
+              color: '#5B5CE2',
+              padding: '1rem 2.5rem',
+              borderRadius: '0.5rem',
+              textDecoration: 'none',
+              fontWeight: 700,
+              fontSize: '1.125rem',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              transition: 'transform 0.2s'
+            }}
+            onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
+            onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+          >
+            Get Started Free
+            <Zap size={20} strokeWidth={1.8} />
+          </Link>
         </div>
       </section>
 
-      {/* 9. FOOTER */}
-      <footer className="py-12 px-6 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
-        <div className="max-w-6xl mx-auto">
-          <div className="grid md:grid-cols-3 gap-12 mb-8">
-            {/* Left - Brand */}
+      {/* Footer */}
+      <footer 
+        style={{
+          backgroundColor: '#F8F9FB',
+          borderTop: '1px solid #E1E5EB'
+        }}
+      >
+        <div className="container mx-auto px-6 py-12">
+          <div className="grid grid-cols-4 gap-8 mb-12">
+            {/* Brand */}
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <span className="text-2xl">📧</span>
-                <span className="text-lg font-bold text-white">Gmail Manager</span>
+                <Mail size={24} style={{ color: '#5B5CE2' }} strokeWidth={1.8} />
+                <span 
+                  style={{ 
+                    fontSize: '1.25rem',
+                    fontWeight: 700,
+                    color: '#20242C'
+                  }}
+                >
+                  Gmail Manager
+                </span>
               </div>
-              <p className="text-sm text-gray">
-                AI-powered email intelligence, built with a multi-model cascade.
+              <p style={{ color: '#687386', fontSize: '0.875rem', lineHeight: 1.6 }}>
+                AI-powered email management that respects your privacy.
               </p>
             </div>
 
-            {/* Center - Links */}
-            <div className="grid grid-cols-2 gap-8">
-              <div>
-                <h4 className="text-sm font-semibold text-white mb-4">Product</h4>
-                <div className="space-y-2 text-sm text-gray">
-                  <button onClick={() => scrollToSection('features')} className="block hover:text-white">
+            {/* Product */}
+            <div>
+              <h4 
+                style={{ 
+                  fontSize: '0.875rem',
+                  fontWeight: 700,
+                  color: '#20242C',
+                  marginBottom: '1rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em'
+                }}
+              >
+                Product
+              </h4>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                <li style={{ marginBottom: '0.5rem' }}>
+                  <a href="#features" style={{ color: '#687386', textDecoration: 'none', fontSize: '0.875rem' }}>
                     Features
-                  </button>
-                  <button onClick={() => navigate('/login')} className="block hover:text-white">
-                    Live Demo
-                  </button>
-                  <button onClick={() => scrollToSection('architecture')} className="block hover:text-white">
-                    Architecture
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <h4 className="text-sm font-semibold text-white mb-4">Resources</h4>
-                <div className="space-y-2 text-sm text-gray">
-                  <a href="#" className="block hover:text-white">
-                    Documentation
                   </a>
-                  <a href="#" className="block hover:text-white">
-                    API Reference
+                </li>
+                <li style={{ marginBottom: '0.5rem' }}>
+                  <a href="#security" style={{ color: '#687386', textDecoration: 'none', fontSize: '0.875rem' }}>
+                    Security
                   </a>
-                  <a href="#" className="block hover:text-white">
-                    License (MIT)
-                  </a>
-                </div>
-              </div>
+                </li>
+                <li style={{ marginBottom: '0.5rem' }}>
+                  <Link to="/login" style={{ color: '#687386', textDecoration: 'none', fontSize: '0.875rem' }}>
+                    Dashboard
+                  </Link>
+                </li>
+              </ul>
             </div>
 
-            {/* Right - Connect */}
+            {/* Company */}
             <div>
-              <h4 className="text-sm font-semibold text-white mb-4">Connect</h4>
-              <a
-                href="https://github.com/jm5155/gmail-manager"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-gray hover:text-white"
+              <h4 
+                style={{ 
+                  fontSize: '0.875rem',
+                  fontWeight: 700,
+                  color: '#20242C',
+                  marginBottom: '1rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em'
+                }}
               >
-                GitHub
-              </a>
+                Company
+              </h4>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                <li style={{ marginBottom: '0.5rem' }}>
+                  <a href="#" style={{ color: '#687386', textDecoration: 'none', fontSize: '0.875rem' }}>
+                    About
+                  </a>
+                </li>
+                <li style={{ marginBottom: '0.5rem' }}>
+                  <a href="#" style={{ color: '#687386', textDecoration: 'none', fontSize: '0.875rem' }}>
+                    Privacy
+                  </a>
+                </li>
+                <li style={{ marginBottom: '0.5rem' }}>
+                  <a href="#" style={{ color: '#687386', textDecoration: 'none', fontSize: '0.875rem' }}>
+                    Terms
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Resources */}
+            <div>
+              <h4 
+                style={{ 
+                  fontSize: '0.875rem',
+                  fontWeight: 700,
+                  color: '#20242C',
+                  marginBottom: '1rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em'
+                }}
+              >
+                Resources
+              </h4>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                <li style={{ marginBottom: '0.5rem' }}>
+                  <a href="#" style={{ color: '#687386', textDecoration: 'none', fontSize: '0.875rem' }}>
+                    Documentation
+                  </a>
+                </li>
+                <li style={{ marginBottom: '0.5rem' }}>
+                  <a href="#" style={{ color: '#687386', textDecoration: 'none', fontSize: '0.875rem' }}>
+                    API Reference
+                  </a>
+                </li>
+                <li style={{ marginBottom: '0.5rem' }}>
+                  <a href="#" style={{ color: '#687386', textDecoration: 'none', fontSize: '0.875rem' }}>
+                    Support
+                  </a>
+                </li>
+              </ul>
             </div>
           </div>
 
           {/* Bottom Bar */}
-          <div className="pt-8 border-t flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted"
-               style={{ borderColor: 'var(--border-subtle)' }}>
-            <div>© 2026 Gmail Manager. All rights reserved.</div>
-            <div>Emails never leave your machine.</div>
+          <div 
+            style={{
+              paddingTop: '2rem',
+              borderTop: '1px solid #E1E5EB',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '1rem'
+            }}
+          >
+            <div style={{ fontSize: '0.875rem', color: '#9AA3B2' }}>
+              © 2026 Gmail Manager. All rights reserved.
+            </div>
+            <div style={{ fontSize: '0.875rem', color: '#687386', fontWeight: 500 }}>
+              🔒 Emails never leave your machine
+            </div>
           </div>
         </div>
       </footer>
