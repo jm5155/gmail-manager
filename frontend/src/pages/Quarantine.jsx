@@ -75,7 +75,7 @@ function Quarantine() {
   }
 
   return (
-    <div className="h-screen overflow-hidden pl-0 md:pl-[240px]">
+    <div className="h-screen overflow-hidden">
       {/* Header */}
       <div className="px-6 py-4 pt-16 md:pt-4" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
         <div className="flex items-center gap-3">

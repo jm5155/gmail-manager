@@ -9,6 +9,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ---------- GLOBAL BOX-SIZING ---------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 /* ---------- DESIGN TOKENS ---------- */
 @layer base {
   :root {

@@ -237,8 +237,8 @@ function Settings() {
 
   if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center pl-0 md:pl-[240px]" style={{ background: 'var(--surface)' }}>
-        <div className="w-10 h-10 border-3 rounded-full animate-spin" style={{ 
+      <div className="h-screen flex items-center justify-center" style={{ background: 'var(--surface)' }}>
+        <div className="w-10 h-10 border-3 rounded-full animate-spin" style={{
           borderWidth: '3px',
           borderColor: 'var(--primary)',
           borderTopColor: 'transparent',
@@ -248,7 +248,7 @@ function Settings() {
   }
 
   return (
-    <div className="h-screen overflow-y-auto pl-0 md:pl-[240px]" style={{ background: 'var(--surface)' }}>
+    <div className="h-screen overflow-y-auto" style={{ background: 'var(--surface)' }}>
       {/* Header */}
       <div className="px-6 py-4 pt-16 md:pt-4" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
         <h1 className="text-xl font-bold style={{color: 'var(--color-text-primary)'}}">Settings</h1>
