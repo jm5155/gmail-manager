@@ -1,23 +1,21 @@
 /**
  * Login.jsx — Google OAuth Login Page
- * Displays a centered login card with the app branding and a "Sign in with Google" button.
- * On click, triggers the OAuth flow via the backend, then polls /auth/status every 2 seconds.
- * When login is detected, redirects to /inbox.
+ * Modern Minimalism + Soft Neumorphism + Premium SaaS
+ * Light mode with subtle depth and clean typography
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-// Backend API base URL
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 
 function Login() {
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);       // Shows spinner during login
-  const [error, setError] = useState('');                   // Error message display
-  const [checkingAuth, setCheckingAuth] = useState(true);   // Initial auth check
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [checkingAuth, setCheckingAuth] = useState(true);
 
-  // ---------- CHECK IF ALREADY LOGGED IN ON MOUNT ----------
+  // Check if already logged in on mount
   useEffect(() => {
     checkExistingAuth();
   }, []);
@@ -27,7 +25,6 @@ function Login() {
       const res = await fetch(`${API_BASE}/auth/status`, { credentials: 'include' });
       const data = await res.json();
       if (data.logged_in) {
-        // Already authenticated — skip login, go to inbox
         navigate('/inbox');
       }
     } catch (err) {
@@ -37,155 +34,172 @@ function Login() {
     }
   }
 
-  // ---------- TRIGGER GOOGLE LOGIN ----------
+  // Trigger Google login
   async function handleLogin() {
     setIsLoading(true);
     setError('');
 
     try {
-      // Fetch the Google OAuth URL from backend
       const res = await fetch(`${API_BASE}/auth/login`, { credentials: 'include' });
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to start login');
+        setError(data.error || 'Failed to initiate login. Please try again.');
+        setIsLoading(false);
+        return;
       }
 
-      // Redirect entire page to Google OAuth consent screen
-      // After user approves, Google redirects to backend /auth/callback
-      // Backend /auth/callback sets session and redirects to /inbox
-      window.location.href = data.auth_url;
+      // Open Google OAuth in popup
+      const width = 600;
+      const height = 700;
+      const left = window.screen.width / 2 - width / 2;
+      const top = window.screen.height / 2 - height / 2;
+
+      const authWindow = window.open(
+        data.auth_url,
+        'GoogleAuth',
+        `width=${width},height=${height},left=${left},top=${top}`
+      );
+
+      // Poll for auth completion
+      const pollInterval = setInterval(async () => {
+        try {
+          const statusRes = await fetch(`${API_BASE}/auth/status`, { credentials: 'include' });
+          const statusData = await statusRes.json();
+
+          if (statusData.logged_in) {
+            clearInterval(pollInterval);
+            if (authWindow && !authWindow.closed) {
+              authWindow.close();
+            }
+            navigate('/inbox');
+          }
+        } catch (err) {
+          console.log('[LOGIN] Polling error:', err);
+        }
+      }, 2000);
+
+      // Stop polling if popup closed
+      const popupCheck = setInterval(() => {
+        if (authWindow && authWindow.closed) {
+          clearInterval(popupCheck);
+          clearInterval(pollInterval);
+          setIsLoading(false);
+        }
+      }, 500);
 
     } catch (err) {
-      setError('Could not connect to the backend. Make sure the server is running.');
+      console.error('[LOGIN] Error:', err);
+      setError('Unable to reach authentication server. Please try again.');
       setIsLoading(false);
     }
   }
 
-  // ---------- LOADING STATE (checking existing auth) ----------
   if (checkingAuth) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-bg-dark">
-        <div className="animate-pulse text-text-gray text-lg">Checking authentication...</div>
+      <div className="min-h-screen flex items-center justify-center"
+           style={{ background: 'var(--color-background)' }}>
+        <div className="w-8 h-8 border-3 rounded-full animate-spin"
+             style={{ 
+               borderColor: 'var(--color-primary)',
+               borderTopColor: 'transparent'
+             }}>
+        </div>
       </div>
     );
   }
 
-  // ---------- RENDER LOGIN PAGE ----------
   return (
-    <div className="min-h-screen flex items-center justify-center bg-bg-dark relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center px-4"
+         style={{ background: 'var(--color-background)' }}>
 
-      {/* Background gradient orbs for visual flair */}
-      <div className="absolute top-[-200px] left-[-200px] w-[500px] h-[500px] rounded-full opacity-20"
-           style={{ background: 'radial-gradient(circle, #2563EB 0%, transparent 70%)' }}></div>
-      <div className="absolute bottom-[-150px] right-[-150px] w-[400px] h-[400px] rounded-full opacity-15"
-           style={{ background: 'radial-gradient(circle, #7C3AED 0%, transparent 70%)' }}></div>
-
-      {/* Login Card */}
-      <div className="relative z-10 w-full max-w-md mx-4">
-        <div className="rounded-xl p-8 text-center"
+      {/* Login Card - Soft Neumorphic Surface */}
+      <div className="w-full max-w-md">
+        <div className="p-10 text-center"
              style={{
-               background: 'rgba(30, 41, 59, 0.8)',
-               backdropFilter: 'blur(20px)',
-               border: '1px solid rgba(51, 65, 85, 0.5)',
-               boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+               background: 'var(--color-surface)',
+               borderRadius: 'var(--radius-3xl)',
+               boxShadow: 'var(--shadow-neumorphic-lg)',
+               border: '1px solid var(--color-border)',
              }}>
 
-          {/* App Logo — Gmail-style envelope icon (FIXED: removed gradient, neumorphic) */}
+          {/* App Logo - Envelope icon with neumorphic container */}
           <div className="mb-6 flex justify-center">
-            <div className="w-20 h-20 rounded-2xl flex items-center justify-center"
+            <div className="w-20 h-20 flex items-center justify-center"
                  style={{
-                   background: 'var(--bg-base)',
-                   boxShadow: '6px 6px 12px #B8C0D0, -6px -6px 12px #FFFFFF',
+                   background: 'var(--color-surface)',
+                   borderRadius: 'var(--radius-2xl)',
+                   boxShadow: 'var(--shadow-neumorphic-sm)',
                  }}>
-              <svg className="w-10 h-10" style={{ color: 'var(--primary)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <svg className="w-10 h-10" 
+                   style={{ color: 'var(--color-primary)' }} 
+                   fill="none" 
+                   viewBox="0 0 24 24" 
+                   stroke="currentColor" 
+                   strokeWidth={1.8}>
                 <path strokeLinecap="round" strokeLinejoin="round"
                       d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
               </svg>
             </div>
           </div>
 
-          {/* App Title (FIXED: dark text on light background) */}
-          <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--text-heading)' }}>Gmail Manager</h1>
-          <p className="mb-8 text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>
-            AI-powered email management. Smart labeling,<br />scam detection, and intelligent sorting.
+          {/* App Title */}
+          <h1 className="text-3xl font-bold mb-2" 
+              style={{ color: 'var(--color-text-primary)' }}>
+            Gmail Manager
+          </h1>
+          
+          {/* Subtitle */}
+          <p className="mb-8 text-sm leading-relaxed" 
+             style={{ color: 'var(--color-text-secondary)' }}>
+            AI-powered email management. Smart labeling,<br />
+            scam detection, and intelligent sorting.
           </p>
 
           {/* Sign in Button */}
           <button
-            id="google-login-btn"
             onClick={handleLogin}
             disabled={isLoading}
-            className="w-full py-3.5 px-6 rounded-lg font-semibold text-white text-base
-                       transition-all duration-300 ease-out
-                       disabled:opacity-60 disabled:cursor-not-allowed
-                       hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
+            className="btn-primary w-full py-3.5 px-6 flex items-center justify-center gap-2.5"
             style={{
-              background: isLoading
-                ? '#475569'
-                : 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
-              boxShadow: isLoading
-                ? 'none'
-                : '0 4px 15px -3px rgba(37, 99, 235, 0.4)',
-            }}
-          >
+              fontSize: '14px',
+              fontWeight: 600,
+            }}>
             {isLoading ? (
-              <span className="flex items-center justify-center gap-3">
-                {/* Loading spinner */}
-                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                  <path className="opacity-75" fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-                Waiting for Google login...
-              </span>
+              <>
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>Signing in...</span>
+              </>
             ) : (
-              <span className="flex items-center justify-center gap-3">
-                {/* Google icon */}
-                <svg className="w-5 h-5" viewBox="0 0 24 24">
-                  <path fill="#fff" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
-                  <path fill="#fff" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" opacity="0.8"/>
-                  <path fill="#fff" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" opacity="0.6"/>
-                  <path fill="#fff" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" opacity="0.4"/>
+              <>
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                 </svg>
-                Sign in with Google
-              </span>
+                <span>Sign in with Google</span>
+              </>
             )}
           </button>
 
           {/* Error Message */}
           {error && (
-            <div className="mt-4 p-3 rounded-lg text-sm text-red-400"
-                 style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+            <div className="mt-4 p-3 rounded-lg text-sm"
+                 style={{
+                   background: 'var(--color-danger-bg)',
+                   color: 'var(--color-danger)',
+                   border: '1px solid var(--color-danger-border)',
+                 }}>
               {error}
             </div>
           )}
 
-          {/* Footer info */}
-          <p className="mt-6 text-xs text-text-gray opacity-60">
-            Requires Gmail API access · Your data stays on this device
+          {/* Trust Badge */}
+          <p className="mt-6 text-xs" 
+             style={{ color: 'var(--color-text-muted)' }}>
+            Secure OAuth 2.0 authentication via Google
           </p>
-        </div>
-
-        {/* Features preview below the card (FIXED: light neumorphic, dark text) */}
-        <div className="mt-6 grid grid-cols-3 gap-3">
-          {[
-            { icon: '🏷️', label: 'Auto Labels' },
-            { icon: '🛡️', label: 'Scam Shield' },
-            { icon: '✨', label: 'AI Rewrite' },
-          ].map((feat) => (
-            <div key={feat.label}
-                 className="rounded-lg py-3 px-2 text-center text-xs
-                            transition-all duration-300 hover:scale-105"
-                 style={{
-                   background: 'var(--bg-base)',
-                   boxShadow: '6px 6px 12px #B8C0D0, -6px -6px 12px #FFFFFF',
-                   color: 'var(--text-body)',
-                 }}>
-              <div className="text-xl mb-1">{feat.icon}</div>
-              {feat.label}
-            </div>
-          ))}
         </div>
       </div>
     </div>
