@@ -89,15 +89,22 @@ function LandingPage() {
   ];
 
   return (
-    <div style={{ backgroundColor: '#F1F3F6', minHeight: '100vh' }}>
+    <div style={{ 
+      backgroundColor: '#F1F3F6', 
+      minHeight: '100vh',
+      touchAction: 'auto',
+      WebkitTouchCallout: 'default',
+      userSelect: 'text'
+    }}>
       {/* Sticky Navbar */}
-      <nav 
-        style={{ 
+      <nav
+        style={{
           backgroundColor: '#F8F9FB',
           borderBottom: '1px solid #E1E5EB',
           position: 'sticky',
           top: 0,
-          zIndex: 50
+          zIndex: 50,
+          touchAction: 'auto'
         }}
       >
         <div className="container mx-auto px-6 py-4">
