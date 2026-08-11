@@ -1,6 +1,6 @@
 /**
- * EmailDetailPanel.jsx — Email Detail Slide-Over Panel (Phase 35)
- * Redesigned with cleaner UI and explicit "Apply to Gmail" button.
+ * EmailDetailPanel.jsx — Email Detail Slide-Over Panel
+ * Redesigned for light design system with clean, minimal UI.
  * Shows full email details with manual label override capability.
  * Slide-over from right, explicit apply button, unsaved changes indicator.
  */
@@ -36,13 +36,11 @@ function EmailDetailPanel({ email, isOpen, onClose, onLabelChange }) {
   const hasUnsavedChanges = selectedLabel !== savedLabel;
 
   const handleDropdownChange = (e) => {
-    setSelectedLabel(e.target.value); // Local state only, no API call
+    setSelectedLabel(e.target.value);
   };
 
   const handleApplyToGmail = async () => {
     if (!email || !hasUnsavedChanges) return;
-
-    const originalLabel = savedLabel;
 
     try {
       setIsUpdating(true);
@@ -59,18 +57,15 @@ function EmailDetailPanel({ email, isOpen, onClose, onLabelChange }) {
         throw new Error(error.message || 'Failed to update label');
       }
 
-      // Success: update saved state
       setSavedLabel(selectedLabel);
       toast.success(`Label changed to ${selectedLabel}`);
       
-      // Notify parent to refresh email list
       if (onLabelChange) {
         onLabelChange(email.email_id, selectedLabel);
       }
 
     } catch (error) {
       toast.error(`Failed to update label: ${error.message}`);
-      // Keep selectedLabel as-is (don't revert), allow retry
     } finally {
       setIsUpdating(false);
     }
@@ -108,17 +103,32 @@ function EmailDetailPanel({ email, isOpen, onClose, onLabelChange }) {
     <div className="fixed inset-0 z-50">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/50"
+        className="absolute inset-0 bg-black/20 backdrop-blur-sm"
         onClick={onClose}
       />
 
       {/* Slide-over panel */}
-      <div className="absolute right-0 top-0 h-full w-full max-w-2xl bg-background-secondary border-l border-border-primary overflow-y-auto shadow-2xl">
+      <div 
+        className="absolute right-0 top-0 h-full w-full max-w-2xl overflow-y-auto shadow-2xl"
+        style={{ 
+          backgroundColor: '#F8F9FB',
+          borderLeft: '1px solid #E1E5EB'
+        }}
+      >
         {/* Top bar with close and apply button */}
-        <div className="sticky top-0 bg-background-secondary border-b border-border-primary p-4 z-10 flex items-center justify-between">
+        <div 
+          className="sticky top-0 p-4 z-10 flex items-center justify-between"
+          style={{ 
+            backgroundColor: '#F8F9FB',
+            borderBottom: '1px solid #E1E5EB'
+          }}
+        >
           <button
             onClick={onClose}
-            className="text-text-gray hover:text-text-white text-2xl leading-none"
+            className="text-2xl leading-none transition-colors"
+            style={{ color: '#687386' }}
+            onMouseEnter={(e) => e.target.style.color = '#20242C'}
+            onMouseLeave={(e) => e.target.style.color = '#687386'}
             aria-label="Close"
           >
             ×
@@ -126,12 +136,10 @@ function EmailDetailPanel({ email, isOpen, onClose, onLabelChange }) {
           <button
             onClick={handleApplyToGmail}
             disabled={!hasUnsavedChanges || isUpdating}
-            className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
+            className="btn-primary"
             style={{
-              backgroundColor: hasUnsavedChanges && !isUpdating ? '#2563EB' : '#334155',
-              color: '#FFFFFF',
-              cursor: hasUnsavedChanges && !isUpdating ? 'pointer' : 'not-allowed',
               opacity: hasUnsavedChanges && !isUpdating ? 1 : 0.5,
+              cursor: hasUnsavedChanges && !isUpdating ? 'pointer' : 'not-allowed',
             }}
           >
             {isUpdating ? 'Applying...' : 'Apply to Gmail'}
@@ -139,32 +147,84 @@ function EmailDetailPanel({ email, isOpen, onClose, onLabelChange }) {
         </div>
 
         {/* Email metadata */}
-        <div className="p-6 border-b border-border-primary">
-          <div className="space-y-2">
-            <div className="flex items-start gap-2">
-              <span className="text-sm font-medium text-text-gray min-w-[60px]">Sender:</span>
-              <span className="text-sm text-text-white flex-1">{email.sender || 'Unknown Sender'}</span>
+        <div 
+          className="p-6"
+          style={{ borderBottom: '1px solid #E1E5EB' }}
+        >
+          <div className="space-y-4">
+            <div>
+              <h2 
+                className="text-xl font-semibold mb-1"
+                style={{ color: '#20242C' }}
+              >
+                {email.subject || '(No Subject)'}
+              </h2>
             </div>
-            <div className="flex items-start gap-2">
-              <span className="text-sm font-medium text-text-gray min-w-[60px]">Subject:</span>
-              <span className="text-sm text-text-white flex-1">{email.subject || '(No Subject)'}</span>
-            </div>
-            <div className="flex items-start gap-2">
-              <span className="text-sm font-medium text-text-gray min-w-[60px]">Date:</span>
-              <span className="text-sm text-text-muted flex-1">{formatDate(email.analyzed_at || email.date)}</span>
+            <div className="space-y-2">
+              <div className="flex items-start gap-3">
+                <svg 
+                  className="w-4 h-4 mt-0.5 flex-shrink-0" 
+                  fill="none" 
+                  stroke="#687386" 
+                  strokeWidth="1.8" 
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                <div className="flex-1">
+                  <span className="text-xs font-medium" style={{ color: '#9AA3B2' }}>From</span>
+                  <p className="text-sm" style={{ color: '#687386' }}>{email.sender || 'Unknown Sender'}</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <svg 
+                  className="w-4 h-4 mt-0.5 flex-shrink-0" 
+                  fill="none" 
+                  stroke="#687386" 
+                  strokeWidth="1.8" 
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <div className="flex-1">
+                  <span className="text-xs font-medium" style={{ color: '#9AA3B2' }}>Date</span>
+                  <p className="text-sm" style={{ color: '#687386' }}>{formatDate(email.analyzed_at || email.date)}</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Label picker with unsaved indicator */}
-        <div className="p-6 border-b border-border-primary bg-background-primary">
+        <div 
+          className="p-6"
+          style={{ 
+            backgroundColor: '#F1F3F6',
+            borderBottom: '1px solid #E1E5EB'
+          }}
+        >
           <div className="flex items-center gap-3 mb-4">
-            <span className="text-sm font-medium text-text-gray min-w-[60px]">Label:</span>
+            <svg 
+              className="w-4 h-4 flex-shrink-0" 
+              fill="none" 
+              stroke="#687386" 
+              strokeWidth="1.8" 
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+            </svg>
+            <span className="text-sm font-medium" style={{ color: '#687386' }}>Label</span>
             <select
               value={selectedLabel}
               onChange={handleDropdownChange}
               disabled={isUpdating}
-              className="flex-1 px-3 py-2 rounded-lg border border-border-primary bg-background-secondary text-text-white focus:outline-none focus:ring-2 focus:ring-accent-primary disabled:opacity-50"
+              className="flex-1 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 transition-all disabled:opacity-50"
+              style={{
+                backgroundColor: '#F8F9FB',
+                border: '1px solid #E1E5EB',
+                color: '#20242C',
+                '--tw-ring-color': '#5B5CE2',
+              }}
             >
               {labels.map(label => (
                 <option key={label.label_id} value={label.label_name}>
@@ -173,7 +233,12 @@ function EmailDetailPanel({ email, isOpen, onClose, onLabelChange }) {
               ))}
             </select>
             {hasUnsavedChanges && !isUpdating && (
-              <span className="text-xs text-yellow-500 whitespace-nowrap">⚠ Not yet applied</span>
+              <span 
+                className="text-xs whitespace-nowrap font-medium"
+                style={{ color: '#E5A23C' }}
+              >
+                ⚠ Not applied
+              </span>
             )}
           </div>
 
@@ -191,16 +256,37 @@ function EmailDetailPanel({ email, isOpen, onClose, onLabelChange }) {
         {/* Email body */}
         <div className="p-6">
           {email.body ? (
-            <pre className="whitespace-pre-wrap text-sm text-text-white font-sans leading-relaxed">
+            <pre 
+              className="whitespace-pre-wrap text-sm font-sans"
+              style={{ 
+                color: '#20242C',
+                lineHeight: '1.7'
+              }}
+            >
               {email.body}
             </pre>
           ) : email.snippet ? (
             <div>
-              <p className="text-sm text-text-muted italic mb-2">Full body not available. Showing snippet:</p>
-              <p className="text-sm text-text-white">{email.snippet}</p>
+              <p 
+                className="text-sm italic mb-2"
+                style={{ color: '#9AA3B2' }}
+              >
+                Full body not available. Showing snippet:
+              </p>
+              <p 
+                className="text-sm"
+                style={{ color: '#20242C' }}
+              >
+                {email.snippet}
+              </p>
             </div>
           ) : (
-            <p className="text-sm text-text-muted italic">No content available</p>
+            <p 
+              className="text-sm italic"
+              style={{ color: '#9AA3B2' }}
+            >
+              No content available
+            </p>
           )}
         </div>
       </div>
