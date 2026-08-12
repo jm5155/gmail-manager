@@ -205,7 +205,7 @@ function Settings() {
   async function handleSetDeleteMode(mode) {
     try {
       const res = await apiRequest('/settings/delete-mode', {
-        method: 'POST',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ delete_mode: mode }),
       });
