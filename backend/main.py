@@ -403,6 +403,8 @@ async def emails_analyze_bulk(request: Request, limit: int = 50):
     if not _is_authenticated(request):
         return JSONResponse(status_code=401, content={"error": "Not logged in."})
 
+    limit = min(max(limit, 1), 200)  # clamp to prevent AI/Gmail quota exhaustion
+
     user_id = _require_user_id(request)
     if not user_id:
         return JSONResponse(status_code=401, content={"error": "User session not found."})

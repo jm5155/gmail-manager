@@ -15,8 +15,10 @@ restartPolicyMaxRetries = 10
 # Environment variables are set in Railway dashboard
 # Required: DATABASE_URL (auto-provided by Railway Postgres)
 # Required: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI
+# Required: SESSION_SECRET_KEY, JWT_SECRET_KEY
 # Required: GROQ_API_KEY, GEMINI_API_KEY, COHERE_API_KEY
 # Optional: NVIDIA_API_KEY, GOOGLE_SAFE_BROWSING_KEY, ALLOWED_ORIGIN
+# Optional (TokenRouter/OmniRoute): TOKENROUTER_BASE_URL, TOKENROUTER_API_KEY_1..5
 
 [healthcheck]
 path = "/"
