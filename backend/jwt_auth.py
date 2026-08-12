@@ -13,7 +13,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # JWT Configuration
-JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "gmail-manager-jwt-secret-key-2024-change-in-production")
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+if not JWT_SECRET_KEY:
+    raise RuntimeError(
+        "JWT_SECRET_KEY env var is required. "
+        "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
+    )
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRATION_DAYS = 7
 

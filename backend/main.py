@@ -47,9 +47,16 @@ app = FastAPI(
 
 # Session middleware for storing user_id after login
 # Configure session cookies to work across domains (Vercel frontend → Railway backend)
+SESSION_SECRET_KEY = os.getenv("SESSION_SECRET_KEY")
+if not SESSION_SECRET_KEY:
+    raise RuntimeError(
+        "SESSION_SECRET_KEY env var is required. "
+        "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
+    )
+
 app.add_middleware(
     SessionMiddleware,
-    secret_key="gmail-manager-session-secret-key-2024",
+    secret_key=SESSION_SECRET_KEY,
     session_cookie="gmail_manager_session",
     max_age=86400 * 7,  # 7 days
     same_site="none",  # Allow cross-site cookies (Vercel → Railway)
