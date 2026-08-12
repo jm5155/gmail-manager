@@ -132,9 +132,9 @@ function Rewriter() {
                   className="px-3.5 py-2 rounded-lg text-xs font-medium transition-all duration-200
                              hover:scale-[1.03] active:scale-[0.97] disabled:opacity-50"
                   style={{
-                    background: activeCommand === cmd.label ? 'rgba(37, 99, 235, 0.2)' : 'var(--color-surface)',
-                    border: `1px solid ${activeCommand === cmd.label ? 'rgba(37, 99, 235, 0.4)' : 'var(--color-border)'}`,
-                    color: activeCommand === cmd.label ? '#60A5FA' : 'var(--color-text-muted)',
+                    background: activeCommand === cmd.label ? 'rgba(59, 130, 246, 0.2)' : 'var(--color-surface)',
+                    border: `1px solid ${activeCommand === cmd.label ? 'rgba(59, 130, 246, 0.4)' : 'var(--color-border)'}`,
+                    color: activeCommand === cmd.label ? 'var(--color-info)' : 'var(--color-text-muted)',
                   }}
                 >
                   {cmd.label}
@@ -207,11 +207,11 @@ function Rewriter() {
               <p className="whitespace-pre-wrap leading-relaxed" style={{ color: 'var(--color-text-primary)' }}>{rewrittenText}</p>
             ) : (
               <div className="flex flex-col items-center justify-center h-full gap-2 opacity-40">
-                <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}
-                     style={{ color: '#20242C' }}>
+<svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}
+                      style={{ color: 'var(--color-text-primary)' }}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
                 </svg>
-                <p className="text-sm" style={{ color: '#20242C' }}>Rewritten text will appear here</p>
+                <p className="text-sm" style={{ color: 'var(--color-text-primary)' }}>Rewritten text will appear here</p>
               </div>
             )}
           </div>
@@ -251,11 +251,11 @@ function Rewriter() {
               <div className="whitespace-pre-wrap" style={{ color: 'var(--color-text-primary)' }}>{rewrittenText}</div>
             ) : (
               <div className="flex flex-col items-center justify-center h-full gap-3 opacity-50">
-                <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}
-                     style={{ color: '#20242C' }}>
+<svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}
+                      style={{ color: 'var(--color-text-primary)' }}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
                 </svg>
-                <p className="text-sm" style={{ color: '#20242C' }}>Rewritten text will appear here</p>
+                <p className="text-sm" style={{ color: 'var(--color-text-primary)' }}>Rewritten text will appear here</p>
               </div>
             )}
           </div>
@@ -268,7 +268,7 @@ function Rewriter() {
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium transition-all duration-200"
               style={{
                 color: 'var(--color-text-primary)',
-                background: 'linear-gradient(135deg, var(--color-primary) 0%, #7C3AED 100%)',
+                background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%)',
               }}
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -322,7 +322,7 @@ function Rewriter() {
               disabled={loading || !originalText.trim()}
               className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 disabled:opacity-50"
               style={{
-                background: originalText.trim() && !loading ? 'linear-gradient(135deg, var(--color-primary) 0%, #7C3AED 100%)' : '#475569',
+                background: originalText.trim() && !loading ? 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%)' : 'var(--color-text-muted)',
               }}
             >
               <svg className="w-4 h-4" style={{ color: 'var(--color-text-primary)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>

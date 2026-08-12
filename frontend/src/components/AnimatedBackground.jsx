@@ -1,9 +1,9 @@
 /**
- * AnimatedBackground.jsx — Minimal Light Background Component
- * Subtle background for light mode design system
+ * AnimatedBackground.jsx — Minimal Background Component
+ * Subtle background for light and dark mode design system
  * 
  * Features:
- * - Clean light background (#F1F3F6)
+ * - Clean adaptive background (var(--color-background))
  * - Minimal subtle particles (barely visible)
  * - No distracting animations
  * - Performance optimized
@@ -31,11 +31,11 @@ function AnimatedBackground() {
 
   return (
     <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-      {/* Clean Light Background */}
+      {/* Clean Background */}
       <div
         className="absolute inset-0"
         style={{
-          background: '#F1F3F6',
+          background: 'var(--color-background)',
         }}
       />
 
@@ -49,7 +49,7 @@ function AnimatedBackground() {
             top: `${particle.top}%`,
             width: `${particle.size}px`,
             height: `${particle.size}px`,
-            backgroundColor: '#E1E5EB',
+            backgroundColor: 'var(--color-border)',
             opacity: 0.08,
             animation: `floatSubtle ${particle.duration}s ease-in-out infinite`,
             animationDelay: `${particle.delay}s`,
@@ -64,8 +64,8 @@ function AnimatedBackground() {
         className="absolute inset-0 opacity-[0.02]"
         style={{
           backgroundImage: `
-            linear-gradient(#E1E5EB 1px, transparent 1px),
-            linear-gradient(90deg, #E1E5EB 1px, transparent 1px)
+            linear-gradient(var(--color-border) 1px, transparent 1px),
+            linear-gradient(90deg, var(--color-border) 1px, transparent 1px)
           `,
           backgroundSize: '60px 60px',
         }}

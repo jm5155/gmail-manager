@@ -148,6 +148,113 @@
     --shadow-md: var(--shadow-flat-md);
     --shadow-lg: var(--shadow-flat-lg);
   }
+
+  /* ---------- DARK MODE TOKENS ---------- */
+  [data-theme="dark"] {
+    /* === DARK MODERN MINIMALIST + SOFT NEUMORPHISM === */
+    
+    /* BASE BACKGROUNDS - Dark Neutral */
+    --color-background: #1A1D24;   /* Primary application canvas */
+    --color-surface: #22262E;      /* Cards, panels, sidebar, modals, elevated surfaces */
+    --color-surface-hover: #2A2F3A; /* Hover state for interactive surfaces */
+    
+    /* TEXT HIERARCHY - Light on Dark */
+    --color-text-primary: #F5F6FA;   /* Headings, important labels, email subjects */
+    --color-text-secondary: #B8BCCC; /* Body text, descriptions, metadata */
+    --color-text-muted: #7A8092;     /* Placeholders, disabled text, tertiary info */
+    
+    /* BORDERS */
+    --color-border: #3A3F4B;         /* Subtle borders throughout */
+    --color-border-light: #4A4F5E;   /* Even lighter borders */
+    
+    /* PRIMARY ACCENT - Indigo (brightened for dark mode contrast) */
+    --color-primary: #8B8CFF;        /* Primary buttons, links, active states */
+    --color-primary-hover: #7A7BFF;  /* Hover state */
+    --color-primary-active: #6A6BF5; /* Active/pressed state */
+    --color-primary-light: #A5A6FF;  /* Lighter variant for backgrounds */
+    
+    /* SEMANTIC COLORS - Status Indicators (adjusted for dark backgrounds) */
+    --color-success: #4ADE80;        /* Success states, connected status */
+    --color-success-bg: #0F2A1A;     /* Success background */
+    --color-success-border: #1A4A2E; /* Success border */
+    
+    --color-warning: #FBBF24;        /* Warning states */
+    --color-warning-bg: #2A250F;     /* Warning background */
+    --color-warning-border: #4A3E1A; /* Warning border */
+    
+    --color-danger: #FB7185;         /* Error/danger states */
+    --color-danger-bg: #2A0F15;      /* Danger background */
+    --color-danger-border: #4A1A22;  /* Danger border */
+    
+    --color-info: #60A5FA;           /* Info states */
+    --color-info-bg: #0F1F2E;        /* Info background */
+    --color-info-border: #1A3A5E;    /* Info border */
+    
+    /* BORDERS & DIVIDERS */
+    /* SOFT NEUMORPHIC SHADOWS - Dark Mode */
+    --shadow-neumorphic-sm: 
+      4px 4px 10px rgba(0, 0, 0, 0.5),
+      -4px -4px 10px rgba(255, 255, 255, 0.05);
+    
+    --shadow-neumorphic-md: 
+      7px 7px 16px rgba(0, 0, 0, 0.55),
+      -7px -7px 16px rgba(255, 255, 255, 0.06);
+    
+    --shadow-neumorphic-lg: 
+      12px 12px 28px rgba(0, 0, 0, 0.6),
+      -12px -12px 28px rgba(255, 255, 255, 0.07);
+    
+    --shadow-neumorphic-inset: 
+      inset 3px 3px 7px rgba(0, 0, 0, 0.5),
+      inset -3px -3px 7px rgba(255, 255, 255, 0.05);
+    
+    /* FLAT SHADOWS (for non-neumorphic elements) */
+    --shadow-flat-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+    --shadow-flat-md: 0 4px 6px rgba(0, 0, 0, 0.5);
+    --shadow-flat-lg: 0 10px 20px rgba(0, 0, 0, 0.6);
+    
+    /* LEGACY ALIASES (for backward compatibility) */
+    --bg-base: var(--color-background);
+    --bg-card: var(--color-surface);
+    --bg-dark: var(--color-background);
+    --bg-elevated: var(--color-surface);
+    --bg-hover: var(--color-surface-hover);
+    --text-heading: var(--color-text-primary);
+    --text-body: var(--color-text-secondary);
+    --text-muted: var(--color-text-muted);
+    --text-primary: var(--color-text-primary);
+    --text-secondary: var(--color-text-secondary);
+    --text-tertiary: var(--color-text-muted);
+    --primary: var(--color-primary);
+    --primary-hover: var(--color-primary-hover);
+    --primary-active: var(--color-primary-active);
+    --success: var(--color-success);
+    --success-bg: var(--color-success-bg);
+    --success-border: var(--color-success-border);
+    --warning: var(--color-warning);
+    --warning-bg: var(--color-warning-bg);
+    --warning-border: var(--color-warning-border);
+    --danger: var(--color-danger);
+    --danger-bg: var(--color-danger-bg);
+    --danger-border: var(--color-danger-border);
+    --info: var(--color-info);
+    --info-bg: var(--color-info-bg);
+    --info-border: var(--color-info-border);
+    --border: var(--color-border);
+    --border-light: var(--color-border-light);
+    --secondary: #A855F7;
+    --secondary-hover: #9333EA;
+    
+    /* NEUMORPHIC SHADOW ALIASES */
+    --neu-raised: var(--shadow-neumorphic-sm);
+    --neu-pressed: var(--shadow-neumorphic-inset);
+    --neu-inset: var(--shadow-neumorphic-inset);
+    --neu-flat: var(--shadow-neumorphic-sm);
+    --neu-hover: var(--shadow-neumorphic-md);
+    --shadow-sm: var(--shadow-flat-sm);
+    --shadow-md: var(--shadow-flat-md);
+    --shadow-lg: var(--shadow-flat-lg);
+  }
   
   /* Base styles */
   * {
@@ -351,7 +458,7 @@
     transition: background var(--transition-fast), transform var(--transition-fast);
   }
   .btn-danger:hover:not(:disabled) {
-    background: #FFE4E6;
+    background: var(--color-danger-bg);
     transform: translateY(-1px);
   }
   .btn-danger:active:not(:disabled) {
@@ -369,8 +476,8 @@
   /* BUTTON — GHOST */
   .btn-ghost {
     background: transparent;
-    color: var(--text-secondary);
-    border: 1px solid var(--border-default);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
     padding: 10px 20px;
     font-size: 14px;
@@ -378,8 +485,8 @@
     transition: background 0.2s ease, color 0.2s ease;
   }
   .btn-ghost:hover:not(:disabled) {
-    background: var(--surface-light);
-    color: var(--text-primary);
+    background: var(--color-surface-hover);
+    color: var(--color-text-primary);
   }
 
   /* BADGES / PILLS — flat tags, fit-content width (fixes text-overflow bug) */
@@ -440,7 +547,7 @@
   /* SIDEBAR NAV ITEM */
   /* NAVIGATION ITEMS - Sidebar */
   .nav-item {
-    color: #000000;
+    color: var(--color-text-primary);
     border-radius: var(--radius-md);
     padding: 10px 14px;
     transition: background var(--transition-fast), 
@@ -455,16 +562,16 @@
   }
   .nav-item:hover {
     background: var(--color-surface-hover);
-    color: #000000;
+    color: var(--color-text-primary);
     transform: translateX(2px);
   }
   .nav-item.active {
     background: rgba(91, 92, 226, 0.08);
-    color: #000000;
+    color: var(--color-text-primary);
     font-weight: 600;
   }
   .nav-item.active svg {
-    color: #000000;
+    color: var(--color-text-primary);
   }
 
   /* SETTINGS GRID — responsive panel layout */

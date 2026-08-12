@@ -127,11 +127,11 @@ function Quarantine() {
                 {/* Red Warning Badge */}
                 <div className="flex items-center gap-2 mb-3">
                   <span className="px-2 py-0.5 rounded-full text-xs font-semibold"
-                        style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#F87171', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+                        style={{ background: 'var(--color-danger-bg)', color: 'var(--color-danger)', border: '1px solid var(--color-danger-border)' }}>
                     ⚠️ Quarantined
                   </span>
                   <span className="px-2 py-0.5 rounded-full text-xs font-semibold"
-                        style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#F87171' }}>
+                        style={{ background: 'var(--color-danger-bg)', color: 'var(--color-danger)' }}>
                     Score: {email.scam_score}
                   </span>
                 </div>

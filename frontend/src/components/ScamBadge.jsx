@@ -23,19 +23,19 @@ function ScamBadge({ score = 0, reason = '', indicators = [], expanded = false, 
     const configs = {
       low: {
         label: 'Safe',
-        color: '#27AE72',
+        color: 'var(--color-success)',
         bg: 'rgba(39, 174, 114, 0.1)',
         border: 'rgba(39, 174, 114, 0.2)',
       },
       medium: {
         label: 'Suspicious',
-        color: '#E5A23C',
+        color: 'var(--color-warning)',
         bg: 'rgba(229, 162, 60, 0.1)',
         border: 'rgba(229, 162, 60, 0.2)',
       },
       high: {
         label: 'Dangerous',
-        color: '#E05A67',
+        color: 'var(--color-danger)',
         bg: 'rgba(224, 90, 103, 0.1)',
         border: 'rgba(224, 90, 103, 0.2)',
       },
@@ -93,10 +93,10 @@ function ScamBadge({ score = 0, reason = '', indicators = [], expanded = false, 
 
             {/* Label + Score */}
             <div>
-              <div className="text-sm font-semibold" style={{ color: '#20242C' }}>
+              <div className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
                 {config.label}
               </div>
-              <div className="text-xs" style={{ color: '#687386' }}>
+              <div className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
                 Risk Score: {score}/100
               </div>
             </div>
@@ -129,12 +129,12 @@ function ScamBadge({ score = 0, reason = '', indicators = [], expanded = false, 
             {/* Detected Indicators */}
             {indicators && indicators.length > 0 && (
               <div className="mb-4">
-                <h5 className="text-xs font-medium mb-2" style={{ color: '#20242C' }}>
+                <h5 className="text-xs font-medium mb-2" style={{ color: 'var(--color-text-primary)' }}>
                   Detected Indicators:
                 </h5>
                 <ul className="space-y-1.5">
                   {indicators.map((indicator, idx) => (
-                    <li key={idx} className="flex items-start gap-2 text-xs" style={{ color: '#687386' }}>
+                    <li key={idx} className="flex items-start gap-2 text-xs" style={{ color: 'var(--color-text-secondary)' }}>
                       <span style={{ color: config.color, marginTop: '2px' }}>•</span>
                       <span>{indicator}</span>
                     </li>
@@ -146,10 +146,10 @@ function ScamBadge({ score = 0, reason = '', indicators = [], expanded = false, 
             {/* AI Analysis */}
             {reason && (
               <div>
-                <h5 className="text-xs font-medium mb-1.5" style={{ color: '#20242C' }}>
+                <h5 className="text-xs font-medium mb-1.5" style={{ color: 'var(--color-text-primary)' }}>
                   Analysis:
                 </h5>
-                <p className="text-xs leading-relaxed" style={{ color: '#687386' }}>
+                <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
                   {reason}
                 </p>
               </div>

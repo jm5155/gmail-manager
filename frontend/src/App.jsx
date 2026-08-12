@@ -17,6 +17,7 @@ import Settings from './pages/Settings';
 import Sidebar from './components/Sidebar';
 import AnimatedBackground from './components/AnimatedBackground';
 import ToastProvider from './components/ToastNotification';
+import { ThemeProvider } from './context/ThemeContext';
 import { apiGet, setAuthToken, getAuthToken } from './lib/api';
 
 // API Base URL - reads from environment variable or defaults to localhost
@@ -88,13 +89,14 @@ function AppContent() {
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           className="fixed top-4 left-4 z-40 w-10 h-10 flex items-center justify-center rounded-lg md:hidden transition-colors"
           style={{
-            backgroundColor: '#F8F9FB',
-            border: '1px solid #E1E5EB'
+            backgroundColor: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
+            boxShadow: 'var(--shadow-flat-sm)'
           }}
           aria-label="Open menu"
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
-               style={{ color: '#20242C' }}>
+               style={{ color: 'var(--color-text-primary)' }}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
@@ -159,9 +161,11 @@ function AppContent() {
 
 function App() {
   return (
-    <ToastProvider>
-      <AppContent />
-    </ToastProvider>
+    <ThemeProvider>
+      <ToastProvider>
+        <AppContent />
+      </ToastProvider>
+    </ThemeProvider>
   );
 }
 

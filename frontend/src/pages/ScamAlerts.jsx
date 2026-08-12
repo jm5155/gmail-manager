@@ -109,9 +109,9 @@ function ScamAlerts() {
               onClick={() => setActiveFilter(filter.value)}
               className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 min-w-[85px] flex items-center justify-center gap-1"
               style={{
-                background: activeFilter === filter.value ? 'rgba(37, 99, 235, 0.15)' : 'transparent',
-                color: activeFilter === filter.value ? '#60A5FA' : 'var(--color-text-muted)',
-                border: `1px solid ${activeFilter === filter.value ? 'rgba(37, 99, 235, 0.3)' : 'var(--color-border)'}`,
+                background: activeFilter === filter.value ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
+                color: activeFilter === filter.value ? 'var(--color-info)' : 'var(--color-text-muted)',
+                border: `1px solid ${activeFilter === filter.value ? 'rgba(59, 130, 246, 0.3)' : 'var(--color-border)'}`,
               }}
             >
               {filter.label}

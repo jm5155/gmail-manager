@@ -215,8 +215,9 @@ def seed_default_labels(user_id: int):
     try:
         cursor = conn.cursor()
 
-        _execute(cursor,"SELECT COUNT(*) FROM custom_labels WHERE user_id = %s", (user_id,))
-        count = cursor.fetchone()['count']
+        _execute(cursor, "SELECT COUNT(*) as count FROM custom_labels WHERE user_id = %s", (user_id,))
+        result = cursor.fetchone()
+        count = result['count'] if isinstance(result, dict) else result[0]
 
         if count == 0:
             defaults = [
@@ -230,10 +231,8 @@ def seed_default_labels(user_id: int):
                 (user_id, "Receipt", "#065F46", "#FFFFFF"),
             ]
             query = "INSERT INTO custom_labels (user_id, label_name, bg_color, text_color) VALUES (%s, %s, %s, %s)".replace("%s", _PLACEHOLDER)
-            cursor.executemany(
-                query,
-                defaults,
-            )
+            for default in defaults:
+                _execute(cursor, query, default)
             conn.commit()
             print(f"[DB] Seeded 8 default labels for user_id={user_id}")
         else:

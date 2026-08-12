@@ -30,6 +30,7 @@ from database import (
     get_labels, add_label, delete_label,
     reset_database, mark_email_safe,
     get_delete_mode, set_delete_mode,
+    _get_connection, _execute,
 )
 from ai_router import ai_router, REWRITE_PROMPT
 from dependencies import require_auth
@@ -750,11 +751,9 @@ async def get_pending_count(request: Request):
     if not user_id:
         return JSONResponse(status_code=401, content={"error": "User session not found."})
 
-    from database import _get_connection
-
     conn = _get_connection()
     cursor = conn.cursor()
-    cursor.execute(f"""
+    _execute(cursor, f"""
         SELECT COUNT(*) as count
         FROM analyzed_emails
         WHERE user_id = %s
@@ -783,10 +782,9 @@ async def apply_all_pending(request: Request):
         return JSONResponse(status_code=401, content={"error": "User session not found."})
 
     # Get all pending email IDs from DB
-    from database import _get_connection
     conn = _get_connection()
     cursor = conn.cursor()
-    cursor.execute(f"""
+    _execute(cursor, f"""
         SELECT email_id
         FROM analyzed_emails
         WHERE user_id = %s

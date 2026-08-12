@@ -13,10 +13,10 @@ function ProgressBar({ current = 0, total = 0, label = '' }) {
     <div className="w-full">
       {/* Label + Counter */}
       <div className="flex justify-between items-center mb-2">
-        <span className="text-sm" style={{ color: '#687386' }}>
+        <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
           {label || `Analyzing ${current} of ${total}...`}
         </span>
-        <span className="text-sm font-semibold" style={{ color: '#20242C' }}>
+        <span className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
           {percentage}%
         </span>
       </div>
@@ -25,8 +25,8 @@ function ProgressBar({ current = 0, total = 0, label = '' }) {
       <div
         className="w-full h-2.5 rounded-full overflow-hidden"
         style={{
-          background: '#F8F9FB',
-          border: '1px solid #E1E5EB',
+          background: 'var(--color-surface)',
+          border: '1px solid var(--color-border)',
         }}
       >
         {/* Animated Fill */}
@@ -34,7 +34,7 @@ function ProgressBar({ current = 0, total = 0, label = '' }) {
           className="h-full rounded-full transition-all duration-500 ease-out relative"
           style={{
             width: `${percentage}%`,
-            background: '#5B5CE2',
+            background: 'var(--color-primary)',
           }}
         >
           {/* Subtle shimmer effect */}

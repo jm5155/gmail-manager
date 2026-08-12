@@ -15,8 +15,10 @@ electron/resources/gmail-manager-backend*
 *.spec.bak
 
 # Environment & secrets
+.env
 backend/.env
 backend/token.json
+backend/tokens/
 backend/gmail_manager.db
 
 # IDE

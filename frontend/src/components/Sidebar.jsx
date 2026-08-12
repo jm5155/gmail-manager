@@ -10,6 +10,7 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { apiRequest, clearAuthToken } from '../lib/api';
+import { useTheme } from '../context/ThemeContext';
 
 // Navigation items with icons and paths
 const NAV_ITEMS = [
@@ -63,6 +64,7 @@ const NAV_ITEMS = [
 
 function Sidebar({ userEmail, mobileMenuOpen = false, onCloseMobileMenu = () => {} }) {
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
 
   async function handleLogout() {
     try {
@@ -88,7 +90,7 @@ function Sidebar({ userEmail, mobileMenuOpen = false, onCloseMobileMenu = () => 
           className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
           style={{
             background: 'var(--color-surface)',
-            boxShadow: '3px 3px 6px rgba(160, 174, 192, 0.2), -3px -3px 6px rgba(255, 255, 255, 0.9)',
+            boxShadow: 'var(--shadow-neumorphic-sm)'
           }}
         >
           <svg className="w-5 h-5" style={{ color: 'var(--color-primary)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
@@ -126,16 +128,35 @@ function Sidebar({ userEmail, mobileMenuOpen = false, onCloseMobileMenu = () => 
             style={{
               background: 'var(--color-primary)',
               color: 'var(--color-text-primary)',
-              boxShadow: '2px 2px 4px rgba(91, 92, 226, 0.2)',
+              boxShadow: 'var(--shadow-flat-sm)'
             }}
           >
             {initials}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate" style={{ color: '#000000' }}>{userEmail || 'User'}</p>
+            <p className="text-sm font-medium truncate" style={{ color: 'var(--color-text-primary)' }}>{userEmail || 'User'}</p>
             <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Active</p>
           </div>
         </div>
+        
+        {/* Theme Toggle */}
+        <button
+          onClick={toggleTheme}
+          className="btn-secondary w-full flex items-center justify-center gap-2 mb-3"
+          aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+        >
+          {theme === 'light' ? (
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+            </svg>
+          ) : (
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+            </svg>
+          )}
+          {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
+        </button>
+        
         <button
           onClick={handleLogout}
           className="btn-secondary w-full flex items-center justify-center gap-2"

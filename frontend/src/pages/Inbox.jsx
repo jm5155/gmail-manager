@@ -410,7 +410,7 @@ function Inbox() {
               disabled={isAnalyzing}
               className="btn-primary px-4 py-1.5 text-sm min-w-[95px] flex items-center justify-center gap-2"
               style={{
-                background: isAnalyzing ? '#475569' : undefined,
+                background: isAnalyzing ? 'var(--color-text-muted)' : undefined,
                 boxShadow: isAnalyzing ? 'none' : undefined,
               }}
             >
@@ -515,7 +515,7 @@ function Inbox() {
                   className="px-3 py-1.5 text-xs capitalize transition-colors"
                   style={{
                     background: batchMode === mode ? 'var(--color-primary)' : 'transparent',
-                    color: batchMode === mode ? '#FFFFFF' : 'var(--color-text-muted)',
+                    color: batchMode === mode ? 'var(--color-text-primary)' : 'var(--color-text-muted)',
                   }}
                 >
                   {mode}
@@ -557,8 +557,8 @@ function Inbox() {
               disabled={!batchValue || batchDeleting}
               className="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all disabled:opacity-50"
               style={{ 
-                background: '#DC2626',
-                color: '#FFFFFF'
+                background: 'var(--color-danger)',
+                color: 'var(--color-text-primary)'
               }}
             >
               {batchDeleting ? 'Deleting...' : 'Delete All Matching'}
@@ -590,7 +590,7 @@ function Inbox() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
             <div className="flex-1">
-              <p className="text-sm font-semibold" style={{ color: '#FBBF24' }}>No labels found</p>
+              <p className="text-sm font-semibold" style={{ color: 'var(--color-warning)' }}>No labels found</p>
               <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-secondary)' }}>
                 You must create at least one label before running analysis. The AI needs labels to classify your emails.
               </p>
@@ -598,7 +598,7 @@ function Inbox() {
             <button
               onClick={() => navigate('/settings')}
               className="px-4 py-2 rounded-lg text-xs font-semibold flex-shrink-0 transition-all hover:scale-[1.02]"
-              style={{ color: 'var(--color-text-primary)', background: 'linear-gradient(135deg, #F59E0B, #D97706)' }}
+              style={{ color: 'var(--color-text-primary)', background: 'linear-gradient(135deg, var(--color-warning), var(--color-warning-bg))' }}
             >
               Go to Settings
             </button>
@@ -624,7 +624,7 @@ function Inbox() {
                     className="h-full rounded-full"
                     style={{
                       width: '40%',
-                      background: 'linear-gradient(90deg, var(--color-primary), #7C3AED)',
+                      background: 'linear-gradient(90deg, var(--color-primary), var(--color-primary-light))',
                       animation: 'indeterminate 1.4s ease-in-out infinite',
                     }}
                   />

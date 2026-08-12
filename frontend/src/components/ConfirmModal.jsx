@@ -25,21 +25,21 @@ function ConfirmModal({
   onCancel = () => {},
 }) {
   return (
-    <div
-      className="modal-overlay fixed inset-0 z-[200] flex items-center justify-center"
-      style={{
-        background: 'rgba(32, 36, 44, 0.4)',
-        backdropFilter: 'blur(4px)',
-      }}
-      onClick={onCancel}
-    >
+<div
+        className="modal-overlay fixed inset-0 z-[200] flex items-center justify-center"
+        style={{
+          background: 'rgba(0, 0, 0, 0.4)',
+          backdropFilter: 'blur(4px)',
+        }}
+        onClick={onCancel}
+      >
       <div
         className="modal-content w-full max-w-md mx-4 animate-fadeIn"
         style={{
-          background: '#F8F9FB',
+          background: 'var(--color-surface)',
           borderRadius: '20px',
           padding: '32px',
-          boxShadow: '0 20px 60px -10px rgba(32, 36, 44, 0.2), 0 0 0 1px rgba(225, 229, 235, 0.8)',
+          boxShadow: '0 20px 60px -10px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)',
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -58,7 +58,7 @@ function ConfirmModal({
               viewBox="0 0 24 24"
               stroke="currentColor"
               strokeWidth={1.8}
-              style={{ color: isDangerous ? '#E05A67' : '#E5A23C' }}
+              style={{ color: isDangerous ? 'var(--color-danger)' : 'var(--color-warning)' }}
             >
               <path
                 strokeLinecap="round"
@@ -72,7 +72,7 @@ function ConfirmModal({
         {/* Title */}
         <h3
           className="text-lg font-semibold text-center mb-2"
-          style={{ color: '#20242C' }}
+          style={{ color: 'var(--color-text-primary)' }}
         >
           {title}
         </h3>
@@ -80,7 +80,7 @@ function ConfirmModal({
         {/* Message */}
         <p
           className="text-sm text-center mb-6 leading-relaxed whitespace-pre-line"
-          style={{ color: '#687386' }}
+          style={{ color: 'var(--color-text-secondary)' }}
         >
           {message}
         </p>

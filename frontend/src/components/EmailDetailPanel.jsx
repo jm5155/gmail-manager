@@ -110,24 +110,24 @@ function EmailDetailPanel({ email, isOpen, onClose, onLabelChange }) {
       <div 
         className="absolute right-0 top-0 h-full w-full max-w-2xl overflow-y-auto shadow-2xl"
         style={{ 
-          backgroundColor: '#F8F9FB',
-          borderLeft: '1px solid #E1E5EB'
+          backgroundColor: 'var(--color-surface)',
+          borderLeft: '1px solid var(--color-border)'
         }}
       >
         {/* Top bar with close and apply button */}
         <div 
           className="sticky top-0 p-4 z-10 flex items-center justify-between"
           style={{ 
-            backgroundColor: '#F8F9FB',
-            borderBottom: '1px solid #E1E5EB'
+            backgroundColor: 'var(--color-surface)',
+            borderBottom: '1px solid var(--color-border)'
           }}
         >
           <button
             onClick={onClose}
             className="text-2xl leading-none transition-colors"
-            style={{ color: '#687386' }}
-            onMouseEnter={(e) => e.target.style.color = '#20242C'}
-            onMouseLeave={(e) => e.target.style.color = '#687386'}
+            style={{ color: 'var(--color-text-secondary)' }}
+            onMouseEnter={(e) => e.target.style.color = 'var(--color-text-primary)'}
+            onMouseLeave={(e) => e.target.style.color = 'var(--color-text-secondary)'}
             aria-label="Close"
           >
             ×
@@ -148,46 +148,46 @@ function EmailDetailPanel({ email, isOpen, onClose, onLabelChange }) {
         {/* Email metadata */}
         <div 
           className="p-6"
-          style={{ borderBottom: '1px solid #E1E5EB' }}
+          style={{ borderBottom: '1px solid var(--color-border)' }}
         >
           <div className="space-y-4">
             <div>
               <h2 
                 className="text-xl font-semibold mb-1"
-                style={{ color: '#20242C' }}
+                style={{ color: 'var(--color-text-primary)' }}
               >
                 {email.subject || '(No Subject)'}
               </h2>
             </div>
             <div className="space-y-2">
               <div className="flex items-start gap-3">
-                <svg 
-                  className="w-4 h-4 mt-0.5 flex-shrink-0" 
-                  fill="none" 
-                  stroke="#687386" 
-                  strokeWidth="1.8" 
-                  viewBox="0 0 24 24"
-                >
+<svg 
+                className="w-4 h-4 mt-0.5 flex-shrink-0" 
+                fill="none" 
+                stroke="var(--color-text-secondary)" 
+                strokeWidth="1.8" 
+                viewBox="0 0 24 24"
+              >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
                 <div className="flex-1">
-                  <span className="text-xs font-medium" style={{ color: '#9AA3B2' }}>From</span>
-                  <p className="text-sm" style={{ color: '#687386' }}>{email.sender || 'Unknown Sender'}</p>
+<span className="text-xs font-medium" style={{ color: 'var(--color-text-muted)' }}>From</span>
+                    <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>{email.sender || 'Unknown Sender'}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <svg 
-                  className="w-4 h-4 mt-0.5 flex-shrink-0" 
-                  fill="none" 
-                  stroke="#687386" 
-                  strokeWidth="1.8" 
-                  viewBox="0 0 24 24"
-                >
+<svg 
+                className="w-4 h-4 mt-0.5 flex-shrink-0" 
+                fill="none" 
+                stroke="var(--color-text-secondary)" 
+                strokeWidth="1.8" 
+                viewBox="0 0 24 24"
+              >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 <div className="flex-1">
-                  <span className="text-xs font-medium" style={{ color: '#9AA3B2' }}>Date</span>
-                  <p className="text-sm" style={{ color: '#687386' }}>{formatDate(email.analyzed_at || email.date)}</p>
+<span className="text-xs font-medium" style={{ color: 'var(--color-text-muted)' }}>Date</span>
+                    <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>{formatDate(email.analyzed_at || email.date)}</p>
                 </div>
               </div>
             </div>
@@ -195,34 +195,34 @@ function EmailDetailPanel({ email, isOpen, onClose, onLabelChange }) {
         </div>
 
         {/* Label picker with unsaved indicator */}
-        <div 
-          className="p-6"
-          style={{ 
-            backgroundColor: '#F1F3F6',
-            borderBottom: '1px solid #E1E5EB'
-          }}
-        >
+<div 
+            className="p-6"
+            style={{ 
+              backgroundColor: 'var(--color-background)',
+              borderBottom: '1px solid var(--color-border)'
+            }}
+          >
           <div className="flex items-center gap-3 mb-4">
             <svg 
               className="w-4 h-4 flex-shrink-0" 
               fill="none" 
-              stroke="#687386" 
+              stroke="var(--color-text-secondary)" 
               strokeWidth="1.8" 
               viewBox="0 0 24 24"
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
             </svg>
-            <span className="text-sm font-medium" style={{ color: '#687386' }}>Label</span>
+            <span className="text-sm font-medium" style={{ color: 'var(--color-text-secondary)' }}>Label</span>
             <select
               value={selectedLabel}
               onChange={handleDropdownChange}
               disabled={isUpdating}
               className="flex-1 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 transition-all disabled:opacity-50"
               style={{
-                backgroundColor: '#F8F9FB',
-                border: '1px solid #E1E5EB',
-                color: '#20242C',
-                '--tw-ring-color': '#5B5CE2',
+                backgroundColor: 'var(--color-surface)',
+                border: '1px solid var(--color-border)',
+                color: 'var(--color-text-primary)',
+                '--tw-ring-color': 'var(--color-primary)',
               }}
             >
               {labels.map(label => (
@@ -234,7 +234,7 @@ function EmailDetailPanel({ email, isOpen, onClose, onLabelChange }) {
             {hasUnsavedChanges && !isUpdating && (
               <span 
                 className="text-xs whitespace-nowrap font-medium"
-                style={{ color: '#E5A23C' }}
+                style={{ color: 'var(--color-warning)' }}
               >
                 ⚠ Not applied
               </span>
@@ -258,7 +258,7 @@ function EmailDetailPanel({ email, isOpen, onClose, onLabelChange }) {
             <pre 
               className="whitespace-pre-wrap text-sm font-sans"
               style={{ 
-                color: '#20242C',
+                color: 'var(--color-text-primary)',
                 lineHeight: '1.7'
               }}
             >
@@ -268,13 +268,13 @@ function EmailDetailPanel({ email, isOpen, onClose, onLabelChange }) {
             <div>
               <p 
                 className="text-sm italic mb-2"
-                style={{ color: '#9AA3B2' }}
+                style={{ color: 'var(--color-text-muted)' }}
               >
                 Full body not available. Showing snippet:
               </p>
               <p 
                 className="text-sm"
-                style={{ color: '#20242C' }}
+                style={{ color: 'var(--color-text-primary)' }}
               >
                 {email.snippet}
               </p>
@@ -282,7 +282,7 @@ function EmailDetailPanel({ email, isOpen, onClose, onLabelChange }) {
           ) : (
             <p 
               className="text-sm italic"
-              style={{ color: '#9AA3B2' }}
+              style={{ color: 'var(--color-text-muted)' }}
             >
               No content available
             </p>

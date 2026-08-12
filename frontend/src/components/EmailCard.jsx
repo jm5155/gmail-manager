@@ -91,17 +91,17 @@ function EmailCard({
     <div 
       className="bg-surface rounded-xl overflow-visible transition-all duration-200"
       style={{
-        backgroundColor: 'var(--color-surface, #F8F9FB)',
-        border: '1px solid var(--color-border, #E1E5EB)',
+        backgroundColor: 'var(--color-surface)',
+        border: '1px solid var(--color-border)',
         boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02)',
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.transform = 'translateY(-1px)';
-        e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.05), 0 2px 4px rgba(0, 0, 0, 0.03)';
+        e.currentTarget.style.boxShadow = 'var(--shadow-neumorphic-md)';
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02)';
+        e.currentTarget.style.boxShadow = 'var(--shadow-neumorphic-sm)';
       }}
     >
       {/* Main Card Content */}
