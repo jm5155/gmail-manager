@@ -622,8 +622,8 @@ Everything Your Inbox Needs
                 >
                   <IconComponent
                     size={22}
-                    color={`var(${feature.color})`}
                     strokeWidth={1.8}
+                    style={{ color: `var(${feature.color})` }}
                   />
                 </div>
                 <h3
