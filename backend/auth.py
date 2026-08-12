@@ -11,6 +11,11 @@ from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from dotenv import load_dotenv
+from database import (
+    save_user_token,
+    get_user_token,
+    delete_user_token,
+)
 
 # Load environment variables from .env file
 load_dotenv()
@@ -26,16 +31,6 @@ SCOPES = [
     "https://www.googleapis.com/auth/userinfo.email",     # Get user email
     "https://www.googleapis.com/auth/userinfo.profile",   # Get user profile
 ]
-
-# Path to store OAuth tokens per user
-TOKEN_DIR = Path(__file__).parent / "tokens"
-TOKEN_DIR.mkdir(exist_ok=True)  # Create tokens directory if it doesn't exist
-
-def get_token_path(user_email: str) -> Path:
-    """Get the token file path for a specific user."""
-    # Sanitize email for use as filename
-    safe_email = user_email.replace('@', '_at_').replace('.', '_')
-    return TOKEN_DIR / f"token_{safe_email}.json"
 
 # Google OAuth credentials from environment variables
 CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
@@ -54,33 +49,30 @@ CLIENT_CONFIG = {
 }
 
 
-# ---------- TOKEN MANAGEMENT ----------
+# ---------- TOKEN MANAGEMENT (DB-BACKED, per-user) ----------
 
-def load_token(user_email: str = None) -> Credentials | None:
+def load_token(user_email: str) -> Credentials | None:
     """
-    Load saved OAuth token for a specific user.
-    If user_email is not provided, tries to load the legacy token.json (for backward compatibility).
-    If the token exists and is expired but has a refresh token, auto-refresh it.
-    Returns Credentials object or None if no valid token found.
+    Load a user's saved OAuth token from the database (keyed by gmail_address).
+    If the token is expired but has a refresh token, it is auto-refreshed and
+    persisted back to the DB. Returns a Credentials object, or None.
+    NOTE: user_email is required — there is no shared/legacy file fallback.
     """
-    # Determine which token file to use
-    if user_email:
-        token_path = get_token_path(user_email)
-    else:
-        # Fallback to legacy single-user token.json
-        token_path = Path(__file__).parent / "token.json"
-    
-    if not token_path.exists():
+    if not user_email:
+        return None
+
+    token_json = get_user_token(user_email)
+    if not token_json:
         return None
 
     try:
-        creds = Credentials.from_authorized_user_file(str(token_path), SCOPES)
+        creds = Credentials.from_authorized_user_info(json.loads(token_json), SCOPES)
 
         if creds and creds.expired and creds.refresh_token:
-            print(f"[AUTH] Token expired for {user_email or 'legacy user'}, refreshing...")
+            print(f"[AUTH] Token expired for {user_email}, refreshing...")
             creds.refresh(Request())
             save_token(creds, user_email)
-            print("[AUTH] Token refreshed successfully.")
+            print(f"[AUTH] Token refreshed for {user_email}.")
 
         return creds if creds and creds.valid else None
 
@@ -89,62 +81,44 @@ def load_token(user_email: str = None) -> Credentials | None:
         return None
 
 
-def save_token(creds: Credentials, user_email: str = None) -> None:
+def save_token(creds: Credentials, user_email: str) -> None:
     """
-    Save OAuth credentials to a user-specific token file.
-    If user_email is not provided, saves to legacy token.json (for backward compatibility).
+    Persist OAuth credentials to the database, keyed by the user's gmail_address.
+    Replaces the old shared file-based token storage (security + ephemeral-FS fix).
     """
-    if user_email:
-        token_path = get_token_path(user_email)
-        print(f"[AUTH] Token saved for user: {user_email}")
-    else:
-        # Fallback to legacy single-user token.json
-        token_path = Path(__file__).parent / "token.json"
-        print("[AUTH] Token saved to legacy token.json")
-    
-    with open(token_path, "w") as f:
-        f.write(creds.to_json())
+    if not user_email:
+        raise ValueError("user_email is required to save a token (no shared file storage)")
+
+    save_user_token(user_email, creds.to_json())
+    print(f"[AUTH] Token saved for user: {user_email}")
 
 
 def delete_token(user_email: str = None) -> None:
     """
-    Remove the saved token file for a specific user (used for logout).
-    If user_email is not provided, deletes legacy token.json.
+    Remove the saved token for a specific user (used on logout).
+    No-op if user_email is not provided.
     """
-    if user_email:
-        token_path = get_token_path(user_email)
-    else:
-        token_path = Path(__file__).parent / "token.json"
-    
-    if token_path.exists():
-        token_path.unlink()
-        print(f"[AUTH] Token deleted for {user_email or 'legacy user'}.")
+    if not user_email:
+        return
+    delete_user_token(user_email)
+    print(f"[AUTH] Token deleted for {user_email}.")
 
 
-def is_logged_in(user_email: str = None) -> bool:
+def is_logged_in(user_email: str) -> bool:
     """
-    Check if a valid (non-expired) token exists for a specific user.
-    If user_email is not provided, tries legacy token.json for backward compatibility.
+    Check if a valid (non-expired) token exists for the given user.
+    user_email is required.
     """
-    # Try user-specific token first if email provided
-    if user_email:
-        creds = load_token(user_email)
-        return creds is not None and creds.valid
-    
-    # Otherwise, try legacy token.json for backward compatibility
-    creds = load_token(user_email=None)
+    if not user_email:
+        return False
+    creds = load_token(user_email)
     return creds is not None and creds.valid
 
 
-def get_user_email() -> str | None:
-    """
-    Get the authenticated user's email address from their OAuth token.
-    Uses the Google userinfo endpoint to fetch the email.
-    """
-    creds = load_token()
+def _email_from_userinfo(creds: Credentials) -> str | None:
+    """Best-effort: resolve the Gmail address from Google's userinfo endpoint."""
     if not creds or not creds.valid:
         return None
-
     try:
         import requests
         resp = requests.get(
@@ -153,12 +127,60 @@ def get_user_email() -> str | None:
             timeout=5,
         )
         if resp.status_code == 200:
-            data = resp.json()
-            return data.get("email")
+            return resp.json().get("email")
     except Exception as e:
         print(f"[AUTH] Error fetching user email: {e}")
-
     return None
+
+
+def get_user_email(user_email: str) -> str | None:
+    """
+    Confirm the authenticated user's email address by validating their token
+    against the Google userinfo endpoint. Requires user_email to locate the token.
+    """
+    creds = load_token(user_email)
+    if not creds or not creds.valid:
+        return None
+    return _email_from_userinfo(creds)
+
+
+def migrate_legacy_tokens() -> None:
+    """
+    One-time, best-effort migration of old file-based tokens into the DB.
+    Scans token.json (legacy single-user) and tokens/token_<email>.json, imports
+    each into the DB, then deletes the files. Safe to call on every startup.
+    """
+    try:
+        base = Path(__file__).parent
+
+        # Legacy single-user token.json
+        legacy = base / "token.json"
+        if legacy.exists():
+            try:
+                creds = Credentials.from_authorized_user_file(str(legacy), SCOPES)
+                email = _email_from_userinfo(creds) if creds else None
+                if email:
+                    save_token(creds, user_email=email)
+                legacy.unlink(missing_ok=True)
+                print(f"[AUTH MIGRATE] Imported legacy token.json for {email}.")
+            except Exception as e:
+                print(f"[AUTH MIGRATE] Skipped legacy token.json: {e}")
+
+        # Per-user tokens/token_<email>.json
+        token_dir = base / "tokens"
+        if token_dir.exists():
+            for f in token_dir.glob("token_*.json"):
+                try:
+                    creds = Credentials.from_authorized_user_file(str(f), SCOPES)
+                    email = _email_from_userinfo(creds) if creds else None
+                    if email:
+                        save_token(creds, user_email=email)
+                    f.unlink(missing_ok=True)
+                    print(f"[AUTH MIGRATE] Imported {f.name} for {email}.")
+                except Exception as e:
+                    print(f"[AUTH MIGRATE] Skipped {f.name}: {e}")
+    except Exception as e:
+        print(f"[AUTH MIGRATE] Migration failed (non-fatal): {e}")
 
 
 # ---------- OAUTH FLOW ----------
@@ -244,7 +266,7 @@ def handle_callback(authorization_code: str) -> dict:
 def get_credentials(user_email: str = None) -> Credentials | None:
     """
     Get valid credentials for making Gmail API calls for a specific user.
-    If user_email is not provided, falls back to legacy token.json.
-    Returns None if user is not logged in.
+    user_email is required to load that user's token from the database.
+    Returns None if the user is not logged in.
     """
     return load_token(user_email)

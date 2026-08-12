@@ -78,6 +78,7 @@ def init_db():
                 user_id {pk_syntax},
                 gmail_address TEXT UNIQUE NOT NULL,
                 access_token TEXT,
+                token TEXT,
                 delete_mode TEXT DEFAULT 'trash',
                 created_at TIMESTAMP {timestamp_default}
             )
@@ -90,6 +91,13 @@ def init_db():
                 print("[DB] Migrated: added delete_mode column to users table")
             except Exception:
                 pass  # Column already exists
+
+        # Migration: add token column (DB-backed OAuth tokens; replaces file storage)
+        try:
+            _execute(cursor, "ALTER TABLE users ADD COLUMN token TEXT")
+            print("[DB] Migrated: added token column to users table")
+        except Exception:
+            pass  # Column already exists
 
         # TABLE 2: custom_labels
         _execute(cursor, f"""
@@ -285,6 +293,69 @@ def get_user_id(gmail_address: str) -> int:
         if row is None:
             raise ValueError(f"User not found: {gmail_address}")
         return row['user_id']
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
+# ---------- OAUTH TOKEN STORAGE (DB-BACKED, per-user) ----------
+
+def save_user_token(user_email: str, token_json: str) -> None:
+    """
+    Persist a user's serialized OAuth token (credentials.to_json()) to the DB,
+    keyed by gmail_address. Replaces the old shared file-based storage.
+    """
+    conn = _get_connection()
+    try:
+        cursor = conn.cursor()
+        _execute(cursor, "UPDATE users SET token = %s WHERE gmail_address = %s", (token_json, user_email))
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
+def get_user_token(user_email: str) -> str | None:
+    """Return the serialized OAuth token for a user, or None if not stored."""
+    conn = _get_connection()
+    try:
+        cursor = conn.cursor()
+        _execute(cursor, "SELECT token FROM users WHERE gmail_address = %s", (user_email,))
+        row = cursor.fetchone()
+        return row['token'] if row and row['token'] else None
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
+def delete_user_token(user_email: str) -> None:
+    """Clear a user's stored OAuth token (used on logout)."""
+    conn = _get_connection()
+    try:
+        cursor = conn.cursor()
+        _execute(cursor, "UPDATE users SET token = NULL WHERE gmail_address = %s", (user_email,))
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
+def get_user_email_by_id(user_id: int) -> str | None:
+    """Return the gmail_address for a given user_id, or None."""
+    conn = _get_connection()
+    try:
+        cursor = conn.cursor()
+        _execute(cursor, "SELECT gmail_address FROM users WHERE user_id = %s", (user_id,))
+        row = cursor.fetchone()
+        return row['gmail_address'] if row else None
     except Exception:
         conn.rollback()
         raise

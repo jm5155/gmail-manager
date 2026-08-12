@@ -18,17 +18,18 @@ from database import (
     is_already_analyzed, save_analyzed_email,
     get_scan_cursor, save_scan_cursor,
     get_labels, get_label_id_by_name,
+    get_user_email_by_id,
     add_to_retry_queue, remove_from_retry_queue,
 )
 
 
-def get_gmail_service():
+def get_gmail_service(user_email: str = None):
     """
-    Build and return a Gmail API service instance.
-    Uses the stored OAuth credentials from auth.py.
-    Returns None if user is not authenticated.
+    Build and return a Gmail API service instance for a specific user.
+    Uses the DB-stored OAuth credentials for that user (keyed by gmail_address).
+    Returns None if the user is not authenticated.
     """
-    creds = get_credentials()
+    creds = get_credentials(user_email)
     if not creds:
         print("[GMAIL] No valid credentials found. User needs to log in.")
         return None
@@ -38,7 +39,7 @@ def get_gmail_service():
     return service
 
 
-def fetch_emails(limit: int = 50, page_token: str | None = None) -> dict:
+def fetch_emails(limit: int = 50, page_token: str | None = None, user_email: str = None) -> dict:
     """
     Fetch emails from Gmail in reverse chronological order (newest first).
     Uses parallel fetching for dramatically faster email retrieval.
@@ -54,7 +55,7 @@ def fetch_emails(limit: int = 50, page_token: str | None = None) -> dict:
     """
     from concurrent.futures import ThreadPoolExecutor, as_completed
 
-    service = get_gmail_service()
+    service = get_gmail_service(user_email)
     if not service:
         return {"emails": [], "next_page_token": None}
 
@@ -93,7 +94,7 @@ def fetch_emails(limit: int = 50, page_token: str | None = None) -> dict:
         # Step 2: Fetch full details in PARALLEL (5 concurrent threads)
         # Each thread builds its own Gmail service instance to avoid
         # httplib2 shared-connection deadlock.
-        creds = get_credentials()
+        creds = get_credentials(user_email)
         collected = []
         with ThreadPoolExecutor(max_workers=5) as executor:
             future_to_id = {
@@ -344,9 +345,9 @@ def change_label(service, email_id: str, old_label_id: str | None, new_label_id:
         raise
 
 
-def trash_email(email_id: str) -> bool:
+def trash_email(email_id: str, user_email: str = None) -> bool:
     """Move an email to Gmail trash (NOT permanent delete)."""
-    service = get_gmail_service()
+    service = get_gmail_service(user_email)
     if not service:
         return False
 
@@ -359,9 +360,9 @@ def trash_email(email_id: str) -> bool:
         return False
 
 
-def permanently_delete_email(email_id: str) -> bool:
+def permanently_delete_email(email_id: str, user_email: str = None) -> bool:
     """Permanently delete an email from Gmail (IRREVERSIBLE)."""
-    service = get_gmail_service()
+    service = get_gmail_service(user_email)
     if not service:
         return False
 
@@ -374,23 +375,26 @@ def permanently_delete_email(email_id: str) -> bool:
         return False
 
 
-def delete_email(email_id: str, user_id: int) -> bool:
+def delete_email(email_id: str, user_id: int, user_email: str = None) -> bool:
     """
     Delete an email using the user's preferred mode (trash or permanent).
     Reads delete_mode from the database.
     """
     from database import get_delete_mode
 
+    if user_email is None and user_id is not None:
+        user_email = get_user_email_by_id(user_id)
+
     mode = get_delete_mode(user_id)
     if mode == "permanent":
-        return permanently_delete_email(email_id)
+        return permanently_delete_email(email_id, user_email)
     else:
-        return trash_email(email_id)
+        return trash_email(email_id, user_email)
 
 
 # ---------- BULK AI ANALYSIS PIPELINE (Steps A through I) ----------
 
-async def analyze_bulk_ordered(limit: int = 50, user_id: int = None):
+async def analyze_bulk_ordered(limit: int = 50, user_id: int = None, user_email: str = None):
     """
     AI-only bulk analysis engine with semaphore-controlled concurrency.
     Yields progress events via SSE as emails finish processing.
@@ -400,14 +404,18 @@ async def analyze_bulk_ordered(limit: int = 50, user_id: int = None):
     Args:
         limit: Maximum number of emails to process
         user_id: The authenticated user's ID
+        user_email: The authenticated user's gmail_address (used to load their token)
     """
     from ai_router import ai_router, CLASSIFICATION_PROMPT
     from security import extract_urls, scan_url
     import httpx
 
+    if user_email is None and user_id is not None:
+        user_email = get_user_email_by_id(user_id)
+
     semaphore = asyncio.Semaphore(10)
     url_semaphore = asyncio.Semaphore(10)
-    service = get_gmail_service()
+    service = get_gmail_service(user_email)
     if not service or user_id is None:
         yield {
             "type": "complete",
@@ -774,12 +782,15 @@ async def analyze_bulk(limit: int = 50, user_id: int = None):
 
 # ---------- DECOUPLED FETCH/LABEL PIPELINES (Phase 24) ----------
 
-async def fetch_only_pipeline(limit: int = 50, user_id: int = None):
+async def fetch_only_pipeline(limit: int = 50, user_id: int = None, user_email: str = None):
     """
     Fetch emails from Gmail and save as status='fetched' placeholders.
     No URL scanning, no AI analysis. Yields SSE progress events.
     """
-    service = get_gmail_service()
+    if user_email is None and user_id is not None:
+        user_email = get_user_email_by_id(user_id)
+
+    service = get_gmail_service(user_email)
     if not service or user_id is None:
         yield {"type": "complete", "fetched": 0, "skipped": 0, "error": "Not authenticated"}
         return
@@ -826,7 +837,7 @@ async def fetch_only_pipeline(limit: int = 50, user_id: int = None):
     yield {"type": "complete", "fetched": saved_count, "skipped": len(fetched_emails) - len(new_emails)}
 
 
-async def label_only_pipeline(limit: int = None, user_id: int = None):
+async def label_only_pipeline(limit: int = None, user_id: int = None, user_email: str = None):
     """
     Read status='fetched' emails from DB and run AI analysis.
     Updates rows to status='labeled'. Yields SSE progress events.
@@ -835,9 +846,12 @@ async def label_only_pipeline(limit: int = None, user_id: int = None):
     from database import get_emails_by_status
     import httpx
 
+    if user_email is None and user_id is not None:
+        user_email = get_user_email_by_id(user_id)
+
     semaphore = asyncio.Semaphore(10)
     url_semaphore = asyncio.Semaphore(10)
-    service = get_gmail_service()
+    service = get_gmail_service(user_email)
 
     if not service or user_id is None:
         yield {"type": "complete", "analyzed": 0, "failed": 0, "error": "Not authenticated"}

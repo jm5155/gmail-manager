@@ -23,7 +23,7 @@ from starlette.middleware.sessions import SessionMiddleware
 import uvicorn
 
 # Import our custom modules
-from auth import get_auth_url, handle_callback, is_logged_in, get_credentials, delete_token, get_user_email
+from auth import get_auth_url, handle_callback, is_logged_in, get_credentials, delete_token, get_user_email, migrate_legacy_tokens
 from gmail import fetch_emails, analyze_bulk_ordered, trash_email, delete_email
 from database import (
     init_db, get_analyzed_emails,
@@ -92,13 +92,20 @@ def _get_user_id(request: Request) -> int | None:
     return request.session.get("user_id")
 
 
-def _is_authenticated(request: Request) -> bool:
-    """Return True when the request has a valid JWT or legacy session/token auth."""
+def _request_user_email(request: Request) -> str | None:
+    """Extract the authenticated user's email from JWT or session."""
     user_data = get_user_from_token(request)
-    if user_data and user_data.get("user_id"):
-        return True
+    if user_data and user_data.get("email"):
+        return user_data["email"]
+    return request.session.get("gmail_address")
 
-    return is_logged_in()
+
+def _is_authenticated(request: Request) -> bool:
+    """Return True when the request has a valid JWT or session auth for a known user."""
+    user_email = _request_user_email(request)
+    if not user_email:
+        return False
+    return is_logged_in(user_email)
 
 
 def _require_user_id(request: Request) -> int:
@@ -120,8 +127,9 @@ def _require_user_id(request: Request) -> int:
 
     # Fallback: if user is logged in (has valid token) but session lost,
     # re-derive user_id from their email
-    if is_logged_in():
-        email = get_user_email()
+    user_email = _request_user_email(request)
+    if is_logged_in(user_email):
+        email = user_email
         if email:
             from database import get_user_id, upsert_user, seed_default_labels
             try:
@@ -129,7 +137,7 @@ def _require_user_id(request: Request) -> int:
             except ValueError:
                 # User exists in token but not in DB (pre-restructuring token)
                 # Auto-upsert them
-                creds = get_credentials()
+                creds = get_credentials(user_email)
                 access_token = creds.token if creds else ""
                 user_id = upsert_user(email, access_token)
                 seed_default_labels(user_id)
@@ -159,6 +167,11 @@ PENDING_GMAIL_SYNC_CONDITION = """
 async def startup_event():
     """Initialize the database on server startup."""
     init_db()
+    # Import legacy file-based tokens into the DB (no-op on ephemeral hosts with no files)
+    try:
+        migrate_legacy_tokens()
+    except Exception as e:
+        print(f"[SERVER] Token migration skipped: {e}")
     print("[SERVER] Gmail Manager API started on port 8000")
 
 
@@ -178,7 +191,7 @@ async def auth_callback(request: Request):
     GET /auth/callback
     Google redirects here after user grants permissions.
     Generates JWT token for cross-domain authentication.
-    Also stores in session and creates legacy token.json for backward compatibility.
+    Stores the user's OAuth token in the database (keyed by gmail_address).
     """
     code = request.query_params.get("code")
     
@@ -197,20 +210,11 @@ async def auth_callback(request: Request):
         
         request.session["user_id"] = user_id
         request.session["gmail_address"] = user_email
-        
+
         # Generate JWT token for cross-domain authentication
         jwt_token = create_access_token(user_id, user_email)
         print(f"[AUTH CALLBACK] Generated JWT token for {user_email}")
-        
-        # CRITICAL FIX: also create legacy token.json for backward compatibility
-        # This ensures all existing endpoints work without session cookies
-        from auth import load_token, save_token
-        creds = load_token(user_email)
-        if creds:
-            # Copy user-specific token to legacy token.json
-            save_token(creds, user_email=None)
-            print(f"[AUTH] Created legacy token.json for {user_email} for backward compatibility")
-        
+
         print(f"[AUTH CALLBACK] Session set: user_id={user_id}, email={user_email}")
         
         # Redirect to frontend with JWT token as URL parameter
@@ -296,13 +300,13 @@ async def auth_status(request: Request):
         logged_in = is_logged_in(user_email)
         print(f"[AUTH/STATUS DEBUG] Token valid for {user_email}: {logged_in}")
     else:
-        # No session, check legacy token.json for backward compatibility
-        logged_in = is_logged_in(user_email=None)
-        print(f"[AUTH/STATUS DEBUG] Legacy token check: {logged_in}")
+        # No session, check stored token for the session user
+        logged_in = is_logged_in(user_email)
+        print(f"[AUTH/STATUS DEBUG] Token check: {logged_in}")
     
     result = {"logged_in": logged_in}
     if logged_in:
-        email = user_email or get_user_email()
+        email = user_email or get_user_email(user_email)
         if email:
             result["email"] = email
     
@@ -329,9 +333,6 @@ async def auth_logout(request: Request):
             print(f"[AUTH] Deleted user-specific token for {user_email}")
         except Exception as e:
             print(f"[AUTH] Error deleting user token: {e}")
-    
-    # Delete legacy token.json
-    delete_token()
     
     # Clear session
     request.session.clear()
@@ -657,7 +658,7 @@ async def update_email_label(request: Request, email_id: str):
 
     # Get Gmail service
     from gmail import get_gmail_service
-    service = get_gmail_service()
+    service = get_gmail_service(_request_user_email(request))
 
     # Apply label change using shared logic
     result = _apply_label_change(email_id, new_label_name, user_id, service)
@@ -698,7 +699,7 @@ async def batch_label_update(request: Request):
 
     # Get Gmail service once for all changes
     from gmail import get_gmail_service
-    service = get_gmail_service()
+    service = get_gmail_service(_request_user_email(request))
     if not service:
         return JSONResponse(status_code=500, content={"error": "gmail_not_authenticated"})
 
@@ -797,7 +798,7 @@ async def apply_all_pending(request: Request):
 
     # Get Gmail service once
     from gmail import get_gmail_service
-    service = get_gmail_service()
+    service = get_gmail_service(_request_user_email(request))
     if not service:
         return JSONResponse(status_code=500, content={"error": "gmail_not_authenticated"})
 
@@ -1109,7 +1110,7 @@ async def quarantine_delete(email_id: str, request: Request):
         return JSONResponse(status_code=401, content={"error": "User session not found."})
 
     mode = get_delete_mode(user_id)
-    success = delete_email(email_id, user_id)
+    success = delete_email(email_id, user_id, user_email=_request_user_email(request))
     if success:
         mark_email_safe(email_id, user_id)
         action = "permanently deleted" if mode == "permanent" else "moved to trash"
@@ -1278,7 +1279,7 @@ async def emails_batch_delete(request: Request):
     failed = 0
 
     for email in matching:
-        success = delete_email(email["email_id"], user_id)
+        success = delete_email(email["email_id"], user_id, user_email=_request_user_email(request))
         if success:
             deleted += 1
         else:
