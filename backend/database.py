@@ -58,6 +58,18 @@ def _execute(cursor, query, params=None):
     cursor.execute(query, params)
 
 
+def _column_exists(cursor, table: str, column: str) -> bool:
+    """Check whether a column exists on a table (works on Postgres and SQLite)."""
+    if USE_POSTGRES:
+        cursor.execute(
+            "SELECT 1 FROM information_schema.columns WHERE table_name=%s AND column_name=%s",
+            (table, column),
+        )
+        return cursor.fetchone() is not None
+    cursor.execute(f"PRAGMA table_info({table})")
+    return any(row[1] == column for row in cursor.fetchall())
+
+
 def init_db():
     """
     Initialize the database (Postgres or SQLite).
@@ -86,18 +98,14 @@ def init_db():
 
         # Migration: add delete_mode column if table already exists without it (SQLite only)
         if not USE_POSTGRES:
-            try:
+            if not _column_exists(cursor, "users", "delete_mode"):
                 _execute(cursor, "ALTER TABLE users ADD COLUMN delete_mode TEXT DEFAULT 'trash'")
                 print("[DB] Migrated: added delete_mode column to users table")
-            except Exception:
-                pass  # Column already exists
 
         # Migration: add token column (DB-backed OAuth tokens; replaces file storage)
-        try:
+        if not _column_exists(cursor, "users", "token"):
             _execute(cursor, "ALTER TABLE users ADD COLUMN token TEXT")
             print("[DB] Migrated: added token column to users table")
-        except Exception:
-            pass  # Column already exists
 
         # TABLE 2: custom_labels
         _execute(cursor, f"""
