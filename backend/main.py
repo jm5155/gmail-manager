@@ -1183,6 +1183,7 @@ async def reanalyze_scam_email(email_id: str, request: Request, user: dict = Dep
         available_labels=", ".join(available_label_names),
     )
     ai_result = await ai_router.analyze_json(prompt)
+    provider_used = ai_result.get("provider_used")
 
     # Defaults — use first available label as fallback
     label = default_label
@@ -1240,6 +1241,7 @@ async def reanalyze_scam_email(email_id: str, request: Request, user: dict = Dep
         "indicators": scam_indicators,
         "label": label,
         "is_quarantined": is_quarantined,
+        "provider_used": provider_used,
     }
 
 
