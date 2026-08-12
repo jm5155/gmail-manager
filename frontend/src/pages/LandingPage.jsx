@@ -622,7 +622,7 @@ Everything Your Inbox Needs
                   <IconComponent
                     size={22}
                     strokeWidth={1.8}
-                    style={{ color: `var(${feature.color.replace('_light', '')})` }}
+                    style={{ color: 'var(--color-text-primary)' }}
                   />
                 </div>
                 <h3
