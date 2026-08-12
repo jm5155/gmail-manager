@@ -438,7 +438,7 @@ async def analyze_bulk_ordered(limit: int = 50, user_id: int = None, user_email:
         cursor = get_scan_cursor(user_id)
         try:
             fetch_result = await asyncio.wait_for(
-                asyncio.to_thread(fetch_emails, limit=limit, page_token=cursor),
+                asyncio.to_thread(fetch_emails, limit=limit, page_token=cursor, user_email=user_email),
                 timeout=60,
             )
         except asyncio.TimeoutError:
@@ -799,7 +799,7 @@ async def fetch_only_pipeline(limit: int = 50, user_id: int = None, user_email: 
 
     cursor = get_scan_cursor(user_id)
     try:
-        fetch_result = await asyncio.to_thread(fetch_emails, limit=limit, page_token=cursor)
+        fetch_result = await asyncio.to_thread(fetch_emails, limit=limit, page_token=cursor, user_email=user_email)
     except Exception as e:
         yield {"type": "complete", "fetched": 0, "error": str(e)}
         return

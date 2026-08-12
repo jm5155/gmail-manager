@@ -355,7 +355,7 @@ async def emails_fetch(request: Request, limit: int = 50, page_token: str = None
     if not _is_authenticated(request):
         return JSONResponse(status_code=401, content={"error": "Not logged in."})
 
-    result = fetch_emails(limit=limit, page_token=page_token)
+    result = fetch_emails(limit=limit, page_token=page_token, user_email=_request_user_email(request))
     return {
         "emails": result["emails"],
         "next_page_token": result["next_page_token"],
