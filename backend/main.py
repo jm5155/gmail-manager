@@ -30,9 +30,10 @@ from database import (
     get_labels, add_label, delete_label,
     reset_database, mark_email_safe,
     get_delete_mode, set_delete_mode,
+    update_analyzed_email, get_label_id_by_name,
     _get_connection, _execute,
 )
-from ai_router import ai_router, REWRITE_PROMPT
+from ai_router import ai_router, REWRITE_PROMPT, CLASSIFICATION_PROMPT
 from dependencies import require_auth
 from jwt_auth import create_access_token, get_user_from_token
 
@@ -1126,6 +1127,120 @@ async def scam_alerts(request: Request, min_score: int = 30, user: dict = Depend
     flagged = [e for e in emails if e.get("scam_score", 0) >= min_score]
     flagged.sort(key=lambda x: x.get("scam_score", 0), reverse=True)
     return {"emails": flagged, "count": len(flagged)}
+
+
+@app.post("/scam/reanalyze/{email_id}")
+async def reanalyze_scam_email(email_id: str, request: Request, user: dict = Depends(require_auth)):
+    """
+    POST /scam/reanalyze/{email_id} — Re-run AI scam analysis on a single email.
+    Reuses the same classification pipeline (URL scan + AI cascade) and persists the
+    new scam_score, indicators, label, and quarantine flag.
+    Returns { scam_score, reason, indicators, label, is_quarantined } for the UI.
+    """
+    import httpx
+    import asyncio
+
+    user_id = user["user_id"]
+
+    # Fetch the email's current data
+    emails = get_analyzed_emails(user_id)
+    email = next((e for e in emails if e["email_id"] == email_id), None)
+    if not email:
+        return JSONResponse(status_code=404, content={"error": "Email not found"})
+
+    body = email.get("body", "") or ""
+    sender = email.get("sender", "") or ""
+    subject = email.get("subject", "") or ""
+    snippet = email.get("snippet", "") or ""
+
+    # Available labels for classification
+    available_labels_list = get_labels(user_id)
+    available_label_names = [lbl["label_name"] for lbl in available_labels_list]
+    if not available_label_names:
+        return JSONResponse(
+            status_code=400,
+            content={"error": "no_labels", "message": "You must create at least one label before analysis."},
+        )
+    default_label = available_label_names[0]
+
+    # Step B — URL extraction and Google Safe Browsing scan
+    from security import extract_urls, scan_url
+    urls = extract_urls(body)
+    url_threat_found = False
+    if urls:
+        async with httpx.AsyncClient(timeout=10.0) as url_client:
+            url_semaphore = asyncio.Semaphore(10)
+            scan_tasks = [scan_url(url, email_id, url_client, url_semaphore) for url in urls]
+            results = await asyncio.gather(*scan_tasks)
+            url_threat_found = any(r["is_safe"] == 0 for r in results)
+
+    # Step C — AI cascade classification and scam scoring
+    prompt = CLASSIFICATION_PROMPT.format(
+        sender=sender,
+        subject=subject,
+        body=body[:1500],
+        url_threat_found=url_threat_found,
+        available_labels=", ".join(available_label_names),
+    )
+    ai_result = await ai_router.analyze_json(prompt)
+
+    # Defaults — use first available label as fallback
+    label = default_label
+    scam_score = 0
+    scam_indicators = []
+    reasoning = ""
+
+    if ai_result.get("data"):
+        data = ai_result["data"]
+        label = data.get("label", default_label)
+        scam_score = data.get("scam_score", 0)
+        scam_indicators = data.get("scam_indicators", [])
+        reasoning = data.get("reasoning", "")
+    elif ai_result.get("error"):
+        return JSONResponse(status_code=503, content={"error": ai_result["error"]})
+
+    # Validate label
+    if label not in available_label_names:
+        label = default_label
+
+    # Validate scam_score (0-100)
+    if not isinstance(scam_score, int):
+        try:
+            scam_score = int(scam_score)
+        except (ValueError, TypeError):
+            scam_score = 0
+    scam_score = max(0, min(100, scam_score))
+
+    # Validate indicators
+    if scam_indicators is None or not isinstance(scam_indicators, list):
+        scam_indicators = []
+
+    # Quarantine flag — same rule as the bulk pipeline
+    is_quarantined = 0
+    label_is_spam_like = label == "Spam" or "scam" in label.lower()
+    if scam_score >= 70 and url_threat_found and label_is_spam_like:
+        is_quarantined = 1
+
+    # Resolve label_id and persist
+    label_id = get_label_id_by_name(user_id, label)
+    update_analyzed_email(
+        email_id=email_id,
+        label_id=label_id,
+        scam_score=scam_score,
+        scam_indicators=json.dumps(scam_indicators),
+        is_quarantined=is_quarantined,
+        status='labeled',
+    )
+
+    print(f"[SCAM REANALYZE] {email_id[:12]}... -> label={label}, scam={scam_score}, quarantine={is_quarantined}")
+    return {
+        "email_id": email_id,
+        "scam_score": scam_score,
+        "reason": reasoning,
+        "indicators": scam_indicators,
+        "label": label,
+        "is_quarantined": is_quarantined,
+    }
 
 
 # ---------- BATCH DELETE ENDPOINT ----------
