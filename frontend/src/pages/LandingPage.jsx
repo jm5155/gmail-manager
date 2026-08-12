@@ -622,7 +622,7 @@ Everything Your Inbox Needs
                 >
                   <IconComponent
                     size={22}
-                    style={{ color: `var(${feature.color})` }}
+                    color={`var(${feature.color})`}
                     strokeWidth={1.8}
                   />
                 </div>

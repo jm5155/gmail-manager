@@ -474,7 +474,7 @@ function Inbox() {
                       <span className="px-2 py-0.5 rounded-full text-xs font-semibold"
                             style={{ 
                               background: 'var(--color-primary)', 
-                              color: '#FFFFFF' 
+                              color: 'var(--color-text-primary)' 
                             }}>
                         {unappliedCount}
                       </span>

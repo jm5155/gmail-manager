@@ -32,10 +32,10 @@ function EmailCard({
   // Deterministic avatar color selection
   const getAvatarColor = (name) => {
     const colors = [
-      { bg: '#5B5CE2', name: 'primary' },    // Primary indigo
-      { bg: '#27AE72', name: 'success' },    // Success green
-      { bg: '#E5A23C', name: 'warning' },    // Warning orange
-      { bg: '#3B82F6', name: 'info' }        // Info blue
+      { bg: 'var(--color-primary)', name: 'primary' },
+      { bg: 'var(--color-success)', name: 'success' },
+      { bg: 'var(--color-warning)', name: 'warning' },
+      { bg: 'var(--color-info)', name: 'info' }
     ];
     
     // Simple hash function for deterministic color
@@ -189,8 +189,8 @@ function EmailCard({
             <span 
               className="text-xs px-3 py-1 rounded-full font-medium"
               style={{
-                backgroundColor: 'rgba(229, 162, 60, 0.1)',
-                color: 'var(--color-warning, #E5A23C)',
+                backgroundColor: 'var(--color-warning-bg)',
+                color: 'var(--color-warning)',
               }}
             >
               ⏳ Analyzing...
@@ -200,8 +200,8 @@ function EmailCard({
             <span 
               className="text-xs px-3 py-1 rounded-full font-medium cursor-help"
               style={{
-                backgroundColor: 'rgba(224, 90, 103, 0.1)',
-                color: 'var(--color-danger, #E05A67)',
+                backgroundColor: 'var(--color-danger-bg)',
+                color: 'var(--color-danger)',
               }}
               title={email.error_reason ? `Failed: ${email.error_reason}` : 'Analysis failed - will retry automatically'}
             >
