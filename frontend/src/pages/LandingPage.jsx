@@ -33,7 +33,7 @@ function LandingPage() {
   const features = [
     {
       icon: Mail,
-      color: '--color-primary',
+      color: '--color-primary-light',
       title: '🏷️ Auto Labels',
       description: 'AI analyzes every email and applies colored Gmail labels — Work, Finance, Newsletter, and more — automatically.'
     },
@@ -57,7 +57,7 @@ function LandingPage() {
     },
     {
       icon: Brain,
-      color: '--color-primary',
+      color: '--color-primary-light',
       title: '✏️ AI Rewriter',
       description: 'Transform any email with presets — Professional, Shorten, Friendly — or a custom instruction.'
     },
@@ -611,7 +611,6 @@ Everything Your Inbox Needs
                     height: '3.25rem',
                     borderRadius: '0.75rem',
                     backgroundColor: `var(${feature.color})`,
-                    opacity: 0.15,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -623,7 +622,7 @@ Everything Your Inbox Needs
                   <IconComponent
                     size={22}
                     strokeWidth={1.8}
-                    style={{ color: `var(${feature.color})` }}
+                    style={{ color: `var(${feature.color.replace('_light', '')})` }}
                   />
                 </div>
                 <h3
