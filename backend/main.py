@@ -16,7 +16,7 @@ if sys.platform == 'win32':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, HTMLResponse
 from starlette.middleware.sessions import SessionMiddleware
@@ -32,7 +32,8 @@ from database import (
     get_delete_mode, set_delete_mode,
 )
 from ai_router import ai_router, REWRITE_PROMPT
-from jwt_auth import create_access_token, require_auth, get_user_from_token
+from dependencies import require_auth
+from jwt_auth import create_access_token, get_user_from_token
 
 # ---------- APP INITIALIZATION ----------
 
@@ -963,15 +964,9 @@ async def reset_database_endpoint(request: Request):
 # ---------- DELETE MODE ENDPOINTS ----------
 
 @app.get("/settings/delete-mode")
-async def get_delete_mode_endpoint(request: Request):
+async def get_delete_mode_endpoint(request: Request, user: dict = Depends(require_auth)):
     """GET /settings/delete-mode — Returns current delete mode ('trash' or 'permanent')."""
-    if not _is_authenticated(request):
-        return JSONResponse(status_code=401, content={"error": "Not logged in."})
-
-    user_id = _require_user_id(request)
-    if not user_id:
-        return JSONResponse(status_code=401, content={"error": "User session not found."})
-
+    user_id = user["user_id"]
     mode = get_delete_mode(user_id)
     return {"delete_mode": mode}
 
@@ -1097,15 +1092,9 @@ async def quarantine_list(request: Request):
 
 
 @app.post("/quarantine/{email_id}/safe")
-async def quarantine_mark_safe(email_id: str, request: Request):
+async def quarantine_mark_safe(email_id: str, request: Request, user: dict = Depends(require_auth)):
     """POST /quarantine/{email_id}/safe — Removes quarantine flag."""
-    if not _is_authenticated(request):
-        return JSONResponse(status_code=401, content={"error": "Not logged in."})
-
-    user_id = _require_user_id(request)
-    if not user_id:
-        return JSONResponse(status_code=401, content={"error": "User session not found."})
-
+    user_id = user["user_id"]
     mark_email_safe(email_id, user_id)
     return {"success": True, "message": f"Email {email_id} marked as safe."}
 
@@ -1132,15 +1121,9 @@ async def quarantine_delete(email_id: str, request: Request):
 # ---------- SCAM ALERTS ENDPOINT ----------
 
 @app.get("/scam/alerts")
-async def scam_alerts(request: Request, min_score: int = 30):
+async def scam_alerts(request: Request, min_score: int = 30, user: dict = Depends(require_auth)):
     """GET /scam/alerts?min_score=30 — Returns flagged emails sorted by scam score."""
-    if not _is_authenticated(request):
-        return JSONResponse(status_code=401, content={"error": "Not logged in."})
-
-    user_id = _require_user_id(request)
-    if not user_id:
-        return JSONResponse(status_code=401, content={"error": "User session not found."})
-
+    user_id = user["user_id"]
     emails = get_analyzed_emails(user_id)
     flagged = [e for e in emails if e.get("scam_score", 0) >= min_score]
     flagged.sort(key=lambda x: x.get("scam_score", 0), reverse=True)

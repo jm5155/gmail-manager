@@ -26,14 +26,19 @@ else:
     print(f"[DB] Using SQLite (local dev mode): {DB_PATH}")
 
 
+_PLACEHOLDER = "%s"
+
+
 def _get_connection():
     """
     Create a database connection (Postgres or SQLite based on environment).
     Returns a connection with dict-like row access.
     """
+    global _PLACEHOLDER
     if USE_POSTGRES:
         # Postgres connection (Railway production)
         conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+        _PLACEHOLDER = "%s"
         return conn
     else:
         # SQLite connection (local development)
@@ -41,7 +46,16 @@ def _get_connection():
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA foreign_keys = ON")
         conn.execute("PRAGMA journal_mode = WAL")
+        _PLACEHOLDER = "?"
         return conn
+
+
+def _execute(cursor, query, params=None):
+    """Execute query with the correct placeholder for the current database backend."""
+    if params is None:
+        params = ()
+    query = query.replace("%s", _PLACEHOLDER)
+    cursor.execute(query, params)
 
 
 def init_db():
@@ -59,7 +73,7 @@ def init_db():
         timestamp_default = "DEFAULT NOW()" if USE_POSTGRES else "DEFAULT CURRENT_TIMESTAMP"
 
         # TABLE 1: users
-        cursor.execute(f"""
+        _execute(cursor, f"""
             CREATE TABLE IF NOT EXISTS users (
                 user_id {pk_syntax},
                 gmail_address TEXT UNIQUE NOT NULL,
@@ -72,13 +86,13 @@ def init_db():
         # Migration: add delete_mode column if table already exists without it (SQLite only)
         if not USE_POSTGRES:
             try:
-                cursor.execute("ALTER TABLE users ADD COLUMN delete_mode TEXT DEFAULT 'trash'")
+                _execute(cursor, "ALTER TABLE users ADD COLUMN delete_mode TEXT DEFAULT 'trash'")
                 print("[DB] Migrated: added delete_mode column to users table")
             except Exception:
                 pass  # Column already exists
 
         # TABLE 2: custom_labels
-        cursor.execute(f"""
+        _execute(cursor, f"""
             CREATE TABLE IF NOT EXISTS custom_labels (
                 label_id {pk_syntax},
                 user_id INTEGER NOT NULL,
@@ -91,7 +105,7 @@ def init_db():
         """)
 
         # TABLE 3: scan_cursor
-        cursor.execute(f"""
+        _execute(cursor, f"""
             CREATE TABLE IF NOT EXISTS scan_cursor (
                 cursor_id {pk_syntax},
                 user_id INTEGER NOT NULL UNIQUE,
@@ -102,7 +116,7 @@ def init_db():
         """)
 
         # TABLE 4: analyzed_emails
-        cursor.execute(f"""
+        _execute(cursor, f"""
             CREATE TABLE IF NOT EXISTS analyzed_emails (
                 email_id TEXT PRIMARY KEY,
                 user_id INTEGER NOT NULL,
@@ -124,7 +138,7 @@ def init_db():
         """)
 
         # TABLE 5: url_cache
-        cursor.execute(f"""
+        _execute(cursor, f"""
             CREATE TABLE IF NOT EXISTS url_cache (
                 url_id {pk_syntax},
                 email_id TEXT NOT NULL,
@@ -137,7 +151,7 @@ def init_db():
         """)
 
         # TABLE 6: retry_queue
-        cursor.execute(f"""
+        _execute(cursor, f"""
             CREATE TABLE IF NOT EXISTS retry_queue (
                 retry_id {pk_syntax},
                 email_id TEXT NOT NULL UNIQUE,
@@ -151,19 +165,19 @@ def init_db():
         # Migration: add applied_to_gmail and last_applied_label_id columns if not exist (Phase 38)
         if USE_POSTGRES:
             # Postgres: use information_schema to check column existence
-            cursor.execute("""
+            _execute(cursor,"""
                 SELECT column_name FROM information_schema.columns
                 WHERE table_name = %s ORDER BY ordinal_position
             """, ('analyzed_emails',))
             columns = [row['column_name'] for row in cursor.fetchall()]
         else:
             # SQLite: use PRAGMA table_info
-            cursor.execute("PRAGMA table_info(analyzed_emails)")
+            _execute(cursor,"PRAGMA table_info(analyzed_emails)")
             columns = [row[1] for row in cursor.fetchall()]
 
         if 'applied_to_gmail' not in columns:
             print("[DB MIGRATION] Adding applied_to_gmail column to analyzed_emails...")
-            cursor.execute("""
+            _execute(cursor,"""
                 ALTER TABLE analyzed_emails
                 ADD COLUMN applied_to_gmail INTEGER DEFAULT 0
             """)
@@ -172,7 +186,7 @@ def init_db():
 
         if 'last_applied_label_id' not in columns:
             print("[DB MIGRATION] Adding last_applied_label_id column to analyzed_emails...")
-            cursor.execute("""
+            _execute(cursor,"""
                 ALTER TABLE analyzed_emails
                 ADD COLUMN last_applied_label_id INTEGER DEFAULT NULL
             """)
@@ -201,7 +215,7 @@ def seed_default_labels(user_id: int):
     try:
         cursor = conn.cursor()
 
-        cursor.execute("SELECT COUNT(*) FROM custom_labels WHERE user_id = %s", (user_id,))
+        _execute(cursor,"SELECT COUNT(*) FROM custom_labels WHERE user_id = %s", (user_id,))
         count = cursor.fetchone()['count']
 
         if count == 0:
@@ -215,8 +229,9 @@ def seed_default_labels(user_id: int):
                 (user_id, "Social", "#0891B2", "#FFFFFF"),
                 (user_id, "Receipt", "#065F46", "#FFFFFF"),
             ]
+            query = "INSERT INTO custom_labels (user_id, label_name, bg_color, text_color) VALUES (%s, %s, %s, %s)".replace("%s", _PLACEHOLDER)
             cursor.executemany(
-                "INSERT INTO custom_labels (user_id, label_name, bg_color, text_color) VALUES (%s, %s, %s, %s)",
+                query,
                 defaults,
             )
             conn.commit()
@@ -238,7 +253,7 @@ def upsert_user(gmail_address: str, access_token: str) -> int:
     try:
         cursor = conn.cursor()
 
-        cursor.execute(
+        _execute(cursor,
             """
             INSERT INTO users (gmail_address, access_token)
             VALUES (%s, %s)
@@ -248,7 +263,7 @@ def upsert_user(gmail_address: str, access_token: str) -> int:
         )
         conn.commit()
 
-        cursor.execute("SELECT user_id FROM users WHERE gmail_address = %s", (gmail_address,))
+        _execute(cursor,"SELECT user_id FROM users WHERE gmail_address = %s", (gmail_address,))
         user_id = cursor.fetchone()['user_id']
 
         print(f"[DB] Upserted user '{gmail_address}' -> user_id={user_id}")
@@ -265,7 +280,7 @@ def get_user_id(gmail_address: str) -> int:
     conn = _get_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT user_id FROM users WHERE gmail_address = %s", (gmail_address,))
+        _execute(cursor,"SELECT user_id FROM users WHERE gmail_address = %s", (gmail_address,))
         row = cursor.fetchone()
 
         if row is None:
@@ -285,7 +300,7 @@ def get_labels(user_id: int) -> list[dict]:
     conn = _get_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute(
+        _execute(cursor,
             "SELECT label_id, label_name, bg_color, text_color FROM custom_labels WHERE user_id = %s ORDER BY created_at ASC",
             (user_id,),
         )
@@ -309,7 +324,7 @@ def get_label_id_by_name(user_id: int, label_name: str) -> int:
         cursor = conn.cursor()
 
         # 1. Exact match
-        cursor.execute(
+        _execute(cursor,
             "SELECT label_id FROM custom_labels WHERE user_id = %s AND label_name = %s",
             (user_id, label_name),
         )
@@ -318,7 +333,7 @@ def get_label_id_by_name(user_id: int, label_name: str) -> int:
             return row['label_id']
 
         # 2. Case-insensitive match (AI may return "work" instead of "Work")
-        cursor.execute(
+        _execute(cursor,
             "SELECT label_id FROM custom_labels WHERE user_id = %s AND LOWER(label_name) = LOWER(%s)",
             (user_id, label_name),
         )
@@ -327,7 +342,7 @@ def get_label_id_by_name(user_id: int, label_name: str) -> int:
             return ci_row['label_id']
 
         # 3. Fallback — first available label for this user
-        cursor.execute(
+        _execute(cursor,
             "SELECT label_id, label_name FROM custom_labels WHERE user_id = %s ORDER BY label_id ASC LIMIT 1",
             (user_id,),
         )
@@ -350,7 +365,7 @@ def add_label(user_id: int, label_name: str, bg_color: str, text_color: str) -> 
     conn = _get_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute(
+        _execute(cursor,
             "INSERT INTO custom_labels (user_id, label_name, bg_color, text_color) VALUES (%s, %s, %s, %s)",
             (user_id, label_name, bg_color, text_color),
         )
@@ -370,7 +385,7 @@ def delete_label(label_id: int, user_id: int) -> None:
     conn = _get_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute(
+        _execute(cursor,
             "DELETE FROM custom_labels WHERE label_id = %s AND user_id = %s",
             (label_id, user_id),
         )
@@ -396,7 +411,7 @@ def save_analyzed_email(email_id: str, user_id: int, label_id: int, scam_score: 
         
         if USE_POSTGRES:
             # Postgres: Use ON CONFLICT for upsert
-            cursor.execute("""
+            _execute(cursor,"""
                 INSERT INTO analyzed_emails
                 (email_id, user_id, label_id, scam_score, scam_indicators, is_quarantined, snippet, sender, subject, status, body)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
@@ -414,7 +429,7 @@ def save_analyzed_email(email_id: str, user_id: int, label_id: int, scam_score: 
             """, (email_id, user_id, label_id, scam_score, scam_indicators, is_quarantined, snippet, sender, subject, status, body))
         else:
             # SQLite: Use INSERT OR REPLACE
-            cursor.execute("""
+            _execute(cursor,"""
                 INSERT OR REPLACE INTO analyzed_emails
                 (email_id, user_id, label_id, scam_score, scam_indicators, is_quarantined, snippet, sender, subject, status, body)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
@@ -439,7 +454,7 @@ def update_analyzed_email(email_id: str, label_id: int, scam_score: int,
     conn = _get_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("""
+        _execute(cursor,"""
             UPDATE analyzed_emails
             SET label_id = %s,
                 scam_score = %s,
@@ -467,7 +482,7 @@ def update_email_label_id(email_id: str, label_id: int) -> None:
     conn = _get_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("""
+        _execute(cursor,"""
             UPDATE analyzed_emails
             SET label_id = %s, applied_to_gmail = 0
             WHERE email_id = %s
@@ -492,7 +507,7 @@ def get_emails_by_status(user_id: int, status: str, limit: int = None) -> list[d
 
         # Parameterized LIMIT
         if limit:
-            cursor.execute("""
+            _execute(cursor,"""
                 SELECT email_id, user_id, snippet, sender, subject, body, analyzed_at
                 FROM analyzed_emails
                 WHERE user_id = %s AND status = %s
@@ -500,7 +515,7 @@ def get_emails_by_status(user_id: int, status: str, limit: int = None) -> list[d
                 LIMIT %s
             """, (user_id, status, limit))
         else:
-            cursor.execute("""
+            _execute(cursor,"""
                 SELECT email_id, user_id, snippet, sender, subject, body, analyzed_at
                 FROM analyzed_emails
                 WHERE user_id = %s AND status = %s
@@ -536,7 +551,7 @@ def is_already_analyzed(email_id: str, user_id: int) -> bool:
     conn = _get_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute(
+        _execute(cursor,
             "SELECT 1 FROM analyzed_emails WHERE email_id = %s AND user_id = %s",
             (email_id, user_id),
         )
@@ -560,7 +575,7 @@ def get_analyzed_emails(user_id: int) -> list[dict]:
     conn = _get_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute(
+        _execute(cursor,
             """
             SELECT ae.email_id, cl.label_name, cl.bg_color, cl.text_color,
                    ae.scam_score, ae.scam_indicators, ae.is_quarantined,
@@ -593,14 +608,14 @@ def save_url_result(email_id: str, url: str, is_safe: int, threat_type: str) -> 
         cursor = conn.cursor()
 
         # Check for existing entry with same email_id + url
-        cursor.execute(
+        _execute(cursor,
             "SELECT 1 FROM url_cache WHERE email_id = %s AND url = %s",
             (email_id, url),
         )
         if cursor.fetchone() is not None:
             return
 
-        cursor.execute(
+        _execute(cursor,
             "INSERT INTO url_cache (email_id, url, is_safe, threat_type) VALUES (%s, %s, %s, %s)",
             (email_id, url, is_safe, threat_type),
         )
@@ -620,7 +635,7 @@ def get_cached_url(url: str) -> dict | None:
     conn = _get_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute(
+        _execute(cursor,
             "SELECT url, is_safe, threat_type, checked_at FROM url_cache WHERE url = %s ORDER BY checked_at DESC LIMIT 1",
             (url,),
         )
@@ -663,14 +678,14 @@ def add_to_retry_queue(email_id: str, error_reason: str) -> None:
         cursor = conn.cursor()
 
         # Check if already in queue
-        cursor.execute("SELECT retry_count FROM retry_queue WHERE email_id = %s", (email_id,))
+        _execute(cursor,"SELECT retry_count FROM retry_queue WHERE email_id = %s", (email_id,))
         row = cursor.fetchone()
 
         if row is not None:
             if row['retry_count'] >= 3:
                 print(f"[DB] Retry limit reached for {email_id[:12]}..., not re-adding")
                 return
-            cursor.execute(
+            _execute(cursor,
                 """
                 UPDATE retry_queue
                 SET retry_count = retry_count + 1, last_attempted = CURRENT_TIMESTAMP, error_reason = %s
@@ -679,7 +694,7 @@ def add_to_retry_queue(email_id: str, error_reason: str) -> None:
                 (error_reason, email_id),
             )
         else:
-            cursor.execute(
+            _execute(cursor,
                 """
                 INSERT INTO retry_queue (email_id, retry_count, last_attempted, error_reason)
                 VALUES (%s, 0, CURRENT_TIMESTAMP, %s)
@@ -701,7 +716,7 @@ def get_retry_queue(user_id: int) -> list[dict]:
     conn = _get_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute(
+        _execute(cursor,
             """
             SELECT rq.retry_id, rq.email_id, rq.retry_count, rq.last_attempted, rq.error_reason
             FROM retry_queue rq
@@ -725,7 +740,7 @@ def remove_from_retry_queue(email_id: str) -> None:
     conn = _get_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("DELETE FROM retry_queue WHERE email_id = %s", (email_id,))
+        _execute(cursor,"DELETE FROM retry_queue WHERE email_id = %s", (email_id,))
         conn.commit()
         print(f"[DB] Removed {email_id[:12]}... from retry queue")
     except Exception:
@@ -742,7 +757,7 @@ def get_scan_cursor(user_id: int) -> str | None:
     conn = _get_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT last_page_token FROM scan_cursor WHERE user_id = %s", (user_id,))
+        _execute(cursor,"SELECT last_page_token FROM scan_cursor WHERE user_id = %s", (user_id,))
         row = cursor.fetchone()
         return row['last_page_token'] if row else None
     except Exception:
@@ -757,7 +772,7 @@ def save_scan_cursor(user_id: int, last_page_token: str) -> None:
     conn = _get_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute(
+        _execute(cursor,
             """
             INSERT INTO scan_cursor (user_id, last_page_token, last_scan_at)
             VALUES (%s, %s, CURRENT_TIMESTAMP)
@@ -780,7 +795,7 @@ def clear_scan_cursor(user_id: int) -> None:
     conn = _get_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute(
+        _execute(cursor,
             "UPDATE scan_cursor SET last_page_token = NULL WHERE user_id = %s",
             (user_id,),
         )
@@ -806,16 +821,16 @@ def reset_database(user_id: int) -> None:
 
         # Delete in FK-safe order (children first)
         # url_cache and retry_queue reference analyzed_emails, so delete those first
-        cursor.execute(
+        _execute(cursor,
             "DELETE FROM url_cache WHERE email_id IN (SELECT email_id FROM analyzed_emails WHERE user_id = %s)",
             (user_id,),
         )
-        cursor.execute(
+        _execute(cursor,
             "DELETE FROM retry_queue WHERE email_id IN (SELECT email_id FROM analyzed_emails WHERE user_id = %s)",
             (user_id,),
         )
-        cursor.execute("DELETE FROM analyzed_emails WHERE user_id = %s", (user_id,))
-        cursor.execute("DELETE FROM scan_cursor WHERE user_id = %s", (user_id,))
+        _execute(cursor,"DELETE FROM analyzed_emails WHERE user_id = %s", (user_id,))
+        _execute(cursor,"DELETE FROM scan_cursor WHERE user_id = %s", (user_id,))
 
         conn.commit()
         print(f"[DB] Reset all analysis data for user_id={user_id}")
@@ -831,7 +846,7 @@ def mark_email_safe(email_id: str, user_id: int) -> None:
     conn = _get_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute(
+        _execute(cursor,
             "UPDATE analyzed_emails SET is_quarantined = 0, scam_score = 0 WHERE email_id = %s AND user_id = %s",
             (email_id, user_id),
         )
@@ -851,7 +866,7 @@ def get_delete_mode(user_id: int) -> str:
     conn = _get_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT delete_mode FROM users WHERE user_id = %s", (user_id,))
+        _execute(cursor,"SELECT delete_mode FROM users WHERE user_id = %s", (user_id,))
         row = cursor.fetchone()
         return row['delete_mode'] if row and row['delete_mode'] else "trash"
     except Exception:
@@ -868,7 +883,7 @@ def set_delete_mode(user_id: int, mode: str) -> None:
     conn = _get_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute(
+        _execute(cursor,
             "UPDATE users SET delete_mode = %s WHERE user_id = %s",
             (mode, user_id),
         )
