@@ -428,6 +428,9 @@ async def analyze_bulk_ordered(limit: int = 50, user_id: int = None, user_email:
     from ai_router import ai_router, CLASSIFICATION_PROMPT
     from security import extract_urls, scan_url
     import httpx
+    import time
+
+    t_bulk_start = time.perf_counter()
 
     if user_email is None and user_id is not None:
         user_email = get_user_email_by_id(user_id)
@@ -555,6 +558,11 @@ async def analyze_bulk_ordered(limit: int = 50, user_id: int = None, user_email:
             # Final summary
             analyzed_count = sum(1 for r in all_results if r["status"] == "success")
 
+            t_bulk_total = time.perf_counter() - t_bulk_start
+            print(f"[TIMING] BULK COMPLETE: total_time={t_bulk_total:.2f}s analyzed={analyzed_count} "
+                  f"skipped={skipped_count} failed={failed_count} "
+                  f"(fetched {len(fetched_emails)} emails, {len(new_emails)} were new)")
+
             yield {
                 "type": "complete",
                 "analyzed": analyzed_count,
@@ -592,13 +600,22 @@ async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
         available_label_names: Cached list of label names for this user
     """
     from security import extract_urls, scan_url
+    import time
 
     async with semaphore:
+        t_start = time.perf_counter()
         email_id = email["id"]
         subject = email.get("subject", "(No Subject)")
         sender = email.get("sender", "(Unknown)")
         body = email.get("body", "")
         snippet = email.get("snippet", "")
+
+        # Timing accumulators
+        t_body_fetch = 0.0
+        t_url_scan = 0.0
+        t_ai_call = 0.0
+        t_label_apply = 0.0
+        t_db_write = 0.0
 
         try:
             # Step A — Deduplication check (per-email level)
@@ -617,13 +634,16 @@ async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
             # Fetch full email body for AI analysis (if not already present)
             # Safety fallback - body should already be populated from format="full" fetch
             if not body:
+                t0 = time.perf_counter()
                 body = await asyncio.to_thread(_get_email_body, service, email_id)
+                t_body_fetch = time.perf_counter() - t0
 
             # Use cached label names passed from analyze_bulk_ordered()
             default_label = available_label_names[0] if available_label_names else "Unknown"
 
             # Insert placeholder to satisfy FK constraints (skip if updating existing row)
             if not update_mode:
+                t0 = time.perf_counter()
                 placeholder_label_id = get_label_id_by_name(user_id, default_label)
                 save_analyzed_email(
                     email_id=email_id,
@@ -638,14 +658,17 @@ async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
                     status='labeled',
                     body=body,
                 )
+                t_db_write += time.perf_counter() - t0
 
             # Step B — URL extraction and Google Safe Browsing scan
+            t0 = time.perf_counter()
             urls = extract_urls(body)
             url_threat_found = False
             if urls:
                 scan_tasks = [scan_url(url, email_id, url_client, url_semaphore) for url in urls]
                 results = await asyncio.gather(*scan_tasks)
                 url_threat_found = any(r["is_safe"] == 0 for r in results)
+            t_url_scan = time.perf_counter() - t0
 
             # Step C — AI cascade classification and scam scoring
             prompt = classification_prompt.format(
@@ -656,7 +679,10 @@ async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
                 available_labels=", ".join(available_label_names),
             )
 
+            t0 = time.perf_counter()
             ai_result = await ai_router.analyze_json(prompt)
+            t_ai_call = time.perf_counter() - t0
+            provider_used = ai_result.get("provider_used", "unknown")
 
             # Defaults — use first available label as fallback (no hardcoded 'Spam')
             label = default_label
@@ -702,6 +728,7 @@ async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
             label_id = get_label_id_by_name(user_id, label)
 
             # Step G — Save to database (UPDATE if update_mode, INSERT if new)
+            t0 = time.perf_counter()
             if update_mode:
                 # Updating existing row from label_only_pipeline
                 from database import update_analyzed_email
@@ -728,8 +755,10 @@ async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
                     status='labeled',
                     body=body,
                 )
+            t_db_write += time.perf_counter() - t0
 
             # Step H — Apply Gmail label
+            t0 = time.perf_counter()
             try:
                 gmail_label_id = get_or_create_label(service, label, user_id)
                 if gmail_label_id:
@@ -737,8 +766,12 @@ async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
             except Exception as e:
                 print(f"[PIPELINE] Failed to apply Gmail label for {email_id[:12]}...: {e}")
                 # Do not crash — continue to next email
+            t_label_apply = time.perf_counter() - t0
 
-            print(f"[PIPELINE] OK: Analyzed {email_id[:12]}... -> label={label}, scam={scam_score}, quarantine={is_quarantined}")
+            t_total = time.perf_counter() - t_start
+            print(f"[TIMING] email={email_id[:12]} body={t_body_fetch:.2f}s url_scan={t_url_scan:.2f}s "
+                  f"ai_call={t_ai_call:.2f}s(provider={provider_used}) label={t_label_apply:.2f}s "
+                  f"db={t_db_write:.2f}s total={t_total:.2f}s")
 
             return {
                 "email_id": email_id,
