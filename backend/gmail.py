@@ -96,7 +96,7 @@ def fetch_emails(limit: int = 50, page_token: str | None = None, user_email: str
         # httplib2 shared-connection deadlock.
         creds = get_credentials(user_email)
         collected = []
-        with ThreadPoolExecutor(max_workers=5) as executor:
+        with ThreadPoolExecutor(max_workers=20) as executor:
             future_to_id = {
                 executor.submit(_get_email_details_threadsafe, creds, mid): mid
                 for mid in message_ids
