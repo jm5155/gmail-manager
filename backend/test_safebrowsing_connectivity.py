@@ -3,18 +3,18 @@ test_safebrowsing_connectivity.py — Standalone Google Safe Browsing API connec
 Run this directly in Railway's shell or as a one-off script to test if the API is reachable.
 
 Usage (Railway shell):
-  cd backend && python test_safebrowsing_connectivity.py
+  python test_safebrowsing_connectivity.py
 
 Expected: If working, should return 200 with threat match for the malware test URL.
-If failing: Will show the exact exception (ConnectTimeout, ConnectError, etc.)
+If failing: Will show the exact exception (ConnectionError, TimeoutError, etc.)
 """
 
 import os
-import httpx
+import json
 import time
-from dotenv import load_dotenv
-
-load_dotenv()
+import urllib.request
+import urllib.error
+import socket
 
 SAFE_BROWSING_KEY = os.getenv("GOOGLE_SAFE_BROWSING_KEY")
 
@@ -60,37 +60,40 @@ def test_safe_browsing():
     try:
         t_start = time.perf_counter()
         
-        with httpx.Client(timeout=10.0) as client:
-            response = client.post(endpoint, json=body)
+        # Prepare request
+        req = urllib.request.Request(
+            endpoint,
+            data=json.dumps(body).encode('utf-8'),
+            headers={'Content-Type': 'application/json'},
+            method='POST'
+        )
+        
+        # Set timeout to 10 seconds
+        with urllib.request.urlopen(req, timeout=10.0) as response:
+            status_code = response.status
+            response_data = response.read().decode('utf-8')
         
         t_elapsed = time.perf_counter() - t_start
         
         print(f"[OK] Connection successful!")
         print(f"[OK] Response time: {t_elapsed:.2f} seconds")
-        print(f"[OK] Status code: {response.status_code}")
+        print(f"[OK] Status code: {status_code}")
         print()
         
-        if response.status_code == 200:
-            data = response.json()
+        if status_code == 200:
+            data = json.loads(response_data)
             if data.get("matches"):
                 print(f"[OK] Threat detected (expected for test URL): {data['matches'][0].get('threatType')}")
                 print("[RESULT] Google Safe Browsing API is WORKING correctly.")
             else:
                 print("[WARNING] No threat detected for malware test URL (unexpected).")
                 print("          This might indicate the API key is invalid or test URL changed.")
-        elif response.status_code == 400:
-            print(f"[ERROR] Bad request (400): {response.text[:200]}")
-            print("        Check if the API key is valid.")
-        elif response.status_code == 403:
-            print(f"[ERROR] Forbidden (403): {response.text[:200]}")
-            print("        The API key may be invalid or lacks Safe Browsing API permissions.")
         else:
-            print(f"[ERROR] Unexpected status code: {response.status_code}")
-            print(f"        Response: {response.text[:200]}")
+            print(f"[ERROR] Unexpected status code: {status_code}")
+            print(f"        Response: {response_data[:200]}")
     
-    except httpx.ConnectTimeout as e:
-        print(f"[ERROR] ConnectTimeout: Connection to Safe Browsing API timed out after 10s")
-        print(f"        Exception: {e}")
+    except socket.timeout:
+        print(f"[ERROR] Timeout: Connection to Safe Browsing API timed out after 10s")
         print()
         print("[DIAGNOSIS] Railway egress cannot reach safebrowsing.googleapis.com")
         print("            Possible causes:")
@@ -98,9 +101,12 @@ def test_safe_browsing():
         print("            - Google Safe Browsing API endpoint down/unreachable")
         print("            - DNS resolution failing for googleapis.com")
     
-    except httpx.ConnectError as e:
-        print(f"[ERROR] ConnectError: Failed to establish connection")
-        print(f"        Exception: {e}")
+    except urllib.error.URLError as e:
+        if isinstance(e.reason, socket.timeout):
+            print(f"[ERROR] Timeout: Connection to Safe Browsing API timed out")
+        else:
+            print(f"[ERROR] URLError: Failed to establish connection")
+            print(f"        Reason: {e.reason}")
         print()
         print("[DIAGNOSIS] Network connectivity issue")
         print("            Possible causes:")
@@ -108,11 +114,14 @@ def test_safe_browsing():
         print("            - DNS failure")
         print("            - Firewall blocking outbound HTTPS to googleapis.com")
     
-    except httpx.ReadTimeout as e:
-        print(f"[ERROR] ReadTimeout: Request sent but response timed out")
-        print(f"        Exception: {e}")
+    except urllib.error.HTTPError as e:
+        print(f"[ERROR] HTTP Error {e.code}: {e.reason}")
+        print(f"        Response: {e.read().decode('utf-8')[:200]}")
         print()
-        print("[DIAGNOSIS] Safe Browsing API is reachable but slow/overloaded")
+        if e.code == 400:
+            print("[DIAGNOSIS] Bad request - API key may be invalid")
+        elif e.code == 403:
+            print("[DIAGNOSIS] Forbidden - API key invalid or lacks Safe Browsing permissions")
     
     except Exception as e:
         print(f"[ERROR] Unexpected error: {type(e).__name__}: {e}")
