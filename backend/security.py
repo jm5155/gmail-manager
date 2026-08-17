@@ -16,6 +16,8 @@ load_dotenv()
 
 # Google Safe Browsing API key from .env
 SAFE_BROWSING_KEY = os.getenv("GOOGLE_SAFE_BROWSING_KEY")
+URL_SAFETY_CACHE: dict[str, tuple[int, str | None]] = {}
+URL_CHECK_TIMEOUT_SECONDS = 5.0
 
 
 def extract_urls(text: str) -> list[str]:
@@ -116,7 +118,13 @@ async def scan_url(url: str, email_id: str,
             "threat_type": cached["threat_type"],
         }
 
-    # Step 2: No cache — call Google Safe Browsing API v4
+    # Step 2: No persistent cache — use the in-memory cache for this process.
+    cached_result = URL_SAFETY_CACHE.get(url)
+    if cached_result is not None:
+        print(f"[SECURITY] In-memory cache hit for URL: {url[:60]}")
+        return {"url": url, "is_safe": cached_result[0], "threat_type": cached_result[1]}
+
+    # Step 3: No cache — call Google Safe Browsing API v4
     if not SAFE_BROWSING_KEY or SAFE_BROWSING_KEY == "your_key_here":
         print(f"[SECURITY] WARNING: Safe Browsing API key not configured. Skipping URL check for: {url[:60]}")
         # Save as safe and return
@@ -142,7 +150,11 @@ async def scan_url(url: str, email_id: str,
 
     try:
         async with semaphore:
-            response = await client.post(endpoint, json=body)
+            response = await client.post(
+                endpoint,
+                json=body,
+                timeout=URL_CHECK_TIMEOUT_SECONDS,
+            )
 
         if response.status_code != 200:
             print(f"[SECURITY] Safe Browsing API error: {response.status_code}")
@@ -160,7 +172,8 @@ async def scan_url(url: str, email_id: str,
         print(f"[SECURITY] Error checking URL safety: {type(e).__name__}: {e}")
         # is_safe already defaulted to 0 (unsafe) when connection fails
 
-    # Step 3: Save result to cache
+    # Step 4: Save results to persistent and in-memory caches.
+    URL_SAFETY_CACHE[url] = (is_safe, threat_type)
     save_url_result(email_id, url, is_safe, threat_type)
 
     return {"url": url, "is_safe": is_safe, "threat_type": threat_type}
