@@ -211,7 +211,7 @@ class AIRouter:
                 "role": "user",
                 "content": prompt,
             }],
-            "max_tokens": 1000,
+            "max_tokens": 500,
             "temperature": 0.2,
             "stream": False,
         }
