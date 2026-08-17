@@ -969,6 +969,7 @@ async def label_only_pipeline(limit: int = None, user_id: int = None, user_email
                 url_client=url_client,
                 url_semaphore=url_semaphore,
                 available_label_names=available_label_names,
+                gmail_labels_cache=gmail_labels_cache,
                 update_mode=True,
             ))
             for email in fetched_emails
