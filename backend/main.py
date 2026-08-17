@@ -1147,8 +1147,8 @@ async def scam_alerts(request: Request, min_score: int = 30, user: dict = Depend
     """GET /scam/alerts?min_score=30 — Returns flagged emails sorted by scam score."""
     user_id = user["user_id"]
     emails = get_analyzed_emails(user_id)
-    flagged = [e for e in emails if e.get("scam_score", 0) >= min_score]
-    flagged.sort(key=lambda x: x.get("scam_score", 0), reverse=True)
+    flagged = [e for e in emails if (e.get("scam_score") or 0) >= min_score]
+    flagged.sort(key=lambda x: (x.get("scam_score") or 0), reverse=True)
     return {"emails": flagged, "count": len(flagged)}
 
 
@@ -1333,7 +1333,7 @@ async def emails_stats(request: Request):
     emails = get_analyzed_emails(user_id)
     total_analyzed = len(emails)
     total_quarantined = sum(1 for e in emails if e.get("is_quarantined") == 1)
-    total_flagged = sum(1 for e in emails if e.get("scam_score", 0) >= 30)
+    total_flagged = sum(1 for e in emails if (e.get("scam_score") or 0) >= 30)
 
     return {
         "total_analyzed": total_analyzed,
