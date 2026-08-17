@@ -1045,7 +1045,20 @@ async def ai_rewrite(request: Request):
 @app.get("/ai/status")
 async def ai_status():
     """GET /ai/status — Returns which AI providers have valid API keys."""
-    status = ai_router.get_status()
+    gemini_keys = [
+        os.getenv(f"GEMINI_API_KEY_{index}")
+        for index in range(1, 18)
+    ]
+    status = {
+        "groq": {"configured": bool(os.getenv("GROQ_API_KEY"))},
+        "nvidia": {"configured": bool(os.getenv("NVIDIA_API_KEY"))},
+        "gemini": {"configured": bool(
+            os.getenv("GEMINI_API_KEY") or any(gemini_keys)
+        )},
+        "cohere": {"configured": bool(os.getenv("COHERE_API_KEY"))},
+        "openrouter": {"configured": bool(os.getenv("OPENROUTER_API_KEY"))},
+        "safebrowsing": {"configured": bool(os.getenv("GOOGLE_SAFE_BROWSING_KEY"))},
+    }
     return {"providers": status}
 
 
