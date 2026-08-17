@@ -89,20 +89,28 @@ def fetch_emails(limit: int = 50, page_token: str | None = None, user_email: str
                 break
 
         message_ids = message_ids[:limit]
-        print(f"[GMAIL] Got {len(message_ids)} message IDs. Fetching details via batch API...", flush=True)
+        print(f"[GMAIL] Got {len(message_ids)} message IDs. Fetching details in parallel...", flush=True)
 
-        # Step 2: Fetch full details using Gmail's Batch API.
-        # Bundles up to 100 individual messages().get() calls into ONE HTTP
-        # request instead of one HTTP round-trip per message.
-        collected = _batch_get_email_details(service, message_ids)
+        # Step 2: Fetch full details in PARALLEL (5 concurrent threads)
+        # Each thread builds its own Gmail service instance to avoid
+        # httplib2 shared-connection deadlock.
+        creds = get_credentials(user_email)
+        collected = []
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            future_to_id = {
+                executor.submit(_get_email_details_threadsafe, creds, mid): mid
+                for mid in message_ids
+            }
+            for future in as_completed(future_to_id):
+                result = future.result()
+                if result:
+                    collected.append(result)
 
         # Preserve original order (reverse-chronological from Gmail)
         id_order = {mid: idx for idx, mid in enumerate(message_ids)}
         collected.sort(key=lambda e: id_order.get(e["id"], 999))
 
-        num_batches = (len(message_ids) + 99) // 100 if message_ids else 0
-        print(f"[GMAIL] Fetched {len(collected)} emails via {num_batches} batch call(s) "
-              f"(was {len(message_ids)} individual calls before). Next cursor: {current_token}")
+        print(f"[GMAIL] Fetched {len(collected)} emails (parallel). Next cursor: {current_token}")
 
         return {
             "emails": collected,
@@ -125,55 +133,6 @@ def _get_email_details_threadsafe(creds, email_id: str) -> dict | None:
     except Exception as e:
         print(f"[GMAIL] Thread-safe fetch failed for {email_id}: {e}")
         return None
-
-
-def _batch_get_email_details(service, message_ids: list[str]) -> list[dict]:
-    """
-    Fetch full details for many emails using Gmail's Batch API.
-    Bundles requests in chunks of 100 (Gmail's batch limit) instead of
-    one HTTP round-trip per message.
-    """
-    collected = []
-    errors = []
-
-    def _callback(request_id, response, exception):
-        if exception is not None:
-            errors.append((request_id, str(exception)))
-            return
-        try:
-            headers = {h["name"]: h["value"] for h in response.get("payload", {}).get("headers", [])}
-            body = _extract_body(response.get("payload", {}))
-            collected.append({
-                "id": request_id,
-                "subject": headers.get("Subject", "(No Subject)"),
-                "sender": headers.get("From", "(Unknown Sender)"),
-                "snippet": response.get("snippet", ""),
-                "date": headers.get("Date", ""),
-                "labels": response.get("labelIds", []),
-                "body": body,
-            })
-        except Exception as e:
-            errors.append((request_id, f"parse error: {e}"))
-
-    CHUNK_SIZE = 100  # Gmail batch API hard limit per request
-    for i in range(0, len(message_ids), CHUNK_SIZE):
-        chunk = message_ids[i:i + CHUNK_SIZE]
-        batch = service.new_batch_http_request(callback=_callback)
-        for mid in chunk:
-            batch.add(
-                service.users().messages().get(userId="me", id=mid, format="full"),
-                request_id=mid,
-            )
-        try:
-            batch.execute()
-        except Exception as e:
-            print(f"[GMAIL] Batch execute failed for chunk starting at {i}: {e}")
-
-    if errors:
-        print(f"[GMAIL] {len(errors)} message(s) failed in batch fetch (skipped): "
-              f"{errors[:5]}{'...' if len(errors) > 5 else ''}")
-
-    return collected
 
 
 def _get_email_details(service, email_id: str) -> dict | None:
@@ -435,7 +394,7 @@ def delete_email(email_id: str, user_id: int, user_email: str = None) -> bool:
 
 # ---------- BULK AI ANALYSIS PIPELINE (Steps A through I) ----------
 
-async def analyze_bulk_ordered(limit: int = 50, user_id: int = None, user_email: str = None, user_keys: dict = None):
+async def analyze_bulk_ordered(limit: int = 50, user_id: int = None, user_email: str = None):
     """
     AI-only bulk analysis engine with semaphore-controlled concurrency.
     Yields progress events via SSE as emails finish processing.
@@ -538,7 +497,6 @@ async def analyze_bulk_ordered(limit: int = 50, user_id: int = None, user_email:
                     service=service,
                     url_client=url_client,
                     url_semaphore=url_semaphore,
-                    user_keys=user_keys,
                 ))
                 for email in new_emails
             ]
@@ -594,7 +552,6 @@ async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
                        user_id: int, service,
                        url_client: httpx.AsyncClient,
                        url_semaphore: asyncio.Semaphore,
-                       user_keys: dict = None,
                        update_mode: bool = False) -> dict:
     """
     Analyze a single email through the AI-only pipeline (Steps A through I).
@@ -670,7 +627,7 @@ async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
                 available_labels=", ".join(available_label_names),
             )
 
-            ai_result = await ai_router.analyze_json(prompt, user_keys=user_keys)
+            ai_result = await ai_router.analyze_json(prompt)
 
             # Defaults — use first available label as fallback (no hardcoded 'Spam')
             label = default_label
@@ -880,7 +837,7 @@ async def fetch_only_pipeline(limit: int = 50, user_id: int = None, user_email: 
     yield {"type": "complete", "fetched": saved_count, "skipped": len(fetched_emails) - len(new_emails)}
 
 
-async def label_only_pipeline(limit: int = None, user_id: int = None, user_email: str = None, user_keys: dict = None):
+async def label_only_pipeline(limit: int = None, user_id: int = None, user_email: str = None):
     """
     Read status='fetched' emails from DB and run AI analysis.
     Updates rows to status='labeled'. Yields SSE progress events.
@@ -922,7 +879,6 @@ async def label_only_pipeline(limit: int = None, user_id: int = None, user_email
                 service=service,
                 url_client=url_client,
                 url_semaphore=url_semaphore,
-                user_keys=user_keys,
                 update_mode=True,
             ))
             for email in fetched_emails
