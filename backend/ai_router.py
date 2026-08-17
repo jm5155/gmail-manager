@@ -294,7 +294,7 @@ class AIRouter:
         if not GEMINI_API_KEY:
             raise ProviderError("Gemini API key not configured")
 
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={GEMINI_API_KEY}"
         body = {
             "contents": [{"parts": [{"text": prompt}]}],
             "generationConfig": {
@@ -637,7 +637,7 @@ class AIRouter:
             },
             "gemini": {
                 "configured": bool(GEMINI_API_KEY and GEMINI_API_KEY != "your_key_here"),
-                "model": "gemini-1.5-flash",
+                "model": "gemini-1.5-flash-latest",
                 "role": "secondary",
             },
             "cohere": {
