@@ -421,5 +421,63 @@ class AIRouter:
             raise ProviderError(f"OpenRouter unexpected response format: missing {e}")
 
 
+    async def analyze(self, prompt: str) -> dict:
+        """Run a prompt through the configured provider cascade."""
+        providers = [
+            ("Groq", self._call_groq),
+            ("NVIDIA", self._call_nvidia),
+            ("Gemini", self._call_gemini),
+            ("Cohere", self._call_cohere),
+            ("OpenRouter", self._call_openrouter),
+        ]
+
+        errors = []
+        for name, call_fn in providers:
+            try:
+                print(f"[AI] Trying {name}...", flush=True)
+                async with AI_CALL_SEMAPHORE:
+                    response = await call_fn(prompt)
+                print(f"[AI] {name} responded successfully.", flush=True)
+                return {"response": response, "provider_used": name}
+            except QuotaError as exc:
+                errors.append(f"{name}: quota: {exc}")
+                print(f"[AI] {name} quota hit; switching provider.", flush=True)
+            except (ProviderError, Exception) as exc:
+                errors.append(f"{name}: {type(exc).__name__}: {exc}")
+                print(f"[AI] {name} failed; switching provider: {exc}", flush=True)
+
+        return {
+            "error": "All AI providers exhausted: " + " | ".join(errors),
+            "provider_used": None,
+        }
+
+    async def analyze_json(self, prompt: str) -> dict:
+        """Run the cascade and parse the provider response as JSON."""
+        result = await self.analyze(prompt)
+        if result.get("error"):
+            return result
+
+        response = result.get("response", "").strip()
+        try:
+            data = json.loads(response)
+        except json.JSONDecodeError:
+            start = response.find("{")
+            end = response.rfind("}")
+            if start < 0 or end <= start:
+                return {
+                    "error": "AI response was not valid JSON",
+                    "provider_used": result.get("provider_used"),
+                }
+            try:
+                data = json.loads(response[start:end + 1])
+            except json.JSONDecodeError as exc:
+                return {
+                    "error": f"AI response JSON parse failed: {exc}",
+                    "provider_used": result.get("provider_used"),
+                }
+
+        return {"data": data, "provider_used": result.get("provider_used")}
+
+
 ai_router = AIRouter()
 
