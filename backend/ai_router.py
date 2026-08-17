@@ -201,7 +201,14 @@ class AIRouter:
         }
         body = {
             "model": "nvidia/nemotron-3-nano-30b-a3b",
-            "messages": [{"role": "user", "content": prompt}],
+            "messages": [{
+                "role": "user",
+                "content": (
+                    f"{prompt}\n\n"
+                    "Respond with ONLY one valid JSON object. Do not use markdown, "
+                    "code fences, or explanatory text."
+                ),
+            }],
             "max_tokens": 500,
             "temperature": 0.2,
             "stream": False,  # Non-streaming for structured responses
@@ -465,18 +472,19 @@ class AIRouter:
             return result
 
         response = result.get("response", "").strip()
+        cleaned = response.replace("```json", "").replace("```", "").strip()
         try:
-            data = json.loads(response)
+            data = json.loads(cleaned)
         except json.JSONDecodeError:
-            start = response.find("{")
-            end = response.rfind("}")
+            start = cleaned.find("{")
+            end = cleaned.rfind("}")
             if start < 0 or end <= start:
                 return {
                     "error": "AI response was not valid JSON",
                     "provider_used": result.get("provider_used"),
                 }
             try:
-                data = json.loads(response[start:end + 1])
+                data = json.loads(cleaned[start:end + 1])
             except json.JSONDecodeError as exc:
                 return {
                     "error": f"AI response JSON parse failed: {exc}",
