@@ -18,8 +18,13 @@ USE_POSTGRES = DATABASE_URL is not None and not FORCE_SQLITE
 
 if USE_POSTGRES:
     import psycopg2
+    from psycopg2 import pool as psycopg2_pool
     from psycopg2.extras import RealDictCursor
-    print("[DB] Using Postgres (DATABASE_URL detected)")
+    _pg_pool = psycopg2_pool.ThreadedConnectionPool(
+        minconn=2, maxconn=15, dsn=DATABASE_URL,
+        cursor_factory=RealDictCursor
+    )
+    print("[DB] Using Postgres (DATABASE_URL detected) with connection pool (2-15 connections)")
 else:
     import sqlite3
     DB_PATH = Path(__file__).parent / "gmail_manager.db"
@@ -31,13 +36,13 @@ _PLACEHOLDER = "%s"
 
 def _get_connection():
     """
-    Create a database connection (Postgres or SQLite based on environment).
+    Get a database connection (from pool for Postgres, fresh for SQLite).
     Returns a connection with dict-like row access.
     """
     global _PLACEHOLDER
     if USE_POSTGRES:
-        # Postgres connection (Railway production)
-        conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+        # Postgres connection from pool
+        conn = _pg_pool.getconn()
         _PLACEHOLDER = "%s"
         return conn
     else:
@@ -48,6 +53,16 @@ def _get_connection():
         conn.execute("PRAGMA journal_mode = WAL")
         _PLACEHOLDER = "?"
         return conn
+
+
+def _release_connection(conn):
+    """
+    Release a database connection (back to pool for Postgres, close for SQLite).
+    """
+    if USE_POSTGRES:
+        _pg_pool.putconn(conn)
+    else:
+        _release_connection(conn)
 
 
 def _execute(cursor, query, params=None):
@@ -106,6 +121,12 @@ def init_db():
         if not _column_exists(cursor, "users", "token"):
             _execute(cursor, "ALTER TABLE users ADD COLUMN token TEXT")
             print("[DB] Migrated: added token column to users table")
+
+        # Migration: add per-user encrypted AI provider key columns (BYOK feature)
+        for col in ("groq_api_key", "gemini_api_key", "cohere_api_key", "nvidia_api_key"):
+            if not _column_exists(cursor, "users", col):
+                _execute(cursor, f"ALTER TABLE users ADD COLUMN {col} TEXT")
+                print(f"[DB] Migrated: added {col} column to users table")
 
         # TABLE 2: custom_labels
         _execute(cursor, f"""
@@ -217,7 +238,7 @@ def init_db():
         conn.rollback()
         raise
     finally:
-        conn.close()
+        _release_connection(conn)
 
 
 # ---------- SEED DEFAULT LABELS ----------
@@ -257,7 +278,7 @@ def seed_default_labels(user_id: int):
         conn.rollback()
         raise
     finally:
-        conn.close()
+        _release_connection(conn)
 
 
 # ---------- USER MANAGEMENT ----------
@@ -287,7 +308,7 @@ def upsert_user(gmail_address: str, access_token: str) -> int:
         conn.rollback()
         raise
     finally:
-        conn.close()
+        _release_connection(conn)
 
 
 def get_user_id(gmail_address: str) -> int:
@@ -305,7 +326,7 @@ def get_user_id(gmail_address: str) -> int:
         conn.rollback()
         raise
     finally:
-        conn.close()
+        _release_connection(conn)
 
 
 # ---------- OAUTH TOKEN STORAGE (DB-BACKED, per-user) ----------
@@ -324,7 +345,7 @@ def save_user_token(user_email: str, token_json: str) -> None:
         conn.rollback()
         raise
     finally:
-        conn.close()
+        _release_connection(conn)
 
 
 def get_user_token(user_email: str) -> str | None:
@@ -339,7 +360,7 @@ def get_user_token(user_email: str) -> str | None:
         conn.rollback()
         raise
     finally:
-        conn.close()
+        _release_connection(conn)
 
 
 def delete_user_token(user_email: str) -> None:
@@ -353,7 +374,7 @@ def delete_user_token(user_email: str) -> None:
         conn.rollback()
         raise
     finally:
-        conn.close()
+        _release_connection(conn)
 
 
 def get_user_email_by_id(user_id: int) -> str | None:
@@ -368,7 +389,93 @@ def get_user_email_by_id(user_id: int) -> str | None:
         conn.rollback()
         raise
     finally:
-        conn.close()
+        _release_connection(conn)
+
+
+# ---------- PER-USER AI PROVIDER KEYS (BYOK) ----------
+
+# Valid provider names for the BYOK feature (the 4 fixed cascade providers).
+AI_PROVIDERS = ("groq", "gemini", "cohere", "nvidia")
+
+# Maps a provider name to the column that stores its (encrypted) key.
+_AI_KEY_COLUMNS = {
+    "groq": "groq_api_key",
+    "gemini": "gemini_api_key",
+    "cohere": "cohere_api_key",
+    "nvidia": "nvidia_api_key",
+}
+
+
+def save_user_ai_key(user_id: int, provider: str, encrypted_key: str) -> None:
+    """
+    Store an encrypted API key for a user + provider.
+    `encrypted_key` must already be encrypted (see backend/encryption.py).
+    Raises ValueError if provider is not one of the supported providers.
+    """
+    if provider not in AI_PROVIDERS:
+        raise ValueError(f"Unknown AI provider: {provider}")
+    column = _AI_KEY_COLUMNS[provider]
+    conn = _get_connection()
+    try:
+        cursor = conn.cursor()
+        _execute(cursor, f"UPDATE users SET {column} = %s WHERE user_id = %s", (encrypted_key, user_id))
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        _release_connection(conn)
+
+
+def get_user_ai_keys(user_id: int) -> dict:
+    """
+    Return the (encrypted) API keys for a user as a dict keyed by provider name:
+        {"groq": "...", "gemini": None, "cohere": "...", "nvidia": None}
+    Values are the raw stored (encrypted) strings; callers must decrypt before use.
+    """
+    conn = _get_connection()
+    try:
+        cursor = conn.cursor()
+        _execute(
+            cursor,
+            "SELECT groq_api_key, gemini_api_key, cohere_api_key, nvidia_api_key "
+            "FROM users WHERE user_id = %s",
+            (user_id,),
+        )
+        row = cursor.fetchone()
+        if not row:
+            return {p: None for p in AI_PROVIDERS}
+        return {
+            "groq": row["groq_api_key"],
+            "gemini": row["gemini_api_key"],
+            "cohere": row["cohere_api_key"],
+            "nvidia": row["nvidia_api_key"],
+        }
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        _release_connection(conn)
+
+
+def delete_user_ai_key(user_id: int, provider: str) -> None:
+    """
+    Remove a user's stored API key for a single provider (sets the column to NULL).
+    Raises ValueError if provider is not one of the supported providers.
+    """
+    if provider not in AI_PROVIDERS:
+        raise ValueError(f"Unknown AI provider: {provider}")
+    column = _AI_KEY_COLUMNS[provider]
+    conn = _get_connection()
+    try:
+        cursor = conn.cursor()
+        _execute(cursor, f"UPDATE users SET {column} = NULL WHERE user_id = %s", (user_id,))
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        _release_connection(conn)
 
 
 # ---------- LABEL MANAGEMENT ----------
@@ -388,7 +495,7 @@ def get_labels(user_id: int) -> list[dict]:
         conn.rollback()
         raise
     finally:
-        conn.close()
+        _release_connection(conn)
 
 
 def get_label_id_by_name(user_id: int, label_name: str) -> int:
@@ -435,7 +542,7 @@ def get_label_id_by_name(user_id: int, label_name: str) -> int:
         conn.rollback()
         raise
     finally:
-        conn.close()
+        _release_connection(conn)
 
 
 def add_label(user_id: int, label_name: str, bg_color: str, text_color: str) -> int:
@@ -455,7 +562,7 @@ def add_label(user_id: int, label_name: str, bg_color: str, text_color: str) -> 
         conn.rollback()
         raise
     finally:
-        conn.close()
+        _release_connection(conn)
 
 
 def delete_label(label_id: int, user_id: int) -> None:
@@ -473,7 +580,7 @@ def delete_label(label_id: int, user_id: int) -> None:
         conn.rollback()
         raise
     finally:
-        conn.close()
+        _release_connection(conn)
 
 
 # ---------- ANALYZED EMAILS ----------
@@ -519,7 +626,7 @@ def save_analyzed_email(email_id: str, user_id: int, label_id: int, scam_score: 
         conn.rollback()
         raise
     finally:
-        conn.close()
+        _release_connection(conn)
 
 
 def update_analyzed_email(email_id: str, label_id: int, scam_score: int,
@@ -547,7 +654,7 @@ def update_analyzed_email(email_id: str, label_id: int, scam_score: int,
         conn.rollback()
         raise
     finally:
-        conn.close()
+        _release_connection(conn)
 
 
 def update_email_label_id(email_id: str, label_id: int) -> None:
@@ -571,7 +678,7 @@ def update_email_label_id(email_id: str, label_id: int) -> None:
         conn.rollback()
         raise
     finally:
-        conn.close()
+        _release_connection(conn)
 
 
 def get_emails_by_status(user_id: int, status: str, limit: int = None) -> list[dict]:
@@ -620,7 +727,7 @@ def get_emails_by_status(user_id: int, status: str, limit: int = None) -> list[d
         conn.rollback()
         raise
     finally:
-        conn.close()
+        _release_connection(conn)
 
 
 
@@ -639,7 +746,7 @@ def is_already_analyzed(email_id: str, user_id: int) -> bool:
         conn.rollback()
         raise
     finally:
-        conn.close()
+        _release_connection(conn)
 
 
 def get_analyzed_emails(user_id: int) -> list[dict]:
@@ -674,7 +781,7 @@ def get_analyzed_emails(user_id: int) -> list[dict]:
         conn.rollback()
         raise
     finally:
-        conn.close()
+        _release_connection(conn)
 
 
 # ---------- URL CACHE ----------
@@ -702,7 +809,7 @@ def save_url_result(email_id: str, url: str, is_safe: int, threat_type: str) -> 
         conn.rollback()
         raise
     finally:
-        conn.close()
+        _release_connection(conn)
 
 
 def get_cached_url(url: str) -> dict | None:
@@ -741,7 +848,7 @@ def get_cached_url(url: str) -> dict | None:
         conn.rollback()
         raise
     finally:
-        conn.close()
+        _release_connection(conn)
 
 
 # ---------- RETRY QUEUE ----------
@@ -786,7 +893,7 @@ def add_to_retry_queue(email_id: str, error_reason: str) -> None:
         conn.rollback()
         raise
     finally:
-        conn.close()
+        _release_connection(conn)
 
 
 def get_retry_queue(user_id: int) -> list[dict]:
@@ -810,7 +917,7 @@ def get_retry_queue(user_id: int) -> list[dict]:
         conn.rollback()
         raise
     finally:
-        conn.close()
+        _release_connection(conn)
 
 
 def remove_from_retry_queue(email_id: str) -> None:
@@ -825,7 +932,7 @@ def remove_from_retry_queue(email_id: str) -> None:
         conn.rollback()
         raise
     finally:
-        conn.close()
+        _release_connection(conn)
 
 
 # ---------- SCAN CURSOR ----------
@@ -842,7 +949,7 @@ def get_scan_cursor(user_id: int) -> str | None:
         conn.rollback()
         raise
     finally:
-        conn.close()
+        _release_connection(conn)
 
 
 def save_scan_cursor(user_id: int, last_page_token: str) -> None:
@@ -865,7 +972,7 @@ def save_scan_cursor(user_id: int, last_page_token: str) -> None:
         conn.rollback()
         raise
     finally:
-        conn.close()
+        _release_connection(conn)
 
 
 def clear_scan_cursor(user_id: int) -> None:
@@ -883,7 +990,7 @@ def clear_scan_cursor(user_id: int) -> None:
         conn.rollback()
         raise
     finally:
-        conn.close()
+        _release_connection(conn)
 
 
 # ---------- ADMIN ----------
@@ -916,7 +1023,7 @@ def reset_database(user_id: int) -> None:
         conn.rollback()
         raise
     finally:
-        conn.close()
+        _release_connection(conn)
 
 
 def mark_email_safe(email_id: str, user_id: int) -> None:
@@ -934,7 +1041,7 @@ def mark_email_safe(email_id: str, user_id: int) -> None:
         conn.rollback()
         raise
     finally:
-        conn.close()
+        _release_connection(conn)
 
 
 # ---------- DELETE MODE ----------
@@ -951,7 +1058,7 @@ def get_delete_mode(user_id: int) -> str:
         conn.rollback()
         raise
     finally:
-        conn.close()
+        _release_connection(conn)
 
 
 def set_delete_mode(user_id: int, mode: str) -> None:
@@ -971,4 +1078,4 @@ def set_delete_mode(user_id: int, mode: str) -> None:
         conn.rollback()
         raise
     finally:
-        conn.close()
+        _release_connection(conn)
