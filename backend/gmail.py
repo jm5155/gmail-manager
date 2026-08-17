@@ -137,18 +137,19 @@ def _get_email_details_threadsafe(creds, email_id: str) -> dict | None:
 
 def _get_email_details(service, email_id: str) -> dict | None:
     """
-    Fetch the full details of a single email by its ID.
-    Extracts subject, sender, snippet, date, labels, and body text.
+    Fetch metadata-only details of a single email by its ID (fast, no body).
+    Extracts subject, sender, snippet, date, labels. Body is empty string.
+    Use _get_email_body() separately to fetch the full body when needed.
     """
     try:
         msg = service.users().messages().get(
             userId="me",
             id=email_id,
-            format="full",
+            format="metadata",
+            metadataHeaders=["Subject", "From", "Date"],
         ).execute()
 
         headers = {h["name"]: h["value"] for h in msg.get("payload", {}).get("headers", [])}
-        body = _extract_body(msg.get("payload", {}))
 
         return {
             "id": email_id,
@@ -157,12 +158,31 @@ def _get_email_details(service, email_id: str) -> dict | None:
             "snippet": msg.get("snippet", ""),
             "date": headers.get("Date", ""),
             "labels": msg.get("labelIds", []),
-            "body": body,
+            "body": "",  # Empty for metadata fetch, use _get_email_body() to fetch body
         }
 
     except Exception as e:
         print(f"[GMAIL] Error fetching email {email_id}: {e}")
         return None
+
+
+def _get_email_body(service, email_id: str) -> str:
+    """
+    Fetch only the body text of a single email by its ID.
+    Use this after _get_email_details() when body content is needed for AI analysis.
+    """
+    try:
+        msg = service.users().messages().get(
+            userId="me",
+            id=email_id,
+            format="full",
+        ).execute()
+
+        return _extract_body(msg.get("payload", {}))
+
+    except Exception as e:
+        print(f"[GMAIL] Error fetching body for email {email_id}: {e}")
+        return ""
 
 
 def _extract_body(payload: dict) -> str:
@@ -587,6 +607,11 @@ async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
                     "scam_score": 0,
                     "is_quarantined": 0,
                 }
+
+            # Fetch full email body for AI analysis (if not already present)
+            # Body is empty from metadata-only fetch, so fetch it now
+            if not body:
+                body = await asyncio.to_thread(_get_email_body, service, email_id)
 
             # Prepare data needed for AI prompt and placeholder
             available_labels_list = get_labels(user_id)
