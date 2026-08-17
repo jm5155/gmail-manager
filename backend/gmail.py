@@ -840,6 +840,11 @@ async def fetch_only_pipeline(limit: int = 50, user_id: int = None, user_email: 
     saved_count = 0
     for email in new_emails:
         try:
+            # Fetch full body before saving (metadata fetch returns body="")
+            body = email.get("body", "")
+            if not body:
+                body = await asyncio.to_thread(_get_email_body, service, email["id"])
+            
             save_analyzed_email(
                 email_id=email["id"],
                 user_id=user_id,
@@ -851,7 +856,7 @@ async def fetch_only_pipeline(limit: int = 50, user_id: int = None, user_email: 
                 sender=email.get("sender", ""),
                 subject=email.get("subject", ""),
                 status='fetched',
-                body=email.get("body", ""),
+                body=body,
             )
             saved_count += 1
             yield {"type": "progress", "current": saved_count, "total": len(new_emails)}
