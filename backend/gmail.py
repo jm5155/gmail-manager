@@ -137,19 +137,18 @@ def _get_email_details_threadsafe(creds, email_id: str) -> dict | None:
 
 def _get_email_details(service, email_id: str) -> dict | None:
     """
-    Fetch metadata-only details of a single email by its ID (fast, no body).
-    Extracts subject, sender, snippet, date, labels. Body is empty string.
-    Use _get_email_body() separately to fetch the full body when needed.
+    Fetch the full details of a single email by its ID.
+    Extracts subject, sender, snippet, date, labels, and body text.
     """
     try:
         msg = service.users().messages().get(
             userId="me",
             id=email_id,
-            format="metadata",
-            metadataHeaders=["Subject", "From", "Date"],
+            format="full",
         ).execute()
 
         headers = {h["name"]: h["value"] for h in msg.get("payload", {}).get("headers", [])}
+        body = _extract_body(msg.get("payload", {}))
 
         return {
             "id": email_id,
@@ -158,7 +157,7 @@ def _get_email_details(service, email_id: str) -> dict | None:
             "snippet": msg.get("snippet", ""),
             "date": headers.get("Date", ""),
             "labels": msg.get("labelIds", []),
-            "body": "",  # Empty for metadata fetch, use _get_email_body() to fetch body
+            "body": body,
         }
 
     except Exception as e:
@@ -446,6 +445,10 @@ async def analyze_bulk_ordered(limit: int = 50, user_id: int = None, user_email:
         }
         return
 
+    # Cache labels once per bulk run (instead of per-email DB query)
+    available_labels_list = await asyncio.to_thread(get_labels, user_id)
+    available_label_names = [lbl["label_name"] for lbl in available_labels_list]
+
     async with httpx.AsyncClient(timeout=10.0, limits=httpx.Limits(max_connections=50)) as url_client:
         # Emit initializing event immediately so the frontend gets instant feedback
         yield {
@@ -517,6 +520,7 @@ async def analyze_bulk_ordered(limit: int = 50, user_id: int = None, user_email:
                     service=service,
                     url_client=url_client,
                     url_semaphore=url_semaphore,
+                    available_label_names=available_label_names,
                 ))
                 for email in new_emails
             ]
@@ -572,6 +576,7 @@ async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
                        user_id: int, service,
                        url_client: httpx.AsyncClient,
                        url_semaphore: asyncio.Semaphore,
+                       available_label_names: list[str],
                        update_mode: bool = False) -> dict:
     """
     Analyze a single email through the AI-only pipeline (Steps A through I).
@@ -584,6 +589,7 @@ async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
         classification_prompt: The CLASSIFICATION_PROMPT template
         user_id: The authenticated user's ID
         service: Gmail API service instance
+        available_label_names: Cached list of label names for this user
     """
     from security import extract_urls, scan_url
 
@@ -609,13 +615,11 @@ async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
                 }
 
             # Fetch full email body for AI analysis (if not already present)
-            # Body is empty from metadata-only fetch, so fetch it now
+            # Safety fallback - body should already be populated from format="full" fetch
             if not body:
                 body = await asyncio.to_thread(_get_email_body, service, email_id)
 
-            # Prepare data needed for AI prompt and placeholder
-            available_labels_list = get_labels(user_id)
-            available_label_names = [lbl["label_name"] for lbl in available_labels_list]
+            # Use cached label names passed from analyze_bulk_ordered()
             default_label = available_label_names[0] if available_label_names else "Unknown"
 
             # Insert placeholder to satisfy FK constraints (skip if updating existing row)
@@ -887,6 +891,10 @@ async def label_only_pipeline(limit: int = None, user_id: int = None, user_email
         yield {"type": "complete", "analyzed": 0, "failed": 0, "error": "Not authenticated"}
         return
 
+    # Cache labels once per bulk run (instead of per-email DB query)
+    available_labels_list = await asyncio.to_thread(get_labels, user_id)
+    available_label_names = [lbl["label_name"] for lbl in available_labels_list]
+
     async with httpx.AsyncClient(timeout=10.0, limits=httpx.Limits(max_connections=50)) as url_client:
         yield {"type": "initializing", "message": "Starting AI analysis..."}
 
@@ -909,6 +917,7 @@ async def label_only_pipeline(limit: int = None, user_id: int = None, user_email
                 service=service,
                 url_client=url_client,
                 url_semaphore=url_semaphore,
+                available_label_names=available_label_names,
                 update_mode=True,
             ))
             for email in fetched_emails
