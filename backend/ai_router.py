@@ -22,8 +22,16 @@ load_dotenv()
 
 # ---------- API KEYS ----------
 
-# Groq API (primary)
+# Groq API (primary) - 9 rotating keys
+GROQ_API_KEYS = [
+    os.getenv(f"GROQ_API_KEY_{i}") for i in range(1, 10)
+]
+GROQ_API_KEYS = [k for k in GROQ_API_KEYS if k]  # Remove unset/empty keys
+
+# Include legacy GROQ_API_KEY if set (treat as key 0)
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+if GROQ_API_KEY and GROQ_API_KEY not in GROQ_API_KEYS:
+    GROQ_API_KEYS.insert(0, GROQ_API_KEY)
 
 # NVIDIA API (secondary fallback - fast model)
 NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY")
@@ -163,10 +171,11 @@ class AIRouter:
         self.client = httpx.Client(timeout=30.0)
         self.async_client = httpx.AsyncClient(timeout=30.0)
         self._gemini_key_index = 0
+        self._groq_key_index = 0
         # OpenRouter does not need key rotation (single key)
         print(
             f"[AI ROUTER] Providers loaded: "
-            f"groq={bool(GROQ_API_KEY)}, "
+            f"groq={len(GROQ_API_KEYS)} keys, "
             f"gemini={bool(GEMINI_API_KEY)}, "
             f"cohere={bool(COHERE_API_KEY)}, "
             f"nvidia={bool(NVIDIA_API_KEY)}, "
@@ -237,8 +246,12 @@ class AIRouter:
 
     async def _call_groq(self, prompt: str) -> str:
         """
-        Call Groq API with llama-3.1-8b-instant model.
+        Call Groq API with llama-3.1-8b-instant model, rotating through 9 API keys.
         Primary AI provider. Called first in the cascade.
+        
+        Tries all available Groq API keys in round-robin order before raising QuotaError.
+        If one key hits 429 (quota), immediately tries the next key. Only fails when
+        ALL keys are exhausted.
         
         Args:
             prompt: The text prompt to send
@@ -247,17 +260,13 @@ class AIRouter:
             Response text from the model
             
         Raises:
-            QuotaError: If status 429
-            ProviderError: If any other error
+            QuotaError: If ALL keys return 429
+            ProviderError: If ALL keys fail with non-quota errors
         """
-        if not GROQ_API_KEY:
-            raise ProviderError("Groq API key not configured")
+        if not GROQ_API_KEYS:
+            raise ProviderError("Groq API keys not configured")
 
         url = "https://api.groq.com/openai/v1/chat/completions"
-        headers = {
-            "Authorization": f"Bearer {GROQ_API_KEY}",
-            "Content-Type": "application/json",
-        }
         body = {
             "model": "openai/gpt-oss-20b",
             "messages": [{"role": "user", "content": prompt}],
@@ -265,21 +274,55 @@ class AIRouter:
             "temperature": 0.2,
         }
 
-        try:
-            response = await self.async_client.post(url, headers=headers, json=body)
+        quota_errors = 0
+        other_errors = []
+        
+        # Try all keys in rotation before giving up
+        for attempt in range(len(GROQ_API_KEYS)):
+            key_index = (self._groq_key_index + attempt) % len(GROQ_API_KEYS)
+            api_key = GROQ_API_KEYS[key_index]
+            
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            }
 
-            if response.status_code == 429:
-                retry_after = response.headers.get("Retry-After")
-                raise QuotaError(f"Groq quota exceeded: {response.text[:300]} | retry-after={retry_after}")
+            try:
+                response = await self.async_client.post(url, headers=headers, json=body)
 
-            if response.status_code != 200:
-                raise ProviderError(f"Groq error {response.status_code}: {response.text[:200]}")
+                if response.status_code == 429:
+                    quota_errors += 1
+                    retry_after = response.headers.get("Retry-After")
+                    print(f"[AI] Groq key #{key_index + 1} quota hit, trying next key...", flush=True)
+                    continue  # Try next key immediately
 
-            data = response.json()
-            return data["choices"][0]["message"]["content"].strip()
+                if response.status_code != 200:
+                    error_msg = f"Groq key #{key_index + 1} error {response.status_code}: {response.text[:200]}"
+                    other_errors.append(error_msg)
+                    print(f"[AI] {error_msg}, trying next key...", flush=True)
+                    continue  # Try next key
 
-        except httpx.TimeoutException:
-            raise ProviderError("Groq request timed out (30s)")
+                # Success - update index for next call and return
+                self._groq_key_index = (key_index + 1) % len(GROQ_API_KEYS)
+                data = response.json()
+                return data["choices"][0]["message"]["content"].strip()
+
+            except httpx.TimeoutException:
+                error_msg = f"Groq key #{key_index + 1} timed out (30s)"
+                other_errors.append(error_msg)
+                print(f"[AI] {error_msg}, trying next key...", flush=True)
+                continue  # Try next key
+            except Exception as e:
+                error_msg = f"Groq key #{key_index + 1} exception: {e}"
+                other_errors.append(error_msg)
+                print(f"[AI] {error_msg}, trying next key...", flush=True)
+                continue  # Try next key
+
+        # All keys exhausted - raise appropriate error
+        if quota_errors == len(GROQ_API_KEYS):
+            raise QuotaError(f"All {len(GROQ_API_KEYS)} Groq API keys exhausted (quota)")
+        else:
+            raise ProviderError(f"All {len(GROQ_API_KEYS)} Groq keys failed: {' | '.join(other_errors)}")
 
     # ---------- PROVIDER: GEMINI (SECONDARY) ----------
 
