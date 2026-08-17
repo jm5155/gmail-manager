@@ -300,7 +300,7 @@ class AIRouter:
 
         key = GEMINI_API_KEYS[self._gemini_key_index % len(GEMINI_API_KEYS)]
         self._gemini_key_index += 1
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={key}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key={key}"
         body = {
             "contents": [{"parts": [{"text": prompt}]}],
             "generationConfig": {
