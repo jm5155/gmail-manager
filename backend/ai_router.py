@@ -390,8 +390,8 @@ class AIRouter:
 
     async def _call_openrouter(self, prompt: str) -> str:
         """
-        Call OpenRouter API with free auto-router.
-        Uses openrouter/auto:free (automatic free model selection).
+        Call OpenRouter API with a verified free instruction model.
+        Uses openai/gpt-oss-20b:free.
         
         Args:
             prompt: The text prompt to send
@@ -414,8 +414,17 @@ class AIRouter:
             "X-Title": "Gmail Manager",
         }
         body = {
-            "model": "openrouter/auto:free",
-            "messages": [{"role": "user", "content": prompt}],
+            "model": "openai/gpt-oss-20b:free",
+            "messages": [{
+                "role": "system",
+                "content": (
+                    "Respond with ONLY one valid JSON object. Do not explain your reasoning, "
+                    "think out loud, use markdown, or output code fences."
+                ),
+            }, {
+                "role": "user",
+                "content": prompt,
+            }],
             "max_tokens": 500,
             "temperature": 0.2,
         }
