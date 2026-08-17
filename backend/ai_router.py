@@ -29,7 +29,11 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY")
 
 # Gemini API (secondary)
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GEMINI_API_KEYS = [
+    key for key in [os.getenv(f"GEMINI_API_KEY_{index}") for index in range(1, 18)]
+    if key and key != "your_key_here"
+]
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") or (GEMINI_API_KEYS[0] if GEMINI_API_KEYS else None)
 
 # Cohere API (tertiary)
 COHERE_API_KEY = os.getenv("COHERE_API_KEY")
@@ -158,6 +162,7 @@ class AIRouter:
         # httpx client with 30-second timeout for all requests
         self.client = httpx.Client(timeout=30.0)
         self.async_client = httpx.AsyncClient(timeout=30.0)
+        self._gemini_key_index = 0
         # OpenRouter does not need key rotation (single key)
         print(
             f"[AI ROUTER] Providers loaded: "
@@ -281,10 +286,12 @@ class AIRouter:
             QuotaError: If status 429
             ProviderError: If any other error
         """
-        if not GEMINI_API_KEY:
+        if not GEMINI_API_KEYS:
             raise ProviderError("Gemini API key not configured")
 
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={GEMINI_API_KEY}"
+        key = GEMINI_API_KEYS[self._gemini_key_index % len(GEMINI_API_KEYS)]
+        self._gemini_key_index += 1
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={key}"
         body = {
             "contents": [{"parts": [{"text": prompt}]}],
             "generationConfig": {
