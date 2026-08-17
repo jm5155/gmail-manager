@@ -25,7 +25,7 @@ load_dotenv()
 # Groq API (primary)
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
-# NVIDIA API (placeholder — kept for future use)
+# NVIDIA API (secondary fallback - fast model)
 NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY")
 
 # Gemini API (secondary)
@@ -34,15 +34,8 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 # Cohere API (tertiary)
 COHERE_API_KEY = os.getenv("COHERE_API_KEY")
 
-# TokenRouter API (quaternary — 5 keys for load distribution)
-TOKENROUTER_BASE_URL = os.getenv("TOKENROUTER_BASE_URL")
-TOKENROUTER_API_KEYS = [
-    os.getenv("TOKENROUTER_API_KEY_1"),
-    os.getenv("TOKENROUTER_API_KEY_2"),
-    os.getenv("TOKENROUTER_API_KEY_3"),
-    os.getenv("TOKENROUTER_API_KEY_4"),
-    os.getenv("TOKENROUTER_API_KEY_5"),
-]
+# OpenRouter API (quinary — free auto-router)
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 # Google Safe Browsing API
 GOOGLE_SAFE_BROWSING_KEY = os.getenv("GOOGLE_SAFE_BROWSING_KEY")
@@ -157,7 +150,7 @@ class AIRouter:
     If the primary provider is rate-limited (429), automatically falls back
     to the next provider in the chain.
     
-    Cascade order: Groq → Gemini → Cohere → TokenRouter
+    Cascade order: Groq → NVIDIA → Gemini → Cohere → OpenRouter
     (NVIDIA preserved but not in active cascade)
     """
 
@@ -165,16 +158,9 @@ class AIRouter:
         # httpx client with 30-second timeout for all requests
         self.client = httpx.Client(timeout=30.0)
         self.async_client = httpx.AsyncClient(timeout=30.0)
-        self._tokenrouter_key_index = 0
+        # OpenRouter does not need key rotation (single key)
         
-        valid_tokenrouter_keys = [k for k in TOKENROUTER_API_KEYS if k]
-        print(
-            f"[AI ROUTER] Providers loaded: "
-            f"groq={bool(GROQ_API_KEY)}, "
-            f"gemini={bool(GEMINI_API_KEY)}, "
-            f"cohere={bool(COHERE_API_KEY)}, "
-            f"tokenrouter={bool(TOKENROUTER_BASE_URL and valid_tokenrouter_keys)}"
-            f"({len(valid_tokenrouter_keys)} keys), "
+        "openrouter={bool(OPENROUTER_API_KEY)}, "
             f"nvidia={bool(NVIDIA_API_KEY)}",
             flush=True,
         )
@@ -184,7 +170,7 @@ class AIRouter:
     async def _call_nvidia(self, prompt: str) -> str:
         """
         Call NVIDIA API (OpenAI-compatible endpoint).
-        Uses minimaxai/minimax-m2.7 model via NVIDIA's integration API.
+        Call NVIDIA API with nemotron-3-nano-30b-a3b (fast model).
         
         Args:
             prompt: The text prompt to send
@@ -205,7 +191,7 @@ class AIRouter:
             "Content-Type": "application/json",
         }
         body = {
-            "model": "minimaxai/minimax-m2.7",
+            "model": "nvidia/nemotron-3-nano-30b-a3b",
             "messages": [{"role": "user", "content": prompt}],
             "max_tokens": 500,
             "temperature": 0.2,
@@ -378,12 +364,12 @@ class AIRouter:
         except httpx.TimeoutException:
             raise ProviderError("Cohere request timed out (30s)")
 
-    # ---------- PROVIDER: TOKENROUTER (QUATERNARY) ----------
+    # ---------- PROVIDER: OPENROUTER (QUINARY) ----------
 
-    async def _call_tokenrouter(self, prompt: str) -> str:
+    async def _call_openrouter(self, prompt: str) -> str:
         """
-        Call TokenRouter API with OpenAI-compatible endpoint.
-        Load-balances across 5 API keys via round-robin selection.
+        Call OpenRouter API with free auto-router.
+        Uses openrouter/auto:free (automatic free model selection).
         
         Args:
             prompt: The text prompt to send
@@ -395,24 +381,18 @@ class AIRouter:
             QuotaError: If status 429 (rate limited)
             ProviderError: If any other error occurs
         """
-        if not TOKENROUTER_BASE_URL or not any(TOKENROUTER_API_KEYS):
-            raise ProviderError("TokenRouter API not configured")
+        if not OPENROUTER_API_KEY:
+            raise ProviderError("OpenRouter API key not configured")
 
-        valid_keys = [k for k in TOKENROUTER_API_KEYS if k]
-        if not valid_keys:
-            raise ProviderError("TokenRouter API not configured")
-
-        key_index = self._tokenrouter_key_index % len(valid_keys)
-        api_key = valid_keys[key_index]
-        self._tokenrouter_key_index += 1
-
-        url = f"{TOKENROUTER_BASE_URL}/chat/completions"
+        url = "https://openrouter.ai/api/v1/chat/completions"
         headers = {
-            "Authorization": f"Bearer {api_key}",
+            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
             "Content-Type": "application/json",
+            "HTTP-Referer": "https://gmail-manager.app",
+            "X-Title": "Gmail Manager",
         }
         body = {
-            "model": "gpt-4o-mini",  # TokenRouter's default fast model
+            "model": "openrouter/auto:free",
             "messages": [{"role": "user", "content": prompt}],
             "max_tokens": 500,
             "temperature": 0.2,
@@ -423,248 +403,17 @@ class AIRouter:
 
             if response.status_code == 429:
                 retry_after = response.headers.get("Retry-After")
-                raise QuotaError(f"TokenRouter quota exceeded: {response.text[:300]} | retry-after={retry_after}")
+                raise QuotaError(f"OpenRouter quota exceeded: {response.text[:300]} | retry-after={retry_after}")
 
             if response.status_code != 200:
-                raise ProviderError(f"TokenRouter error {response.status_code}: {response.text[:200]}")
+                raise ProviderError(f"OpenRouter error {response.status_code}: {response.text[:200]}")
 
             data = response.json()
             return data["choices"][0]["message"]["content"].strip()
 
         except httpx.TimeoutException:
-            raise ProviderError("TokenRouter request timed out (30s)")
+            raise ProviderError("OpenRouter request timed out (30s)")
+        except KeyError as e:
+            raise ProviderError(f"OpenRouter unexpected response format: missing {e}")
 
-    # ---------- RETRY-DELAY PARSING (Phase 13, Option 3) ----------
-
-    @staticmethod
-    def _parse_retry_delay(err_text: str) -> float | None:
-        """
-        Extract a retry delay (in seconds) from a captured 429 error message.
-        Looks for the Retry-After header value first (captured as
-        'retry-after=<value>'), then a JSON retry-delay field such as Gemini's
-        '"retryDelay": "12s"'. Returns None if neither is present.
-        """
-        import re
-        # 1. Retry-After header, captured as "retry-after=<value>"
-        # tolerate an optional trailing unit, e.g. "retry-after=10" or "retry-after=10s"
-        m = re.search(r"retry-after=([0-9.]+)s?", err_text, re.IGNORECASE)
-        if m:
-            val = m.group(1).strip()
-            if val.lower() not in ("none", ""):
-                try:
-                    return float(val)
-                except ValueError:
-                    pass
-        # 2. JSON retry-delay field, e.g. "retryDelay": "12s" or "retry_delay": 12
-        m = re.search(r'retry[_-]?delay["\']?\s*[:=]\s*["\']?([0-9.]+)\s*s?', err_text, re.IGNORECASE)
-        if m:
-            try:
-                return float(m.group(1))
-            except ValueError:
-                pass
-        return None
-
-    # ---------- CASCADE ANALYZE ----------
-
-    async def analyze(self, prompt: str) -> dict:
-        """
-        Run a prompt through the AI cascade: Groq → Gemini → Cohere → TokenRouter.
-        Automatically switches to the next provider if the current one hits quota limits.
-        
-        Args:
-            prompt: The text prompt to analyze
-            
-        Returns:
-            Dict with keys: response (str), provider_used (str)
-            On total failure: { error: str }
-        """
-        # Provider cascade — ordered by priority
-        providers = [
-            ("Groq", self._call_groq),
-            ("Gemini", self._call_gemini),
-            ("Cohere", self._call_cohere),
-            ("TokenRouter", self._call_tokenrouter),
-        ]
-
-        for name, call_fn in providers:
-            try:
-                timestamp = datetime.now().strftime("%H:%M:%S")
-                print(f"[AI {timestamp}] Trying {name}...", flush=True)
-
-                # Phase 16, Option B: hard-cap Cohere at 20/min. Acquire BEFORE the
-                # global semaphore so waiting for the Cohere window does not hold a
-                # global concurrency slot. May raise QuotaError if the wait cap is hit.
-                if name == "Cohere":
-                    await COHERE_RATE_LIMITER.acquire("Cohere")
-
-                async with AI_CALL_SEMAPHORE:
-                    result = await call_fn(prompt)
-                print(f"[AI {timestamp}] [OK] {name} responded successfully.", flush=True)
-                
-                return {
-                    "response": result,
-                    "provider_used": name,
-                }
-
-            except QuotaError as e:
-                timestamp = datetime.now().strftime("%H:%M:%S")
-                print(f"[AI {timestamp}] [WARNING] {name} quota hit, switching to next provider... ({e})", flush=True)
-                # Phase 13, Option 3: bounded backoff using captured retry delay
-                # (Retry-After header or JSON retry-delay), capped at 5s. If no
-                # delay is present, fall back immediately (today's behavior).
-                retry_delay = self._parse_retry_delay(str(e))
-                if retry_delay is not None:
-                    await asyncio.sleep(min(retry_delay, 5.0))
-                continue
-
-            except ProviderError as e:
-                timestamp = datetime.now().strftime("%H:%M:%S")
-                print(f"[AI {timestamp}] [ERROR] {name} error: {e}", flush=True)
-                continue
-
-            except Exception as e:
-                timestamp = datetime.now().strftime("%H:%M:%S")
-                print(f"[AI {timestamp}] [ERROR] {name} unexpected error: {type(e).__name__}: {e}", flush=True)
-                continue
-
-        # All providers failed
-        print("[AI] [ERROR] All AI providers exhausted. No response available.", flush=True)
-        return {"error": "All AI providers exhausted", "provider_used": None}
-
-    # ---------- JSON PARSING WITH RETRY ----------
-
-    async def analyze_json(self, prompt: str) -> dict:
-        """
-        Run a prompt and parse the response as JSON.
-        If JSON parsing fails, retry with a stricter prompt suffix.
-        
-        Args:
-            prompt: The text prompt expecting a JSON response
-            
-        Returns:
-            Dict with keys: data (parsed JSON), provider_used (str)
-            On failure: { error: str }
-        """
-        # First attempt
-        result = await self.analyze(prompt)
-        
-        if "error" in result:
-            return result
-
-        # Try to parse JSON from response
-        parsed = self._extract_json(result["response"])
-        if parsed is not None:
-            return {
-                "data": parsed,
-                "provider_used": result["provider_used"],
-            }
-
-        # JSON parsing failed — retry with stricter prompt
-        print(f"[AI] JSON parse failed, retrying with strict suffix...", flush=True)
-        strict_prompt = prompt + "\n\nRespond only with valid JSON, nothing else."
-        result = await self.analyze(strict_prompt)
-        
-        if "error" in result:
-            return result
-
-        parsed = self._extract_json(result["response"])
-        if parsed is not None:
-            return {
-                "data": parsed,
-                "provider_used": result["provider_used"],
-            }
-
-        # Both attempts failed — return raw text
-        print(f"[AI] JSON parse failed after retry. Returning raw response.", flush=True)
-        return {
-            "data": None,
-            "raw_response": result["response"],
-            "provider_used": result["provider_used"],
-            "error": "Failed to parse JSON from AI response",
-        }
-
-    def _extract_json(self, text: str) -> dict | None:
-        """
-        Extract and parse JSON from AI response text.
-        Handles cases where models wrap JSON in markdown code fences.
-        
-        Args:
-            text: Raw response text from AI
-            
-        Returns:
-            Parsed dict or None if parsing fails
-        """
-        # Clean up common AI response wrapping
-        cleaned = text.strip()
-        
-        # Remove markdown code fences if present
-        if cleaned.startswith("```json"):
-            cleaned = cleaned[7:]
-        elif cleaned.startswith("```"):
-            cleaned = cleaned[3:]
-        if cleaned.endswith("```"):
-            cleaned = cleaned[:-3]
-        cleaned = cleaned.strip()
-
-        try:
-            return json.loads(cleaned)
-        except json.JSONDecodeError:
-            # Try to find JSON object in the text
-            start = cleaned.find("{")
-            end = cleaned.rfind("}") + 1
-            if start >= 0 and end > start:
-                try:
-                    return json.loads(cleaned[start:end])
-                except json.JSONDecodeError:
-                    pass
-        return None
-
-    # ---------- STATUS CHECK ----------
-
-    def get_status(self) -> dict:
-        """
-        Check which AI providers have valid API keys configured.
-        
-        Returns:
-            Dict with provider names and their configuration status
-        """
-        valid_tokenrouter_keys = [k for k in TOKENROUTER_API_KEYS if k]
-        return {
-            "groq": {
-                "configured": bool(GROQ_API_KEY and GROQ_API_KEY != "your_key_here"),
-                "model": "llama-3.1-8b-instant",
-                "role": "primary",
-            },
-            "gemini": {
-                "configured": bool(GEMINI_API_KEY and GEMINI_API_KEY != "your_key_here"),
-                "model": "gemini-1.5-flash-latest",
-                "role": "secondary",
-            },
-            "cohere": {
-                "configured": bool(COHERE_API_KEY and COHERE_API_KEY != "your_key_here"),
-                "model": "command-a-03-2025",
-                "role": "tertiary",
-            },
-            "tokenrouter": {
-                "configured": bool(TOKENROUTER_BASE_URL and valid_tokenrouter_keys),
-                "model": "gpt-4o-mini",
-                "role": "quaternary",
-                "keys_loaded": len(valid_tokenrouter_keys),
-            },
-            "nvidia": {
-                "configured": bool(NVIDIA_API_KEY and NVIDIA_API_KEY != "your_key_here"),
-                "model": "minimaxai/minimax-m2.7",
-                "role": "placeholder (inactive)",
-            },
-            "safebrowsing": {
-                "configured": bool(GOOGLE_SAFE_BROWSING_KEY and GOOGLE_SAFE_BROWSING_KEY != "your_key_here"),
-                "model": "Google Safe Browsing API",
-                "role": "security",
-            },
-        }
-
-
-# ---------- SINGLETON INSTANCE ----------
-
-# Create a single router instance to reuse across the app
-ai_router = AIRouter()
+    
