@@ -159,9 +159,13 @@ class AIRouter:
         self.client = httpx.Client(timeout=30.0)
         self.async_client = httpx.AsyncClient(timeout=30.0)
         # OpenRouter does not need key rotation (single key)
-        
-        "openrouter={bool(OPENROUTER_API_KEY)}, "
-            f"nvidia={bool(NVIDIA_API_KEY)}",
+        print(
+            f"[AI ROUTER] Providers loaded: "
+            f"groq={bool(GROQ_API_KEY)}, "
+            f"gemini={bool(GEMINI_API_KEY)}, "
+            f"cohere={bool(COHERE_API_KEY)}, "
+            f"nvidia={bool(NVIDIA_API_KEY)}, "
+            f"openrouter={bool(OPENROUTER_API_KEY)}",
             flush=True,
         )
 
