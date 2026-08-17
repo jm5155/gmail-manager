@@ -17,6 +17,7 @@ load_dotenv()
 # Google Safe Browsing API key from .env
 SAFE_BROWSING_KEY = os.getenv("GOOGLE_SAFE_BROWSING_KEY")
 URL_SAFETY_CACHE: dict[str, tuple[int, str | None]] = {}
+_cache_lock = asyncio.Lock()  # Protects URL_SAFETY_CACHE from concurrent access
 URL_CHECK_TIMEOUT_SECONDS = 5.0
 
 
@@ -119,10 +120,12 @@ async def scan_url(url: str, email_id: str,
         }
 
     # Step 2: No persistent cache — use the in-memory cache for this process.
-    cached_result = URL_SAFETY_CACHE.get(url)
-    if cached_result is not None:
-        print(f"[SECURITY] In-memory cache hit for URL: {url[:60]}")
-        return {"url": url, "is_safe": cached_result[0], "threat_type": cached_result[1]}
+    # Lock protects against cache stampede (multiple tasks checking same URL concurrently)
+    async with _cache_lock:
+        cached_result = URL_SAFETY_CACHE.get(url)
+        if cached_result is not None:
+            print(f"[SECURITY] In-memory cache hit for URL: {url[:60]}")
+            return {"url": url, "is_safe": cached_result[0], "threat_type": cached_result[1]}
 
     # Step 3: No cache — call Google Safe Browsing API v4
     if not SAFE_BROWSING_KEY or SAFE_BROWSING_KEY == "your_key_here":
@@ -173,7 +176,8 @@ async def scan_url(url: str, email_id: str,
         # is_safe already defaulted to 0 (unsafe) when connection fails
 
     # Step 4: Save results to persistent and in-memory caches.
-    URL_SAFETY_CACHE[url] = (is_safe, threat_type)
+    async with _cache_lock:
+        URL_SAFETY_CACHE[url] = (is_safe, threat_type)
     save_url_result(email_id, url, is_safe, threat_type)
 
     return {"url": url, "is_safe": is_safe, "threat_type": threat_type}

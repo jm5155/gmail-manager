@@ -171,7 +171,9 @@ class AIRouter:
         self.client = httpx.Client(timeout=30.0)
         self.async_client = httpx.AsyncClient(timeout=30.0)
         self._gemini_key_index = 0
+        self._gemini_index_lock = asyncio.Lock()  # Protects Gemini key rotation
         self._groq_key_index = 0
+        self._groq_index_lock = asyncio.Lock()  # Protects Groq key rotation
         # OpenRouter does not need key rotation (single key)
         print(
             f"[AI ROUTER] Providers loaded: "
@@ -278,8 +280,10 @@ class AIRouter:
         other_errors = []
         
         # Try all keys in rotation before giving up
+        # Lock ensures atomicity of read-modify-write on key index
         for attempt in range(len(GROQ_API_KEYS)):
-            key_index = (self._groq_key_index + attempt) % len(GROQ_API_KEYS)
+            async with self._groq_index_lock:
+                key_index = (self._groq_key_index + attempt) % len(GROQ_API_KEYS)
             api_key = GROQ_API_KEYS[key_index]
             
             headers = {
@@ -303,7 +307,8 @@ class AIRouter:
                     continue  # Try next key
 
                 # Success - update index for next call and return
-                self._groq_key_index = (key_index + 1) % len(GROQ_API_KEYS)
+                async with self._groq_index_lock:
+                    self._groq_key_index = (key_index + 1) % len(GROQ_API_KEYS)
                 data = response.json()
                 return data["choices"][0]["message"]["content"].strip()
 
@@ -343,8 +348,9 @@ class AIRouter:
         if not GEMINI_API_KEYS:
             raise ProviderError("Gemini API key not configured")
 
-        key = GEMINI_API_KEYS[self._gemini_key_index % len(GEMINI_API_KEYS)]
-        self._gemini_key_index += 1
+        async with self._gemini_index_lock:
+            key = GEMINI_API_KEYS[self._gemini_key_index % len(GEMINI_API_KEYS)]
+            self._gemini_key_index += 1
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={key}"
         body = {
             "contents": [{"parts": [{"text": prompt}]}],
