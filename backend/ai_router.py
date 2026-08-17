@@ -420,4 +420,6 @@ class AIRouter:
         except KeyError as e:
             raise ProviderError(f"OpenRouter unexpected response format: missing {e}")
 
-    
+
+ai_router = AIRouter()
+
