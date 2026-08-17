@@ -137,7 +137,7 @@ async def scan_url(url: str, email_id: str,
         },
     }
 
-    is_safe = 1
+    is_safe = 0  # Default to UNSAFE when API call fails (security-first)
     threat_type = None
 
     try:
@@ -152,9 +152,13 @@ async def scan_url(url: str, email_id: str,
                 is_safe = 0
                 threat_type = data["matches"][0].get("threatType", "UNKNOWN")
                 print(f"[SECURITY] WARNING: UNSAFE URL detected: {url[:60]} - {threat_type}")
+            else:
+                # API returned 200 with no matches = safe
+                is_safe = 1
 
     except Exception as e:
         print(f"[SECURITY] Error checking URL safety: {type(e).__name__}: {e}")
+        # is_safe already defaulted to 0 (unsafe) when connection fails
 
     # Step 3: Save result to cache
     save_url_result(email_id, url, is_safe, threat_type)

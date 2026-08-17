@@ -663,6 +663,10 @@ async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
             # Step B — URL extraction and Google Safe Browsing scan
             t0 = time.perf_counter()
             urls = extract_urls(body)
+            # Cap at 10 URLs per email to prevent 3+ minute scan delays on emails with 79-88 URLs
+            if len(urls) > 10:
+                print(f"[SECURITY] Capping URL scan from {len(urls)} to 10 URLs for email {email_id[:12]}...")
+                urls = urls[:10]
             url_threat_found = False
             if urls:
                 scan_tasks = [scan_url(url, email_id, url_client, url_semaphore) for url in urls]
