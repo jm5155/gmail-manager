@@ -200,18 +200,20 @@ class AIRouter:
             "Content-Type": "application/json",
         }
         body = {
-            "model": "nvidia/nemotron-3-nano-30b-a3b",
+            "model": "meta/llama-3.1-8b-instruct",
             "messages": [{
-                "role": "user",
+                "role": "system",
                 "content": (
-                    f"{prompt}\n\n"
-                    "Respond with ONLY one valid JSON object. Do not use markdown, "
-                    "code fences, or explanatory text."
+                    "Respond with ONLY one valid JSON object. Do not explain your reasoning, "
+                    "think out loud, use markdown, or output code fences."
                 ),
+            }, {
+                "role": "user",
+                "content": prompt,
             }],
             "max_tokens": 1000,
             "temperature": 0.2,
-            "stream": False,  # Non-streaming for structured responses
+            "stream": False,
         }
 
         try:
