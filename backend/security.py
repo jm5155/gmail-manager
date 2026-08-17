@@ -172,7 +172,9 @@ async def scan_url(url: str, email_id: str,
                 is_safe = 1
 
     except Exception as e:
-        print(f"[SECURITY] Error checking URL safety: {type(e).__name__}: {e}")
+        import traceback
+        print(f"[SECURITY] Error checking URL safety for {url[:60]}: {type(e).__name__}: {e!r}")
+        print(f"[SECURITY] Full traceback:\n{traceback.format_exc()}")
         # is_safe already defaulted to 0 (unsafe) when connection fails
 
     # Step 4: Save results to persistent and in-memory caches.
