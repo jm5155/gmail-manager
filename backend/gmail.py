@@ -137,18 +137,19 @@ def _get_email_details_threadsafe(creds, email_id: str) -> dict | None:
 
 def _get_email_details(service, email_id: str) -> dict | None:
     """
-    Fetch the full details of a single email by its ID.
-    Extracts subject, sender, snippet, date, labels, and body text.
+    Fetch lightweight metadata for a single email by its ID.
+    Extracts subject, sender, snippet, date, and labels (no body - use _get_email_body for that).
+    Body is deferred to on-demand fetch via _get_email_body() to reduce initial fetch payload size.
     """
     try:
         msg = service.users().messages().get(
             userId="me",
             id=email_id,
-            format="full",
+            format="metadata",
+            metadataHeaders=["Subject", "From", "Date"],
         ).execute()
 
         headers = {h["name"]: h["value"] for h in msg.get("payload", {}).get("headers", [])}
-        body = _extract_body(msg.get("payload", {}))
 
         return {
             "id": email_id,
@@ -157,7 +158,7 @@ def _get_email_details(service, email_id: str) -> dict | None:
             "snippet": msg.get("snippet", ""),
             "date": headers.get("Date", ""),
             "labels": msg.get("labelIds", []),
-            "body": body,
+            "body": "",  # Empty - body fetched on-demand via _get_email_body()
         }
 
     except Exception as e:
