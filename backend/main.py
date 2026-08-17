@@ -31,10 +31,8 @@ from database import (
     reset_database, mark_email_safe,
     get_delete_mode, set_delete_mode,
     update_analyzed_email, get_label_id_by_name,
-    get_user_ai_keys, save_user_ai_key, delete_user_ai_key,
     _get_connection, _execute,
 )
-from encryption import encrypt_key, decrypt_key
 from ai_router import ai_router, REWRITE_PROMPT, CLASSIFICATION_PROMPT
 from dependencies import require_auth
 from jwt_auth import create_access_token, get_user_from_token
@@ -107,25 +105,6 @@ def _request_user_email(request: Request) -> str | None:
     if user_data and user_data.get("email"):
         return user_data["email"]
     return request.session.get("gmail_address")
-
-
-# Valid BYOK provider names (the 4 fixed cascade providers).
-AI_PROVIDERS = ("groq", "gemini", "cohere", "nvidia")
-
-
-def _get_decrypted_user_keys(user_id: int) -> dict:
-    """
-    Fetch a user's stored AI keys and decrypt them.
-    Returns {"groq": "...", "gemini": None, "cohere": "...", "nvidia": None}.
-    Decrypted plaintext is never logged.
-    """
-    raw = get_user_ai_keys(user_id)
-    return {p: decrypt_key(raw.get(p)) for p in AI_PROVIDERS}
-
-
-def _has_any_user_key(user_id: int) -> bool:
-    """Return True if the user has configured at least one AI provider key."""
-    return any(_get_decrypted_user_keys(user_id).values())
 
 
 def _is_authenticated(request: Request) -> bool:
@@ -438,19 +417,10 @@ async def emails_analyze_bulk(request: Request, limit: int = 50):
             content={"error": "no_labels", "message": "You must create at least one label before running analysis. Go to Settings to add labels."}
         )
 
-    # Bring-Your-Own-Key: require at least one configured provider.
-    if not _has_any_user_key(user_id):
-        return JSONResponse(
-            status_code=400,
-            content={"error": "no_api_key", "message": "You need to add at least one AI API key in Settings before using this feature."},
-        )
-
-    user_keys = _get_decrypted_user_keys(user_id)
-
     from starlette.responses import StreamingResponse
 
     async def sse_stream():
-        async for event in analyze_bulk_ordered(limit=limit, user_id=user_id, user_keys=user_keys):
+        async for event in analyze_bulk_ordered(limit=limit, user_id=user_id):
             event_type = event.get("type", "message")
             if event_type == "email_done":
                 event_type = "progress"
@@ -1030,66 +1000,6 @@ async def update_delete_mode_endpoint(request: Request):
     return {"message": f"Delete mode set to '{mode}'.", "delete_mode": mode}
 
 
-# ---------- BYOK: PER-USER AI PROVIDER KEYS ----------
-
-@app.get("/settings/ai-keys")
-async def get_ai_keys_endpoint(request: Request):
-    """GET /settings/ai-keys — Return which providers the user has configured (booleans only)."""
-    if not _is_authenticated(request):
-        return JSONResponse(status_code=401, content={"error": "Not logged in."})
-    user_id = _require_user_id(request)
-    if not user_id:
-        return JSONResponse(status_code=401, content={"error": "User session not found."})
-
-    keys = get_user_ai_keys(user_id)
-    # Never return the raw or decrypted key to the frontend.
-    return {p: bool(keys.get(p)) for p in AI_PROVIDERS}
-
-
-@app.post("/settings/ai-keys")
-async def post_ai_key_endpoint(request: Request):
-    """POST /settings/ai-keys — Save a user's API key for one provider (encrypted at rest)."""
-    if not _is_authenticated(request):
-        return JSONResponse(status_code=401, content={"error": "Not logged in."})
-    user_id = _require_user_id(request)
-    if not user_id:
-        return JSONResponse(status_code=401, content={"error": "User session not found."})
-
-    data = await request.json()
-    provider = data.get("provider")
-    api_key = data.get("api_key", "")
-
-    if provider not in AI_PROVIDERS:
-        return JSONResponse(
-            status_code=400,
-            content={"error": f"Invalid provider. Must be one of: {', '.join(AI_PROVIDERS)}"},
-        )
-    if not api_key or not str(api_key).strip():
-        return JSONResponse(status_code=400, content={"error": "api_key is required."})
-
-    save_user_ai_key(user_id, provider, encrypt_key(str(api_key).strip()))
-    return {"provider": provider, "configured": True}
-
-
-@app.delete("/settings/ai-keys/{provider}")
-async def delete_ai_key_endpoint(provider: str, request: Request):
-    """DELETE /settings/ai-keys/{provider} — Remove a saved key for one provider."""
-    if not _is_authenticated(request):
-        return JSONResponse(status_code=401, content={"error": "Not logged in."})
-    user_id = _require_user_id(request)
-    if not user_id:
-        return JSONResponse(status_code=401, content={"error": "User session not found."})
-
-    if provider not in AI_PROVIDERS:
-        return JSONResponse(
-            status_code=400,
-            content={"error": f"Invalid provider. Must be one of: {', '.join(AI_PROVIDERS)}"},
-        )
-
-    delete_user_ai_key(user_id, provider)
-    return {"provider": provider, "configured": False}
-
-
 # ---------- MARK EMAIL SAFE ----------
 
 @app.patch("/emails/{email_id}/mark-safe")
@@ -1111,20 +1021,6 @@ async def patch_mark_email_safe(email_id: str, request: Request):
 @app.post("/ai/rewrite")
 async def ai_rewrite(request: Request):
     """POST /ai/rewrite — Rewrite email text using AI."""
-    if not _is_authenticated(request):
-        return JSONResponse(status_code=401, content={"error": "Not logged in."})
-
-    user_id = _require_user_id(request)
-    if not user_id:
-        return JSONResponse(status_code=401, content={"error": "User session not found."})
-
-    # Bring-Your-Own-Key: require at least one configured provider.
-    if not _has_any_user_key(user_id):
-        return JSONResponse(
-            status_code=400,
-            content={"error": "no_api_key", "message": "You need to add at least one AI API key in Settings before using this feature."},
-        )
-
     data = await request.json()
     text = data.get("text", "")
     instruction = data.get("instruction", "")
@@ -1132,9 +1028,8 @@ async def ai_rewrite(request: Request):
     if not text:
         return JSONResponse(status_code=400, content={"error": "No text provided."})
 
-    user_keys = _get_decrypted_user_keys(user_id)
     prompt = REWRITE_PROMPT.format(instruction=instruction, text=text)
-    result = await ai_router.analyze(prompt, user_keys=user_keys)
+    result = await ai_router.analyze(prompt)
 
     if "error" in result:
         return JSONResponse(status_code=503, content=result)
@@ -1286,15 +1181,6 @@ async def reanalyze_scam_email(email_id: str, request: Request, user: dict = Dep
         )
     default_label = available_label_names[0]
 
-    # Bring-Your-Own-Key: require at least one configured provider.
-    if not _has_any_user_key(user_id):
-        return JSONResponse(
-            status_code=400,
-            content={"error": "no_api_key", "message": "You need to add at least one AI API key in Settings before using this feature."},
-        )
-
-    user_keys = _get_decrypted_user_keys(user_id)
-
     # Step B — URL extraction and Google Safe Browsing scan
     from security import extract_urls, scan_url
     urls = extract_urls(body)
@@ -1314,7 +1200,7 @@ async def reanalyze_scam_email(email_id: str, request: Request, user: dict = Dep
         url_threat_found=url_threat_found,
         available_labels=", ".join(available_label_names),
     )
-    ai_result = await ai_router.analyze_json(prompt, user_keys=user_keys)
+    ai_result = await ai_router.analyze_json(prompt)
     provider_used = ai_result.get("provider_used")
 
     # Defaults — use first available label as fallback
