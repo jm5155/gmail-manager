@@ -275,7 +275,7 @@ def _nearest_gmail_color(hex_bg: str, hex_text: str) -> tuple:
     return best
 
 
-def get_or_create_label(service, label_name: str, user_id: int) -> str | None:
+def get_or_create_label(service, label_name: str, user_id: int, gmail_labels_cache: dict[str, str]) -> str | None:
     """
     Get an existing Gmail label by name, or create it if it doesn't exist.
     Maps database colors to Gmail-approved palette colors.
@@ -301,14 +301,11 @@ def get_or_create_label(service, label_name: str, user_id: int) -> str | None:
         # Map to Gmail-approved colors (arbitrary hex causes 400 errors)
         gmail_bg, gmail_text = _nearest_gmail_color(db_bg, db_text)
 
-        # Check if label already exists
-        results = service.users().labels().list(userId="me").execute()
-        labels = results.get("labels", [])
-
+        # Check the batch-scoped Gmail label cache before making an API call.
         prefix = f"GM/{label_name}"
-        for label in labels:
-            if label["name"] == prefix:
-                return label["id"]
+        cached_label_id = gmail_labels_cache.get(prefix)
+        if cached_label_id:
+            return cached_label_id
 
         # Create new label with Gmail-approved colors
         label_body = {
@@ -319,6 +316,7 @@ def get_or_create_label(service, label_name: str, user_id: int) -> str | None:
         }
 
         created = service.users().labels().create(userId="me", body=label_body).execute()
+        gmail_labels_cache[prefix] = created["id"]
         print(f"[GMAIL] Created new label '{prefix}' (ID: {created['id']}, color: {gmail_bg}).")
         return created["id"]
 
@@ -448,6 +446,13 @@ async def analyze_bulk_ordered(limit: int = 50, user_id: int = None, user_email:
         }
         return
 
+    gmail_labels_result = await asyncio.to_thread(
+        lambda: service.users().labels().list(userId="me").execute()
+    )
+    gmail_labels_cache = {
+        lbl["name"]: lbl["id"] for lbl in gmail_labels_result.get("labels", [])
+    }
+
     # Cache labels once per bulk run (instead of per-email DB query)
     available_labels_list = await asyncio.to_thread(get_labels, user_id)
     available_label_names = [lbl["label_name"] for lbl in available_labels_list]
@@ -524,6 +529,7 @@ async def analyze_bulk_ordered(limit: int = 50, user_id: int = None, user_email:
                     url_client=url_client,
                     url_semaphore=url_semaphore,
                     available_label_names=available_label_names,
+                    gmail_labels_cache=gmail_labels_cache,
                 ))
                 for email in new_emails
             ]
@@ -585,6 +591,7 @@ async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
                        url_client: httpx.AsyncClient,
                        url_semaphore: asyncio.Semaphore,
                        available_label_names: list[str],
+                       gmail_labels_cache: dict[str, str],
                        update_mode: bool = False) -> dict:
     """
     Analyze a single email through the AI-only pipeline (Steps A through I).
@@ -764,7 +771,7 @@ async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
             # Step H — Apply Gmail label
             t0 = time.perf_counter()
             try:
-                gmail_label_id = get_or_create_label(service, label, user_id)
+                gmail_label_id = get_or_create_label(service, label, user_id, gmail_labels_cache)
                 if gmail_label_id:
                     apply_label(service, email_id, gmail_label_id)
             except Exception as e:
@@ -927,6 +934,13 @@ async def label_only_pipeline(limit: int = None, user_id: int = None, user_email
     if not service or user_id is None:
         yield {"type": "complete", "analyzed": 0, "failed": 0, "error": "Not authenticated"}
         return
+
+    gmail_labels_result = await asyncio.to_thread(
+        lambda: service.users().labels().list(userId="me").execute()
+    )
+    gmail_labels_cache = {
+        lbl["name"]: lbl["id"] for lbl in gmail_labels_result.get("labels", [])
+    }
 
     # Cache labels once per bulk run (instead of per-email DB query)
     available_labels_list = await asyncio.to_thread(get_labels, user_id)
