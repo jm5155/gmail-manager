@@ -209,7 +209,7 @@ class AIRouter:
                     "code fences, or explanatory text."
                 ),
             }],
-            "max_tokens": 500,
+            "max_tokens": 1000,
             "temperature": 0.2,
             "stream": False,  # Non-streaming for structured responses
         }
@@ -224,7 +224,9 @@ class AIRouter:
                 raise ProviderError(f"NVIDIA error {response.status_code}: {response.text[:200]}")
 
             data = response.json()
-            return data["choices"][0]["message"]["content"].strip()
+            raw_content = data["choices"][0]["message"]["content"]
+            print(f"[AI NVIDIA RAW] {raw_content!r}", flush=True)
+            return raw_content.strip()
 
         except httpx.TimeoutException:
             raise ProviderError("NVIDIA request timed out (30s)")
@@ -466,32 +468,38 @@ class AIRouter:
         }
 
     async def analyze_json(self, prompt: str) -> dict:
-        """Run the cascade and parse the provider response as JSON."""
-        result = await self.analyze(prompt)
-        if result.get("error"):
-            return result
-
-        response = result.get("response", "").strip()
-        cleaned = response.replace("```json", "").replace("```", "").strip()
-        try:
-            data = json.loads(cleaned)
-        except json.JSONDecodeError:
-            start = cleaned.find("{")
-            end = cleaned.rfind("}")
-            if start < 0 or end <= start:
-                return {
-                    "error": "AI response was not valid JSON",
-                    "provider_used": result.get("provider_used"),
-                }
+        """Run the cascade and continue past providers with invalid JSON."""
+        providers = [
+            ("Groq", self._call_groq),
+            ("NVIDIA", self._call_nvidia),
+            ("Gemini", self._call_gemini),
+            ("Cohere", self._call_cohere),
+            ("OpenRouter", self._call_openrouter),
+        ]
+        errors = []
+        for name, call_fn in providers:
             try:
-                data = json.loads(cleaned[start:end + 1])
-            except json.JSONDecodeError as exc:
-                return {
-                    "error": f"AI response JSON parse failed: {exc}",
-                    "provider_used": result.get("provider_used"),
-                }
-
-        return {"data": data, "provider_used": result.get("provider_used")}
+                print(f"[AI] Trying {name}...", flush=True)
+                async with AI_CALL_SEMAPHORE:
+                    response = await call_fn(prompt)
+                cleaned = response.strip().replace("```json", "").replace("```", "").strip()
+                try:
+                    data = json.loads(cleaned)
+                except json.JSONDecodeError:
+                    start = cleaned.find("{")
+                    end = cleaned.rfind("}")
+                    if start < 0 or end <= start:
+                        raise ValueError("AI response was not valid JSON")
+                    data = json.loads(cleaned[start:end + 1])
+                print(f"[AI] {name} responded successfully with valid JSON.", flush=True)
+                return {"data": data, "provider_used": name}
+            except QuotaError as exc:
+                errors.append(f"{name}: quota: {exc}")
+                print(f"[AI] {name} quota hit; switching provider.", flush=True)
+            except Exception as exc:
+                errors.append(f"{name}: {type(exc).__name__}: {exc}")
+                print(f"[AI] {name} failed; switching provider: {exc}", flush=True)
+        return {"error": "All AI providers exhausted: " + " | ".join(errors), "provider_used": None}
 
 
 ai_router = AIRouter()
