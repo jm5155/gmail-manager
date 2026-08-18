@@ -200,73 +200,91 @@ async def auth_callback(request: Request):
     Generates JWT token for cross-domain authentication.
     Stores the user's OAuth token in the database (keyed by gmail_address).
     """
-    code = request.query_params.get("code")
-    
-    if not code:
-        return JSONResponse(
-            status_code=400,
-            content={"error": "No authorization code received from Google"},
-        )
-    
-    result = handle_callback(code)
-    
-    # Store user_id and gmail_address in session (for backward compatibility)
-    if result.get("success") and result.get("user_id"):
-        user_id = result["user_id"]
-        user_email = result["gmail_address"]
+    try:
+        print(f"[AUTH CALLBACK] Received callback request")
+        code = request.query_params.get("code")
         
-        request.session["user_id"] = user_id
-        request.session["gmail_address"] = user_email
+        if not code:
+            print("[AUTH CALLBACK ERROR] No authorization code in request")
+            return JSONResponse(
+                status_code=400,
+                content={"error": "No authorization code received from Google"},
+            )
+        
+        print(f"[AUTH CALLBACK] Processing authorization code (length: {len(code)})")
+        result = handle_callback(code)
+        print(f"[AUTH CALLBACK] handle_callback result: {result}")
+        
+        # Store user_id and gmail_address in session (for backward compatibility)
+        if result.get("success") and result.get("user_id"):
+            user_id = result["user_id"]
+            user_email = result["gmail_address"]
+            
+            print(f"[AUTH CALLBACK] Setting session for user_id={user_id}, email={user_email}")
+            request.session["user_id"] = user_id
+            request.session["gmail_address"] = user_email
 
-        # Generate JWT token for cross-domain authentication
-        jwt_token = create_access_token(user_id, user_email)
-        print(f"[AUTH CALLBACK] Generated JWT token for {user_email}")
+            # Generate JWT token for cross-domain authentication
+            print(f"[AUTH CALLBACK] Creating JWT token for {user_email}")
+            jwt_token = create_access_token(user_id, user_email)
+            print(f"[AUTH CALLBACK] Generated JWT token for {user_email}")
 
-        print(f"[AUTH CALLBACK] Session set: user_id={user_id}, email={user_email}")
-        
-        # Redirect to frontend with JWT token as URL parameter
-        frontend_url = os.getenv("FRONTEND_URL", "https://gmail-manager-gamma.vercel.app")
-        redirect_url = f"{frontend_url}/inbox?token={jwt_token}"
-        
-        html_content = f"""
-        <html>
-        <head>
-            <title>Gmail Manager - Login Success</title>
-            <meta http-equiv="refresh" content="1;url={redirect_url}" />
-            <script>
-            // Automatic redirect after 1 second
-            setTimeout(function() {{
-                window.location.href = '{redirect_url}';
-            }}, 1000);
-            </script>
-        </head>
-        <body style="display:flex;justify-content:center;align-items:center;height:100vh;
-            font-family:Inter,sans-serif;background:#F1F3F6;color:#20242C;">
-            <div style="text-align:center;">
-                <h1 style="color:#27AE72;font-size:2.5rem;margin-bottom:1rem;">✓ Login Successful</h1>
-                <p style="color:#687386;font-size:1.1rem;">Redirecting to Inbox...</p>
-                <div style="margin-top:2rem;">
-                    <div style="width:200px;height:4px;background:#E1E5EB;border-radius:999px;overflow:hidden;margin:0 auto;">
-                        <div style="width:0;height:100%;background:#5B5CE2;border-radius:999px;animation:progress 1s ease-out forwards;"></div>
+            print(f"[AUTH CALLBACK] Session set: user_id={user_id}, email={user_email}")
+            
+            # Redirect to frontend with JWT token as URL parameter
+            frontend_url = os.getenv("FRONTEND_URL", "https://gmail-manager-gamma.vercel.app")
+            redirect_url = f"{frontend_url}/inbox?token={jwt_token}"
+            
+            html_content = f"""
+            <html>
+            <head>
+                <title>Gmail Manager - Login Success</title>
+                <meta http-equiv="refresh" content="1;url={redirect_url}" />
+                <script>
+                // Automatic redirect after 1 second
+                setTimeout(function() {{
+                    window.location.href = '{redirect_url}';
+                }}, 1000);
+                </script>
+            </head>
+            <body style="display:flex;justify-content:center;align-items:center;height:100vh;
+                font-family:Inter,sans-serif;background:#F1F3F6;color:#20242C;">
+                <div style="text-align:center;">
+                    <h1 style="color:#27AE72;font-size:2.5rem;margin-bottom:1rem;">✓ Login Successful</h1>
+                    <p style="color:#687386;font-size:1.1rem;">Redirecting to Inbox...</p>
+                    <div style="margin-top:2rem;">
+                        <div style="width:200px;height:4px;background:#E1E5EB;border-radius:999px;overflow:hidden;margin:0 auto;">
+                            <div style="width:0;height:100%;background:#5B5CE2;border-radius:999px;animation:progress 1s ease-out forwards;"></div>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <style>
-            @keyframes progress {{
-                from {{ width: 0%; }}
-                to {{ width: 100%; }}
-            }}
-            </style>
-        </body>
-        </html>
-        """
-        return HTMLResponse(content=html_content)
+                <style>
+                @keyframes progress {{
+                    from {{ width: 0%; }}
+                    to {{ width: 100%; }}
+                }}
+                </style>
+            </body>
+            </html>
+            """
+            print(f"[AUTH CALLBACK] Returning success HTML redirect")
+            return HTMLResponse(content=html_content)
+        
+        # If authentication failed
+        print(f"[AUTH CALLBACK ERROR] Authentication failed: {result.get('message', 'Unknown error')}")
+        return JSONResponse(
+            status_code=401,
+            content={"error": result.get("message", "Authentication failed")}
+        )
     
-    # If authentication failed
-    return JSONResponse(
-        status_code=401,
-        content={"error": "Authentication failed"}
-    )
+    except Exception as e:
+        print(f"[AUTH CALLBACK EXCEPTION] {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Authentication error: {str(e)}"}
+        )
 
 
 @app.get("/auth/status")
