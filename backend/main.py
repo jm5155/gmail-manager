@@ -65,13 +65,21 @@ app.add_middleware(
 
 # Enable CORS - Fixed for credentials mode
 # Wildcard (*) not allowed with credentials, must specify exact origins
-IS_PRODUCTION = os.getenv("RAILWAY_ENVIRONMENT") is not None
+# Check multiple Railway environment indicators
+IS_PRODUCTION = (
+    os.getenv("RAILWAY_ENVIRONMENT") is not None or 
+    os.getenv("RAILWAY_PROJECT_ID") is not None or
+    os.getenv("PORT") is not None  # Railway sets PORT env var
+)
 
 if IS_PRODUCTION:
     # Production: Specific Vercel origin (required for credentials: 'include')
     origins = [
         "https://gmail-manager-gamma.vercel.app",
         "https://gmail-manager-gamma.vercel.app/",  # With trailing slash
+        "http://localhost:5173",  # Allow local dev testing against prod backend
+        "http://localhost:3000",
+        "http://localhost:5174",
     ]
     print(f"[CORS] Production mode - Allowed origins: {origins}")
 else:
@@ -80,6 +88,7 @@ else:
         "http://localhost:5173",
         "http://localhost:3000",
         "http://localhost:5174",
+        "https://gmail-manager-gamma.vercel.app",  # Allow testing prod frontend
     ]
     print(f"[CORS] Dev mode - Allowed origins: {origins}")
 
