@@ -7,9 +7,10 @@ Includes the AI-only bulk analysis pipeline (Steps A through I).
 
 import json
 import asyncio
-import logging
-from datetime import datetime
+import socket
+socket.setdefaulttimeout(15)
 from googleapiclient.discovery import build
+from googleapiclient.http import BatchHttpRequest
 import httpx
 import socket
 socket.setdefaulttimeout(15)
@@ -89,28 +90,29 @@ def fetch_emails(limit: int = 50, page_token: str | None = None, user_email: str
                 break
 
         message_ids = message_ids[:limit]
-        print(f"[GMAIL] Got {len(message_ids)} message IDs. Fetching details in parallel...", flush=True)
+        print(f"[GMAIL] Got {len(message_ids)} message IDs. Fetching details via batch HTTP...", flush=True)
 
-        # Step 2: Fetch full details in PARALLEL (5 concurrent threads)
-        # Each thread builds its own Gmail service instance to avoid
-        # httplib2 shared-connection deadlock.
+        # Step 2: Fetch full details using Gmail's batch endpoint.
+        # Gmail enforces a hard cap of 50 sub-requests per batch, so we chunk
+        # into groups of 50 and run those chunks concurrently across threads
+        # (each thread builds its own Gmail service instance to avoid
+        # httplib2 shared-connection deadlock).
         creds = get_credentials(user_email)
+        chunks = [message_ids[i:i + 50] for i in range(0, len(message_ids), 50)]
         collected = []
-        with ThreadPoolExecutor(max_workers=20) as executor:
-            future_to_id = {
-                executor.submit(_get_email_details_threadsafe, creds, mid): mid
-                for mid in message_ids
+        with ThreadPoolExecutor(max_workers=min(10, len(chunks) or 1)) as executor:
+            future_to_chunk = {
+                executor.submit(_get_email_details_batch_threadsafe, creds, chunk): chunk
+                for chunk in chunks
             }
-            for future in as_completed(future_to_id):
-                result = future.result()
-                if result:
-                    collected.append(result)
+            for future in as_completed(future_to_chunk):
+                collected.extend(future.result())
 
         # Preserve original order (reverse-chronological from Gmail)
         id_order = {mid: idx for idx, mid in enumerate(message_ids)}
         collected.sort(key=lambda e: id_order.get(e["id"], 999))
 
-        print(f"[GMAIL] Fetched {len(collected)} emails (parallel). Next cursor: {current_token}")
+        print(f"[GMAIL] Fetched {len(collected)} emails (batched). Next cursor: {current_token}")
 
         return {
             "emails": collected,
@@ -120,6 +122,80 @@ def fetch_emails(limit: int = 50, page_token: str | None = None, user_email: str
     except Exception as e:
         print(f"[GMAIL] Error fetching emails: {e}")
         return {"emails": [], "next_page_token": None}
+
+
+def _parse_email_metadata(email_id: str, msg: dict) -> dict:
+    """
+    Parse a Gmail messages().get(format="metadata") response into our
+    internal email dict shape. Shared by both the single-fetch and
+    batch-fetch code paths so parsing logic stays in one place.
+    Body is left empty - fetched on-demand via _get_email_body().
+    """
+    headers = {h["name"]: h["value"] for h in msg.get("payload", {}).get("headers", [])}
+
+    return {
+        "id": email_id,
+        "subject": headers.get("Subject", "(No Subject)"),
+        "sender": headers.get("From", "(Unknown Sender)"),
+        "snippet": msg.get("snippet", ""),
+        "date": headers.get("Date", ""),
+        "labels": msg.get("labelIds", []),
+        "body": "",  # Empty - body fetched on-demand via _get_email_body()
+    }
+
+
+def _get_email_details_batch_threadsafe(creds, email_ids: list[str]) -> list[dict]:
+    """
+    Thread-safe wrapper: builds its own Gmail service instance per call
+    (to avoid httplib2 shared-connection deadlocks) and fetches up to 50
+    messages' metadata in a single Gmail BatchHttpRequest (1 HTTP round-trip
+    instead of one per message).
+    """
+    try:
+        svc = build("gmail", "v1", credentials=creds, cache_discovery=False)
+        return _get_email_details_batch(svc, email_ids)
+    except Exception as e:
+        print(f"[GMAIL] Batch fetch failed for chunk of {len(email_ids)}: {e}")
+        return []
+
+
+def _get_email_details_batch(service, email_ids: list[str]) -> list[dict]:
+    """
+    Fetch lightweight metadata for up to 50 emails in a single Gmail
+    BatchHttpRequest. Gmail caps batches at 50 sub-requests; callers are
+    responsible for chunking larger ID lists before calling this.
+    """
+    if not email_ids:
+        return []
+
+    results: dict[str, dict] = {}
+    errors: dict[str, Exception] = {}
+
+    def _callback(request_id, response, exception):
+        if exception is not None:
+            errors[request_id] = exception
+        else:
+            results[request_id] = response
+
+    batch = service.new_batch_http_request(callback=_callback)
+    for mid in email_ids:
+        batch.add(
+            service.users().messages().get(
+                userId="me",
+                id=mid,
+                format="metadata",
+                metadataHeaders=["Subject", "From", "Date"],
+            ),
+            request_id=mid,
+        )
+
+    batch.execute()
+
+    if errors:
+        for mid, exc in errors.items():
+            print(f"[GMAIL] Error fetching email {mid} (batch): {exc}")
+
+    return [_parse_email_metadata(mid, results[mid]) for mid in email_ids if mid in results]
 
 
 def _get_email_details_threadsafe(creds, email_id: str) -> dict | None:
@@ -149,17 +225,7 @@ def _get_email_details(service, email_id: str) -> dict | None:
             metadataHeaders=["Subject", "From", "Date"],
         ).execute()
 
-        headers = {h["name"]: h["value"] for h in msg.get("payload", {}).get("headers", [])}
-
-        return {
-            "id": email_id,
-            "subject": headers.get("Subject", "(No Subject)"),
-            "sender": headers.get("From", "(Unknown Sender)"),
-            "snippet": msg.get("snippet", ""),
-            "date": headers.get("Date", ""),
-            "labels": msg.get("labelIds", []),
-            "body": "",  # Empty - body fetched on-demand via _get_email_body()
-        }
+        return _parse_email_metadata(email_id, msg)
 
     except Exception as e:
         print(f"[GMAIL] Error fetching email {email_id}: {e}")
