@@ -683,7 +683,7 @@ def update_email_label_id(email_id: str, label_id: int) -> None:
 
 def get_emails_by_status(user_id: int, status: str, limit: int = None) -> list[dict]:
     """
-    Return emails with a specific status, ordered by analyzed_at ASC.
+    Return emails with a specific status, ordered by analyzed_at DESC (newest first).
     Used by label_only_pipeline to fetch status='fetched' rows.
     """
     conn = _get_connection()
@@ -696,7 +696,7 @@ def get_emails_by_status(user_id: int, status: str, limit: int = None) -> list[d
                 SELECT email_id, user_id, snippet, sender, subject, body, analyzed_at
                 FROM analyzed_emails
                 WHERE user_id = %s AND status = %s
-                ORDER BY analyzed_at ASC
+                ORDER BY analyzed_at DESC
                 LIMIT %s
             """, (user_id, status, limit))
         else:
@@ -704,7 +704,7 @@ def get_emails_by_status(user_id: int, status: str, limit: int = None) -> list[d
                 SELECT email_id, user_id, snippet, sender, subject, body, analyzed_at
                 FROM analyzed_emails
                 WHERE user_id = %s AND status = %s
-                ORDER BY analyzed_at ASC
+                ORDER BY analyzed_at DESC
             """, (user_id, status))
 
         rows = cursor.fetchall()
