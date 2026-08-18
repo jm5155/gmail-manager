@@ -713,9 +713,27 @@ async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
                 raise Exception(ai_result["error"])
 
             # Step D — Validate AI output
-            # label must match one of available_labels
-            if label not in available_label_names:
-                label = default_label  # get_label_id_by_name will handle fallback
+            # label must match one of available_labels (case-insensitive, whitespace-trimmed)
+            label_normalized = label.strip()
+            label_match = None
+            
+            # Try exact match first
+            if label_normalized in available_label_names:
+                label_match = label_normalized
+            else:
+                # Try case-insensitive match
+                label_lower = label_normalized.lower()
+                for available_label in available_label_names:
+                    if available_label.lower() == label_lower:
+                        label_match = available_label
+                        break
+            
+            if label_match:
+                label = label_match
+            else:
+                # No match found - log the mismatch and fall back to default
+                print(f"[AI LABEL MISMATCH] email={email_id[:12]}... AI returned label='{label}' but not in available_labels={available_label_names}, falling back to '{default_label}'", flush=True)
+                label = default_label
 
             # scam_score must be 0-100
             if not isinstance(scam_score, int):

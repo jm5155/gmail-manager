@@ -110,10 +110,12 @@ COHERE_RATE_LIMITER = _FixedWindowRateLimiter(max_calls=20, period=60.0, max_wai
 CLASSIFICATION_PROMPT = """You are an email classification and scam detection AI. You will be given an email's sender, subject, body, a flag indicating if a malicious URL was found in the email, and a list of available classification labels.
 
 Your job is to:
-1. Classify the email into exactly ONE label from the provided available_labels list.
+1. Classify the email into exactly ONE label from the provided available_labels list. You MUST copy the label name EXACTLY as it appears in the list, character-for-character, with exact capitalization and spacing. Do not paraphrase or use similar words.
 2. Assign a scam probability score from 0 to 100 where 0 means definitely not a scam and 100 means definitely a scam.
 3. List the specific phishing or scam indicators you detected. If none, return an empty list.
 4. Provide a one-sentence reasoning for your classification.
+
+IMPORTANT: The "label" field in your JSON response must be an EXACT MATCH (including capitalization) to one of the labels in the Available Labels list below. If none fit perfectly, choose the closest match from the list and copy its exact spelling.
 
 Use these rules when deciding the scam_score:
 - If url_threat_found is true, the scam_score must be at least 70.
@@ -131,6 +133,8 @@ Subject: {subject}
 Body: {body}
 URL Threat Found: {url_threat_found}
 Available Labels: {available_labels}
+
+Remember: Copy one label from the Available Labels list EXACTLY as written above.
 """
 
 REWRITE_PROMPT = """
