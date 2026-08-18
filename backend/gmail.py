@@ -856,9 +856,11 @@ async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
             # Step H — Apply Gmail label
             t0 = time.perf_counter()
             try:
-                gmail_label_id = get_or_create_label(service, label, user_id, gmail_labels_cache)
+                gmail_label_id = await asyncio.to_thread(
+                    get_or_create_label, service, label, user_id, gmail_labels_cache
+                )
                 if gmail_label_id:
-                    apply_label(service, email_id, gmail_label_id)
+                    await asyncio.to_thread(apply_label, service, email_id, gmail_label_id)
             except Exception as e:
                 print(f"[PIPELINE] Failed to apply Gmail label for {email_id[:12]}...: {e}")
                 # Do not crash — continue to next email
