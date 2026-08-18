@@ -100,7 +100,7 @@ def fetch_emails(limit: int = 50, page_token: str | None = None, user_email: str
         creds = get_credentials(user_email)
         chunks = [message_ids[i:i + 50] for i in range(0, len(message_ids), 50)]
         collected = []
-        with ThreadPoolExecutor(max_workers=min(10, len(chunks) or 1)) as executor:
+        with ThreadPoolExecutor(max_workers=min(4, len(chunks) or 1)) as executor:
             future_to_chunk = {
                 executor.submit(_get_email_details_batch_threadsafe, creds, chunk): chunk
                 for chunk in chunks
@@ -168,32 +168,54 @@ def _get_email_details_batch(service, email_ids: list[str]) -> list[dict]:
     if not email_ids:
         return []
 
+    import time
+
     results: dict[str, dict] = {}
-    errors: dict[str, Exception] = {}
+    pending_ids = list(email_ids)
 
-    def _callback(request_id, response, exception):
-        if exception is not None:
-            errors[request_id] = exception
-        else:
-            results[request_id] = response
+    for attempt in range(3):
+        if not pending_ids:
+            break
 
-    batch = service.new_batch_http_request(callback=_callback)
-    for mid in email_ids:
-        batch.add(
-            service.users().messages().get(
-                userId="me",
-                id=mid,
-                format="metadata",
-                metadataHeaders=["Subject", "From", "Date"],
-            ),
-            request_id=mid,
-        )
+        errors: dict[str, Exception] = {}
 
-    batch.execute()
+        def _callback(request_id, response, exception):
+            if exception is not None:
+                errors[request_id] = exception
+            else:
+                results[request_id] = response
 
-    if errors:
+        batch = service.new_batch_http_request(callback=_callback)
+        for mid in pending_ids:
+            batch.add(
+                service.users().messages().get(
+                    userId="me",
+                    id=mid,
+                    format="metadata",
+                    metadataHeaders=["Subject", "From", "Date"],
+                ),
+                request_id=mid,
+            )
+
+        batch.execute()
+        pending_ids = []
+        retry_ids = []
         for mid, exc in errors.items():
-            print(f"[GMAIL] Error fetching email {mid} (batch): {exc}")
+            status = getattr(getattr(exc, "resp", None), "status", None)
+            if status == 429:
+                retry_ids.append(mid)
+            else:
+                print(f"[GMAIL] Error fetching email {mid} (batch): {exc}")
+
+        if retry_ids:
+            pending_ids = retry_ids
+            if attempt < 2:
+                delay = 2 ** attempt
+                print(f"[GMAIL] Batch fetch rate-limited for {len(retry_ids)} emails; retrying in {delay}s", flush=True)
+                time.sleep(delay)
+
+    for mid in pending_ids:
+        print(f"[GMAIL] Dropping email {mid} after batch fetch retries", flush=True)
 
     return [_parse_email_metadata(mid, results[mid]) for mid in email_ids if mid in results]
 
@@ -500,7 +522,7 @@ async def analyze_bulk_ordered(limit: int = 50, user_id: int = None, user_email:
     if user_email is None and user_id is not None:
         user_email = get_user_email_by_id(user_id)
 
-    semaphore = asyncio.Semaphore(10)
+    semaphore = asyncio.Semaphore(4)
     url_semaphore = asyncio.Semaphore(40)
     service = get_gmail_service(user_email)
     if not service or user_id is None:
@@ -1014,7 +1036,7 @@ async def label_only_pipeline(limit: int = None, user_id: int = None, user_email
     if user_email is None and user_id is not None:
         user_email = get_user_email_by_id(user_id)
 
-    semaphore = asyncio.Semaphore(10)
+    semaphore = asyncio.Semaphore(4)
     url_semaphore = asyncio.Semaphore(40)
     service = get_gmail_service(user_email)
 
