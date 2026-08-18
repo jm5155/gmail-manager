@@ -272,8 +272,10 @@ class AIRouter:
         body = {
             "model": "openai/gpt-oss-20b",
             "messages": [{"role": "user", "content": prompt}],
-            "max_tokens": 500,
+            "max_tokens": 1200,
             "temperature": 0.2,
+            "response_format": {"type": "json_object"},
+            "reasoning_effort": "low",
         }
 
         quota_errors = 0
@@ -356,7 +358,9 @@ class AIRouter:
             "contents": [{"parts": [{"text": prompt}]}],
             "generationConfig": {
                 "temperature": 0.2,
-                "maxOutputTokens": 500,
+                "maxOutputTokens": 1200,
+                "thinkingConfig": {"thinkingBudget": 0},
+                "responseMimeType": "application/json",
             }
         }
 
@@ -474,8 +478,9 @@ class AIRouter:
                 "role": "user",
                 "content": prompt,
             }],
-            "max_tokens": 500,
+            "max_tokens": 1200,
             "temperature": 0.2,
+            "response_format": {"type": "json_object"},
         }
 
         try:
