@@ -393,15 +393,26 @@ async def emails_fetch(request: Request, limit: int = 50, page_token: str = None
 @app.get("/emails")
 async def emails_get(request: Request):
     """GET /emails — Returns all cached analyzed emails from SQLite."""
-    if not _is_authenticated(request):
-        return JSONResponse(status_code=401, content={"error": "Not logged in."})
+    try:
+        print("[EMAILS-GET] Request received")
+        if not _is_authenticated(request):
+            print("[EMAILS-GET] Not authenticated")
+            return JSONResponse(status_code=401, content={"error": "Not logged in."})
 
-    user_id = _require_user_id(request)
-    if not user_id:
-        return JSONResponse(status_code=401, content={"error": "User session not found."})
+        user_id = _require_user_id(request)
+        if not user_id:
+            print("[EMAILS-GET] No user_id found")
+            return JSONResponse(status_code=401, content={"error": "User session not found."})
 
-    emails = get_analyzed_emails(user_id)
-    return {"emails": emails, "count": len(emails)}
+        print(f"[EMAILS-GET] Fetching emails for user_id={user_id}")
+        emails = get_analyzed_emails(user_id)
+        print(f"[EMAILS-GET] Found {len(emails)} emails")
+        return {"emails": emails, "count": len(emails)}
+    except Exception as e:
+        print(f"[EMAILS-GET ERROR] {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(status_code=500, content={"error": f"Failed to fetch emails: {str(e)}"})
 
 
 @app.get("/emails/analyzed")
@@ -782,27 +793,39 @@ async def get_pending_count(request: Request):
     GET /emails/pending-count — Count emails needing Gmail sync.
     Returns count of emails where status='labeled' AND applied_to_gmail=0.
     """
-    if not _is_authenticated(request):
-        return JSONResponse(status_code=401, content={"error": "Not logged in."})
+    try:
+        print("[PENDING-COUNT] Request received")
+        if not _is_authenticated(request):
+            print("[PENDING-COUNT] Not authenticated")
+            return JSONResponse(status_code=401, content={"error": "Not logged in."})
 
-    user_id = _require_user_id(request)
-    if not user_id:
-        return JSONResponse(status_code=401, content={"error": "User session not found."})
+        user_id = _require_user_id(request)
+        if not user_id:
+            print("[PENDING-COUNT] No user_id found")
+            return JSONResponse(status_code=401, content={"error": "User session not found."})
 
-    conn = _get_connection()
-    cursor = conn.cursor()
-    _execute(cursor, f"""
-        SELECT COUNT(*) as count
-        FROM analyzed_emails
-        WHERE user_id = %s
-{PENDING_GMAIL_SYNC_CONDITION}
-    """, (user_id,))
+        print(f"[PENDING-COUNT] Fetching count for user_id={user_id}")
+        conn = _get_connection()
+        try:
+            cursor = conn.cursor()
+            _execute(cursor, f"""
+                SELECT COUNT(*) as count
+                FROM analyzed_emails
+                WHERE user_id = %s
+    {PENDING_GMAIL_SYNC_CONDITION}
+            """, (user_id,))
 
-    result = cursor.fetchone()
-    count = result['count'] if isinstance(result, dict) else result[0]
-    conn.close()
-
-    return {"pending_count": count}
+            result = cursor.fetchone()
+            count = result['count'] if isinstance(result, dict) else result[0]
+            print(f"[PENDING-COUNT] Count={count}")
+            return {"pending_count": count}
+        finally:
+            conn.close()
+    except Exception as e:
+        print(f"[PENDING-COUNT ERROR] {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(status_code=500, content={"error": f"Failed to fetch pending count: {str(e)}"})
 
 
 @app.post("/emails/apply-all-pending")
