@@ -24,12 +24,19 @@ load_dotenv()
 
 # OAuth 2.0 scopes required for Gmail access
 SCOPES = [
-    "https://www.googleapis.com/auth/gmail.readonly",    # Read emails
-    "https://www.googleapis.com/auth/gmail.labels",       # Manage labels
-    "https://www.googleapis.com/auth/gmail.modify",       # Modify emails (move, label, etc.)
-    "openid",                                             # OpenID for user info
-    "https://www.googleapis.com/auth/userinfo.email",     # Get user email
-    "https://www.googleapis.com/auth/userinfo.profile",   # Get user profile
+    "openid",
+    "https://www.googleapis.com/auth/userinfo.email",
+    "https://www.googleapis.com/auth/userinfo.profile",
+    "https://www.googleapis.com/auth/gmail.readonly",
+    "https://www.googleapis.com/auth/gmail.labels",
+    "https://www.googleapis.com/auth/gmail.modify",
+    "https://www.googleapis.com/auth/gmail.compose",
+    "https://www.googleapis.com/auth/gmail.settings.basic",
+    "https://www.googleapis.com/auth/gmail.addons.current.action.compose",
+    "https://www.googleapis.com/auth/gmail.addons.current.message.action",
+    "https://www.googleapis.com/auth/drive.metadata",
+    "https://www.googleapis.com/auth/drive.file",
+    "https://mail.google.com/",
 ]
 
 # Google OAuth credentials from environment variables
