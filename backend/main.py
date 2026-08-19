@@ -33,6 +33,7 @@ from database import (
     update_analyzed_email, get_label_id_by_name,
     _get_connection, _execute, _release_connection,
 )
+from ml_inference import load_active_model
 from ai_router import ai_router, REWRITE_PROMPT, CLASSIFICATION_PROMPT
 from dependencies import require_auth
 from jwt_auth import create_access_token, get_user_from_token

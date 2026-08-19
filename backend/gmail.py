@@ -2,7 +2,7 @@
 gmail.py — Gmail API Integration Module (Restructured)
 Fetches emails from the user's Gmail inbox using the Gmail API.
 Uses the OAuth token from auth.py for authentication.
-Includes the AI-only bulk analysis pipeline (Steps A through I).
+Includes the hybrid ML + AI cascade pipeline (Steps A through I).
 """
 
 import json
@@ -22,6 +22,7 @@ from database import (
     get_user_email_by_id,
     add_to_retry_queue, remove_from_retry_queue,
 )
+from ml_inference import predict_async, is_model_available, log_disagreement
 
 
 def get_gmail_service(user_email: str = None):
@@ -708,8 +709,8 @@ async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
                        gmail_labels_cache: dict[str, str],
                        update_mode: bool = False) -> dict:
     """
-    Analyze a single email through the AI-only pipeline (Steps A through I).
-    No rule-based pre-filter. Every email goes through the AI cascade.
+    Analyze a single email through the hybrid ML + AI cascade pipeline (Steps A through I).
+    Phase 6: ML model handles high-confidence cases; escalates uncertain/risky cases to AI.
 
     Args:
         email: Email dict with keys: id, subject, sender, body, snippet
@@ -795,19 +796,48 @@ async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
                 url_threat_found = any(r["is_safe"] == 0 for r in results)
             t_url_scan = time.perf_counter() - t0
 
-            # Step C — AI cascade classification and scam scoring
-            prompt = classification_prompt.format(
-                sender=sender,
-                subject=subject,
-                body=body[:1500],  # First 1500 characters, truncated
-                url_threat_found=url_threat_found,
-                available_labels=", ".join(available_label_names),
-            )
+            # Step C — ML model pre-filter (Phase 6: hybrid routing)
+            ml_prediction = None
+            ml_confidence = 0.0
+            should_use_ai = True
+            source = 'ai'
+            
+            if is_model_available() and not update_mode:
+                ml_result = await predict_async(
+                    email_id=email_id,
+                    subject=subject,
+                    sender=sender,
+                    body=body,
+                    snippet=snippet,
+                    user_id=user_id
+                )
+                
+                if ml_result:
+                    ml_prediction = ml_result['prediction']
+                    ml_confidence = ml_result['confidence']
+                    should_use_ai = ml_result['should_escalate_to_ai']
+                    
+                    if not should_use_ai:
+                        source = 'ml'
+                        print(f"[ML] Confident prediction for {email_id[:12]}... ({ml_prediction}, conf={ml_confidence:.3f})")
 
-            t0 = time.perf_counter()
-            ai_result = await ai_router.analyze_json(prompt)
-            t_ai_call = time.perf_counter() - t0
-            provider_used = ai_result.get("provider_used", "unknown")
+            # Step D — AI cascade classification (if ML escalated or no model)
+            provider_used = None
+            if should_use_ai:
+                prompt = classification_prompt.format(
+                    sender=sender,
+                    subject=subject,
+                    body=body[:1500],  # First 1500 characters, truncated
+                    url_threat_found=url_threat_found,
+                    available_labels=", ".join(available_label_names),
+                )
+
+                t0 = time.perf_counter()
+                ai_result = await ai_router.analyze_json(prompt)
+                t_ai_call = time.perf_counter() - t0
+                provider_used = ai_result.get("provider_used", "unknown")
+            else:
+                ai_result = {"data": None}
 
             # Defaults — use first available label as fallback (no hardcoded 'Spam')
             label = default_label
@@ -815,17 +845,31 @@ async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
             scam_indicators = []
             reasoning = ""
 
-            if ai_result.get("data"):
-                data = ai_result["data"]
-                label = data.get("label", default_label)
-                scam_score = data.get("scam_score", 0)
-                scam_indicators = data.get("scam_indicators", [])
-                reasoning = data.get("reasoning", "")
-            elif ai_result.get("error"):
-                # AI cascade fully failed — add to retry queue and return
-                raise Exception(ai_result["error"])
+            if should_use_ai:
+                if ai_result.get("data"):
+                    data = ai_result["data"]
+                    label = data.get("label", default_label)
+                    scam_score = data.get("scam_score", 0)
+                    scam_indicators = data.get("scam_indicators", [])
+                    reasoning = data.get("reasoning", "")
+                    
+                    if ml_prediction and is_model_available():
+                        ai_risk = 'high_risk' if scam_score >= 60 else 'low_risk'
+                        await log_disagreement(email_id, ml_prediction, ml_confidence, ai_risk)
+                        
+                elif ai_result.get("error"):
+                    raise Exception(ai_result["error"])
+            else:
+                if ml_prediction == 'high_risk':
+                    label = "Spam"
+                    scam_score = 75
+                    scam_indicators = ["ML model classified as high-risk"]
+                else:
+                    label = default_label
+                    scam_score = 15
+                    scam_indicators = []
 
-            # Step D — Validate AI output
+            # Step E — Validate AI/ML output
             # label must match one of available_labels (case-insensitive, whitespace-trimmed)
             label_normalized = label.strip()
             label_match = None
@@ -860,17 +904,17 @@ async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
             if scam_indicators is None or not isinstance(scam_indicators, list):
                 scam_indicators = []
 
-            # Step E — Determine quarantine flag
+            # Step F — Determine quarantine flag
             # is_quarantined = 1 if ALL THREE conditions are true
             is_quarantined = 0
             label_is_spam_like = label == "Spam" or "scam" in label.lower()
             if scam_score >= 70 and url_threat_found and label_is_spam_like:
                 is_quarantined = 1
 
-            # Step F — Resolve label_id
+            # Step G — Resolve label_id
             label_id = get_label_id_by_name(user_id, label)
 
-            # Step G — Save to database (UPDATE if update_mode, INSERT if new)
+            # Step H — Save to database (UPDATE if update_mode, INSERT if new)
             t0 = time.perf_counter()
             if update_mode:
                 # Updating existing row from label_only_pipeline
@@ -897,6 +941,9 @@ async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
                     subject=subject,
                     status='labeled',
                     body=body,
+                    source=source,
+                    ml_confidence=ml_confidence if source == 'ml' else None,
+                    provider_used=provider_used,
                 )
             t_db_write += time.perf_counter() - t0
 

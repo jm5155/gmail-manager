@@ -174,9 +174,12 @@ def init_db():
                 status TEXT NOT NULL DEFAULT 'labeled',
                 analyzed_at TIMESTAMP {timestamp_default},
                 body TEXT,
-                applied_to_gmail INTEGER DEFAULT 0,
-                last_applied_label_id INTEGER DEFAULT NULL,
-                FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+                 applied_to_gmail INTEGER DEFAULT 0,
+                 last_applied_label_id INTEGER DEFAULT NULL,
+                 source TEXT DEFAULT 'ai',
+                 ml_confidence REAL,
+                 provider_used TEXT,
+                 FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
                 FOREIGN KEY (label_id) REFERENCES custom_labels(label_id) ON DELETE RESTRICT
             )
         """)
@@ -236,6 +239,32 @@ def init_db():
             """)
             conn.commit()
             print("[DB MIGRATION] last_applied_label_id column added successfully.")
+
+        for column, definition in (
+            ("source", "TEXT DEFAULT 'ai'"),
+            ("ml_confidence", "REAL"),
+            ("provider_used", "TEXT"),
+        ):
+            if column not in columns:
+                _execute(cursor, f"ALTER TABLE analyzed_emails ADD COLUMN {column} {definition}")
+                conn.commit()
+
+        _execute(cursor, f"""
+            CREATE TABLE IF NOT EXISTS ml_models (
+                model_id {pk_syntax}, version TEXT NOT NULL, trained_at TIMESTAMP {timestamp_default},
+                training_row_count INTEGER NOT NULL, validation_precision REAL,
+                validation_recall REAL, calibration_error REAL, model_blob {"BYTEA" if USE_POSTGRES else "BLOB"},
+                is_active INTEGER DEFAULT 0
+            )
+        """)
+        _execute(cursor, f"""
+            CREATE TABLE IF NOT EXISTS ml_disagreements (
+                disagreement_id {pk_syntax}, email_id TEXT NOT NULL, ml_prediction TEXT,
+                ml_confidence REAL, ai_prediction TEXT, agreed INTEGER NOT NULL DEFAULT 0,
+                logged_at TIMESTAMP {timestamp_default},
+                FOREIGN KEY (email_id) REFERENCES analyzed_emails(email_id) ON DELETE CASCADE
+            )
+        """)
 
         conn.commit()
         db_type = "Postgres" if USE_POSTGRES else "SQLite"
@@ -595,8 +624,10 @@ def delete_label(label_id: int, user_id: int) -> None:
 def save_analyzed_email(email_id: str, user_id: int, label_id: int, scam_score: int,
                          scam_indicators: str, is_quarantined: int,
                          snippet: str, sender: str, subject: str,
-                         status: str = 'labeled', body: str = None) -> None:
-    """Insert or update (upsert) analyzed_email record."""
+                         status: str = 'labeled', body: str = None,
+                         source: str = 'ai', ml_confidence: float = None,
+                         provider_used: str = None) -> None:
+    """Insert or update (upsert) analyzed_email record with ML tracking."""
     conn = _get_connection()
     try:
         cursor = conn.cursor()
@@ -605,8 +636,8 @@ def save_analyzed_email(email_id: str, user_id: int, label_id: int, scam_score: 
             # Postgres: Use ON CONFLICT for upsert
             _execute(cursor,"""
                 INSERT INTO analyzed_emails
-                (email_id, user_id, label_id, scam_score, scam_indicators, is_quarantined, snippet, sender, subject, status, body)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                (email_id, user_id, label_id, scam_score, scam_indicators, is_quarantined, snippet, sender, subject, status, body, source, ml_confidence, provider_used)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (email_id) DO UPDATE SET
                     user_id = EXCLUDED.user_id,
                     label_id = EXCLUDED.label_id,
@@ -617,18 +648,21 @@ def save_analyzed_email(email_id: str, user_id: int, label_id: int, scam_score: 
                     sender = EXCLUDED.sender,
                     subject = EXCLUDED.subject,
                     status = EXCLUDED.status,
-                    body = EXCLUDED.body
-            """, (email_id, user_id, label_id, scam_score, scam_indicators, is_quarantined, snippet, sender, subject, status, body))
+                    body = EXCLUDED.body,
+                    source = EXCLUDED.source,
+                    ml_confidence = EXCLUDED.ml_confidence,
+                    provider_used = EXCLUDED.provider_used
+            """, (email_id, user_id, label_id, scam_score, scam_indicators, is_quarantined, snippet, sender, subject, status, body, source, ml_confidence, provider_used))
         else:
             # SQLite: Use INSERT OR REPLACE
             _execute(cursor,"""
                 INSERT OR REPLACE INTO analyzed_emails
-                (email_id, user_id, label_id, scam_score, scam_indicators, is_quarantined, snippet, sender, subject, status, body)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (email_id, user_id, label_id, scam_score, scam_indicators, is_quarantined, snippet, sender, subject, status, body))
+                (email_id, user_id, label_id, scam_score, scam_indicators, is_quarantined, snippet, sender, subject, status, body, source, ml_confidence, provider_used)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (email_id, user_id, label_id, scam_score, scam_indicators, is_quarantined, snippet, sender, subject, status, body, source, ml_confidence, provider_used))
         
         conn.commit()
-        print(f"[DB] Saved email {email_id[:12]}... label_id={label_id}, scam_score={scam_score}, status={status}")
+        print(f"[DB] Saved email {email_id[:12]}... label_id={label_id}, scam_score={scam_score}, status={status}, source={source}")
     except Exception:
         conn.rollback()
         raise
@@ -637,7 +671,9 @@ def save_analyzed_email(email_id: str, user_id: int, label_id: int, scam_score: 
 
 
 def update_analyzed_email(email_id: str, label_id: int, scam_score: int,
-                          scam_indicators: str, is_quarantined: int, status: str = 'labeled') -> None:
+                          scam_indicators: str, is_quarantined: int, status: str = 'labeled',
+                          source: str = 'ai', ml_confidence: float = None,
+                          provider_used: str = None) -> None:
     """
     Update an existing analyzed_emails row with AI results.
     Preserves the original analyzed_at timestamp and body.
@@ -650,11 +686,15 @@ def update_analyzed_email(email_id: str, label_id: int, scam_score: int,
             UPDATE analyzed_emails
             SET label_id = %s,
                 scam_score = %s,
-                scam_indicators = %s,
-                is_quarantined = %s,
-                status = %s
-            WHERE email_id = %s
-        """, (label_id, scam_score, scam_indicators, is_quarantined, status, email_id))
+                 scam_indicators = %s,
+                 is_quarantined = %s,
+                 status = %s,
+                 source = %s,
+                 ml_confidence = %s,
+                 provider_used = %s
+             WHERE email_id = %s
+         """, (label_id, scam_score, scam_indicators, is_quarantined, status,
+               source, ml_confidence, provider_used, email_id))
         conn.commit()
         print(f"[DB] Updated email {email_id[:12]}... to status={status}, label_id={label_id}, score={scam_score}")
     except Exception:
