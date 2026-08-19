@@ -1405,6 +1405,51 @@ async def emails_batch_delete(request: Request):
 
 # ---------- STATS ENDPOINT ----------
 
+@app.post("/emails/retry-failed")
+async def retry_failed_emails(request: Request):
+    """
+    POST /emails/retry-failed — Reset status='failed' emails back to status='fetched'
+    so they can be picked up by the next analysis run.
+    """
+    if not _is_authenticated(request):
+        return JSONResponse(status_code=401, content={"error": "Not logged in."})
+
+    user_id = _require_user_id(request)
+    if not user_id:
+        return JSONResponse(status_code=401, content={"error": "User session not found."})
+
+    try:
+        # Get all failed emails for this user
+        from database import get_emails_by_status, _get_connection, _execute, _release_connection
+        failed_emails = get_emails_by_status(user_id, status='failed')
+        
+        if not failed_emails:
+            return {"success": True, "reset_count": 0, "message": "No failed emails found"}
+
+        # Reset their status to 'fetched' so they'll be analyzed on next run
+        conn = _get_connection()
+        try:
+            cursor = conn.cursor()
+            for email in failed_emails:
+                _execute(cursor, """
+                    UPDATE analyzed_emails
+                    SET status = 'fetched'
+                    WHERE email_id = %s AND user_id = %s
+                """, (email['email_id'], user_id))
+            conn.commit()
+            reset_count = len(failed_emails)
+            print(f"[RETRY] Reset {reset_count} failed emails to 'fetched' status for user {user_id}")
+            return {"success": True, "reset_count": reset_count, "message": f"Reset {reset_count} failed emails. Run analysis again to retry them."}
+        finally:
+            _release_connection(conn)
+
+    except Exception as e:
+        print(f"[RETRY ERROR] {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(status_code=500, content={"error": f"Failed to retry emails: {str(e)}"})
+
+
 @app.get("/emails/stats")
 async def emails_stats(request: Request):
     """GET /emails/stats — Returns summary statistics."""
