@@ -69,7 +69,7 @@ def load_training_data():
             X_text.append(text)
             
             score = row['scam_score'] if isinstance(row, dict) else row[6]
-            y_labels.append('high_risk' if score >= 0.6 else 'low_risk')
+            y_labels.append('high_risk' if score >= 60 else 'low_risk')
             y_scores.append(score)
             providers.append(row['provider_used'] if isinstance(row, dict) else row[7])
         

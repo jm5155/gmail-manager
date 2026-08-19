@@ -188,7 +188,7 @@ def get_sender_history(sender: str, conn) -> Dict[str, Any]:
     _execute(cursor, """
         SELECT 
             COUNT(*) as sent_count,
-            SUM(CASE WHEN scam_score >= 0.6 THEN 1 ELSE 0 END) as scam_count,
+            SUM(CASE WHEN scam_score >= 60 THEN 1 ELSE 0 END) as scam_count,
             AVG(scam_score) as avg_score
         FROM analyzed_emails
         WHERE sender = %s AND scam_score IS NOT NULL

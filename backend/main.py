@@ -182,7 +182,7 @@ PENDING_GMAIL_SYNC_CONDITION = """
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize the database on server startup."""
+    """Initialize the database and ML model on server startup."""
     # Set explicit thread pool size for asyncio.to_thread() to prevent exhaustion
     import asyncio
     from concurrent.futures import ThreadPoolExecutor
@@ -191,6 +191,10 @@ async def startup_event():
     print("[SERVER] Configured asyncio executor with 32 worker threads")
     
     init_db()
+    
+    # Load active ML model if available
+    load_active_model()
+    
     # Import legacy file-based tokens into the DB (no-op on ephemeral hosts with no files)
     try:
         migrate_legacy_tokens()

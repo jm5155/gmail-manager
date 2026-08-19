@@ -860,6 +860,12 @@ async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
                 elif ai_result.get("error"):
                     raise Exception(ai_result["error"])
             else:
+                # ML-only prediction (no AI cascade)
+                # Design decision: ML predicts risk only, not category label
+                # High-risk → Spam, Low-risk → first available label (typically "Safe")
+                # Tradeoff: ML-routed emails get generic labels instead of rich categorization
+                # (Marketing, Personal, etc.). This is intentional to keep the model simple
+                # and focused on scam detection. Category labeling requires AI cascade.
                 if ml_prediction == 'high_risk':
                     label = "Spam"
                     scam_score = 75
