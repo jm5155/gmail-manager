@@ -21,10 +21,10 @@ if USE_POSTGRES:
     from psycopg2 import pool as psycopg2_pool
     from psycopg2.extras import RealDictCursor
     _pg_pool = psycopg2_pool.ThreadedConnectionPool(
-        minconn=2, maxconn=15, dsn=DATABASE_URL,
+        minconn=2, maxconn=20, dsn=DATABASE_URL,
         cursor_factory=RealDictCursor
     )
-    print("[DB] Using Postgres (DATABASE_URL detected) with connection pool (2-15 connections)")
+    print("[DB] Using Postgres (DATABASE_URL detected) with connection pool (2-20 connections)")
 else:
     import sqlite3
     DB_PATH = Path(__file__).parent / "gmail_manager.db"

@@ -558,8 +558,12 @@ def _apply_label_change(email_id: str, new_label_name: str, user_id: int, servic
             return {"success": False, "error": "gmail_not_authenticated"}
 
         try:
-            # Get Gmail label IDs
-            gmail_labels_cache = {}  # Cache for API efficiency
+            # Build Gmail labels cache from actual Gmail labels (prevents 409 conflicts)
+            gmail_labels_result = service.users().labels().list(userId="me").execute()
+            gmail_labels_cache = {
+                lbl["name"]: lbl["id"] for lbl in gmail_labels_result.get("labels", [])
+            }
+            
             old_gmail_label_id = None
             if old_label:
                 old_gmail_label_id = get_or_create_label(service, old_label["label_name"], user_id, gmail_labels_cache)
@@ -586,7 +590,7 @@ def _apply_label_change(email_id: str, new_label_name: str, user_id: int, servic
         return {"success": False, "error": f"unexpected_error: {e}"}
 
 
-def _sync_label_to_gmail(email_id: str, user_id: int, service) -> dict:
+def _sync_label_to_gmail(email_id: str, user_id: int, service, gmail_labels_cache: dict[str, str]) -> dict:
     """
     Sync email's current label_id to Gmail, removing old label if needed.
 
@@ -596,6 +600,9 @@ def _sync_label_to_gmail(email_id: str, user_id: int, service) -> dict:
     - If same: no-op (already synced)
 
     On success: updates both applied_to_gmail=1 AND last_applied_label_id=<current label_id>
+
+    Args:
+        gmail_labels_cache: Pre-built dict mapping label names to Gmail label IDs (shared across batch)
 
     Returns dict with 'success': bool, 'error': str (if failed).
     Does NOT touch scam_score, scam_indicators, or is_quarantined.
@@ -643,10 +650,7 @@ def _sync_label_to_gmail(email_id: str, user_id: int, service) -> dict:
 
         current_label_name = current_label["label_name"]
 
-        # Build Gmail labels cache once for all get_or_create_label calls
-        gmail_labels_cache = {}
-
-        # Get Gmail label ID for new label
+        # Get Gmail label ID for new label (reuse shared cache)
         new_gmail_label_id = get_or_create_label(service, current_label_name, user_id, gmail_labels_cache)
         if not new_gmail_label_id:
             _release_connection(conn)
@@ -869,13 +873,22 @@ async def apply_all_pending(request: Request):
     if not service:
         return JSONResponse(status_code=500, content={"error": "gmail_not_authenticated"})
 
+    # Build gmail_labels_cache once for the entire batch (same pattern as analyze_bulk_ordered)
+    import asyncio
+    gmail_labels_result = await asyncio.to_thread(
+        lambda: service.users().labels().list(userId="me").execute()
+    )
+    gmail_labels_cache = {
+        lbl["name"]: lbl["id"] for lbl in gmail_labels_result.get("labels", [])
+    }
+
     # Apply each using corrected _sync_label_to_gmail()
     applied = 0
     failed = 0
     errors = []
 
     for email_id in pending_emails:
-        result = _sync_label_to_gmail(email_id, user_id, service)
+        result = _sync_label_to_gmail(email_id, user_id, service, gmail_labels_cache)
 
         if result["success"]:
             applied += 1
