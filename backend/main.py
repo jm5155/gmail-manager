@@ -182,6 +182,13 @@ PENDING_GMAIL_SYNC_CONDITION = """
 @app.on_event("startup")
 async def startup_event():
     """Initialize the database on server startup."""
+    # Set explicit thread pool size for asyncio.to_thread() to prevent exhaustion
+    import asyncio
+    from concurrent.futures import ThreadPoolExecutor
+    loop = asyncio.get_running_loop()
+    loop.set_default_executor(ThreadPoolExecutor(max_workers=32))
+    print("[SERVER] Configured asyncio executor with 32 worker threads")
+    
     init_db()
     # Import legacy file-based tokens into the DB (no-op on ephemeral hosts with no files)
     try:
