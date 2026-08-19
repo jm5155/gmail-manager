@@ -31,7 +31,7 @@ from database import (
     reset_database, mark_email_safe,
     get_delete_mode, set_delete_mode,
     update_analyzed_email, get_label_id_by_name,
-    _get_connection, _execute,
+    _get_connection, _execute, _release_connection,
 )
 from ai_router import ai_router, REWRITE_PROMPT, CLASSIFICATION_PROMPT
 from dependencies import require_auth
@@ -614,7 +614,7 @@ def _sync_label_to_gmail(email_id: str, user_id: int, service) -> dict:
 
         row = cursor.fetchone()
         if not row:
-            conn.close()
+            _release_connection(conn)
             return {"success": False, "error": "Email not found"}
 
         current_label_id = row['label_id']
@@ -628,7 +628,7 @@ def _sync_label_to_gmail(email_id: str, user_id: int, service) -> dict:
                 WHERE email_id = %s AND user_id = %s
             """, (email_id, user_id))
             conn.commit()
-            conn.close()
+            _release_connection(conn)
             return {"success": True}  # Already synced, nothing else to do
 
         # Get label names
@@ -636,7 +636,7 @@ def _sync_label_to_gmail(email_id: str, user_id: int, service) -> dict:
         current_label = next((l for l in labels if l["label_id"] == current_label_id), None)
 
         if not current_label:
-            conn.close()
+            _release_connection(conn)
             return {"success": False, "error": "Current label not found"}
 
         current_label_name = current_label["label_name"]
@@ -644,7 +644,7 @@ def _sync_label_to_gmail(email_id: str, user_id: int, service) -> dict:
         # Get Gmail label ID for new label
         new_gmail_label_id = get_or_create_label(service, current_label_name, user_id)
         if not new_gmail_label_id:
-            conn.close()
+            _release_connection(conn)
             return {"success": False, "error": "Failed to get/create Gmail label"}
 
         # Determine if we need to remove old label
@@ -672,7 +672,7 @@ def _sync_label_to_gmail(email_id: str, user_id: int, service) -> dict:
             WHERE email_id = %s
         """, (current_label_id, email_id))
         conn.commit()
-        conn.close()
+        _release_connection(conn)
 
         return {"success": True}
 
@@ -820,7 +820,7 @@ async def get_pending_count(request: Request):
             print(f"[PENDING-COUNT] Count={count}")
             return {"pending_count": count}
         finally:
-            conn.close()
+            _release_connection(conn)
     except Exception as e:
         print(f"[PENDING-COUNT ERROR] {type(e).__name__}: {str(e)}")
         import traceback
@@ -853,7 +853,7 @@ async def apply_all_pending(request: Request):
     """, (user_id,))
 
     pending_emails = [row['email_id'] for row in cursor.fetchall()]
-    conn.close()
+    _release_connection(conn)
 
     # Get Gmail service once
     from gmail import get_gmail_service
