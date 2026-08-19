@@ -109,8 +109,8 @@ async def scan_url(url: str, email_id: str,
     """
     from database import get_cached_url, save_url_result
 
-    # Step 1: Check cache first
-    cached = get_cached_url(url)
+    # Step 1: Check cache first (offload blocking DB call to thread)
+    cached = await asyncio.to_thread(get_cached_url, url)
     if cached is not None:
         print(f"[SECURITY] Cache hit for URL: {url[:60]}")
         return {
@@ -130,8 +130,8 @@ async def scan_url(url: str, email_id: str,
     # Step 3: No cache — call Google Safe Browsing API v4
     if not SAFE_BROWSING_KEY or SAFE_BROWSING_KEY == "your_key_here":
         print(f"[SECURITY] WARNING: Safe Browsing API key not configured. Skipping URL check for: {url[:60]}")
-        # Save as safe and return
-        save_url_result(email_id, url, 1, None)
+        # Save as safe and return (offload blocking DB call to thread)
+        await asyncio.to_thread(save_url_result, email_id, url, 1, None)
         return {"url": url, "is_safe": 1, "threat_type": None}
 
     endpoint = f"https://safebrowsing.googleapis.com/v4/threatMatches:find?key={SAFE_BROWSING_KEY}"
@@ -180,6 +180,7 @@ async def scan_url(url: str, email_id: str,
     # Step 4: Save results to persistent and in-memory caches.
     async with _cache_lock:
         URL_SAFETY_CACHE[url] = (is_safe, threat_type)
-    save_url_result(email_id, url, is_safe, threat_type)
+    # Offload blocking DB call to thread to prevent event loop blocking
+    await asyncio.to_thread(save_url_result, email_id, url, is_safe, threat_type)
 
     return {"url": url, "is_safe": is_safe, "threat_type": threat_type}
