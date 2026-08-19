@@ -62,7 +62,7 @@ def _release_connection(conn):
     if USE_POSTGRES:
         _pg_pool.putconn(conn)
     else:
-        _release_connection(conn)
+        conn.close()
 
 
 def _execute(cursor, query, params=None):
