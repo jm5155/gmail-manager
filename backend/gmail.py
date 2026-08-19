@@ -364,19 +364,27 @@ def _nearest_gmail_color(hex_bg: str, hex_text: str) -> tuple:
     return best
 
 
-def get_or_create_label(service, label_name: str, user_id: int, gmail_labels_cache: dict[str, str]) -> str | None:
+def get_or_create_label(user_email: str, label_name: str, user_id: int, gmail_labels_cache: dict[str, str]) -> str | None:
     """
     Get an existing Gmail label by name, or create it if it doesn't exist.
     Maps database colors to Gmail-approved palette colors.
+    
+    Builds a thread-local Gmail service object to ensure thread safety.
 
     Args:
-        service: Gmail API service instance
+        user_email: Gmail address for authentication (builds fresh service per call)
         label_name: The label name (e.g., "Work", "Finance")
         user_id: The user ID for fetching label colors
+        gmail_labels_cache: Cache mapping label names to IDs (shared across batch)
 
     Returns:
         The label ID string, or None on failure
     """
+    # Build fresh service per call for thread safety (httplib2.Http is not thread-safe)
+    service = get_gmail_service(user_email)
+    if not service:
+        return None
+        
     try:
         labels_db = get_labels(user_id)
         label_info = next(
@@ -415,8 +423,17 @@ def get_or_create_label(service, label_name: str, user_id: int, gmail_labels_cac
         return None
 
 
-def apply_label(service, email_id: str, label_id: str):
-    """Apply a Gmail label to a specific email."""
+def apply_label(user_email: str, email_id: str, label_id: str):
+    """
+    Apply a Gmail label to a specific email.
+    Builds a thread-local Gmail service object to ensure thread safety.
+    """
+    # Build fresh service per call for thread safety (httplib2.Http is not thread-safe)
+    service = get_gmail_service(user_email)
+    if not service:
+        print(f"[GMAIL] Cannot apply label: service unavailable for {user_email}")
+        return
+        
     try:
         service.users().messages().modify(
             userId="me",
@@ -428,11 +445,18 @@ def apply_label(service, email_id: str, label_id: str):
         print(f"[GMAIL] Error applying label to {email_id}: {e}")
 
 
-def change_label(service, email_id: str, old_label_id: str | None, new_label_id: str):
+def change_label(user_email: str, email_id: str, old_label_id: str | None, new_label_id: str):
     """
     Replace one Gmail label with another on an email.
     Removes old_label_id (if provided) and adds new_label_id in a single modify() call.
+    Builds a thread-local Gmail service object to ensure thread safety.
     """
+    # Build fresh service per call for thread safety (httplib2.Http is not thread-safe)
+    service = get_gmail_service(user_email)
+    if not service:
+        print(f"[GMAIL] Cannot change label: service unavailable for {user_email}")
+        return
+        
     try:
         body = {}
         if old_label_id:
@@ -879,10 +903,10 @@ async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
             t0 = time.perf_counter()
             try:
                 gmail_label_id = await asyncio.to_thread(
-                    get_or_create_label, service, label, user_id, gmail_labels_cache
+                    get_or_create_label, user_email, label, user_id, gmail_labels_cache
                 )
                 if gmail_label_id:
-                    await asyncio.to_thread(apply_label, service, email_id, gmail_label_id)
+                    await asyncio.to_thread(apply_label, user_email, email_id, gmail_label_id)
             except Exception as e:
                 print(f"[PIPELINE] Failed to apply Gmail label for {email_id[:12]}...: {e}")
                 # Do not crash — continue to next email

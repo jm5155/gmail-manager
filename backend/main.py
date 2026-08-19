@@ -525,15 +525,18 @@ async def emails_label_only(request: Request, limit: int = None):
 
 
 
-def _apply_label_change(email_id: str, new_label_name: str, user_id: int, service) -> dict:
+def _apply_label_change(email_id: str, new_label_name: str, user_id: int, user_email: str) -> dict:
     """
     Internal function: Apply label change to a single email.
     Updates database and Gmail atomically, with rollback on Gmail failure.
     Returns dict with 'success': bool, 'error': str (if failed).
     Does NOT touch scam_score, scam_indicators, or is_quarantined.
+    
+    Args:
+        user_email: Gmail address (each thread builds its own service object for thread safety)
     """
     from database import get_labels, get_analyzed_emails, update_email_label_id
-    from gmail import get_or_create_label, change_label
+    from gmail import get_or_create_label, change_label, get_gmail_service
 
     try:
         # Validate new label exists
@@ -558,6 +561,7 @@ def _apply_label_change(email_id: str, new_label_name: str, user_id: int, servic
             return {"success": False, "error": f"db_error: {e}"}
 
         # Update Gmail
+        service = get_gmail_service(user_email)
         if not service:
             # Rollback database change
             if old_label_id:
@@ -573,14 +577,14 @@ def _apply_label_change(email_id: str, new_label_name: str, user_id: int, servic
             
             old_gmail_label_id = None
             if old_label:
-                old_gmail_label_id = get_or_create_label(service, old_label["label_name"], user_id, gmail_labels_cache)
+                old_gmail_label_id = get_or_create_label(user_email, old_label["label_name"], user_id, gmail_labels_cache)
 
-            new_gmail_label_id = get_or_create_label(service, new_label_name, user_id, gmail_labels_cache)
+            new_gmail_label_id = get_or_create_label(user_email, new_label_name, user_id, gmail_labels_cache)
             if not new_gmail_label_id:
                 raise Exception("Failed to get/create Gmail label")
 
             # Change label in Gmail (remove old, add new)
-            change_label(service, email_id, old_gmail_label_id, new_gmail_label_id)
+            change_label(user_email, email_id, old_gmail_label_id, new_gmail_label_id)
 
         except Exception as e:
             # Rollback database change
@@ -597,7 +601,7 @@ def _apply_label_change(email_id: str, new_label_name: str, user_id: int, servic
         return {"success": False, "error": f"unexpected_error: {e}"}
 
 
-def _sync_label_to_gmail(email_id: str, user_id: int, service, gmail_labels_cache: dict[str, str]) -> dict:
+def _sync_label_to_gmail(email_id: str, user_id: int, user_email: str, gmail_labels_cache: dict[str, str]) -> dict:
     """
     Sync email's current label_id to Gmail, removing old label if needed.
 
@@ -609,6 +613,7 @@ def _sync_label_to_gmail(email_id: str, user_id: int, service, gmail_labels_cach
     On success: updates both applied_to_gmail=1 AND last_applied_label_id=<current label_id>
 
     Args:
+        user_email: Gmail address (each thread builds its own service object for thread safety)
         gmail_labels_cache: Pre-built dict mapping label names to Gmail label IDs (shared across batch)
 
     Returns dict with 'success': bool, 'error': str (if failed).
@@ -658,7 +663,7 @@ def _sync_label_to_gmail(email_id: str, user_id: int, service, gmail_labels_cach
         current_label_name = current_label["label_name"]
 
         # Get Gmail label ID for new label (reuse shared cache)
-        new_gmail_label_id = get_or_create_label(service, current_label_name, user_id, gmail_labels_cache)
+        new_gmail_label_id = get_or_create_label(user_email, current_label_name, user_id, gmail_labels_cache)
         if not new_gmail_label_id:
             _release_connection(conn)
             return {"success": False, "error": "Failed to get/create Gmail label"}
@@ -666,19 +671,19 @@ def _sync_label_to_gmail(email_id: str, user_id: int, service, gmail_labels_cach
         # Determine if we need to remove old label
         if last_applied_label_id is None:
             # First-ever apply: just add new label
-            apply_label(service, email_id, new_gmail_label_id)
+            apply_label(user_email, email_id, new_gmail_label_id)
 
         elif last_applied_label_id != current_label_id:
             # Label changed: remove old + add new
             old_label = next((l for l in labels if l["label_id"] == last_applied_label_id), None)
 
             if old_label:
-                old_gmail_label_id = get_or_create_label(service, old_label["label_name"], user_id, gmail_labels_cache)
+                old_gmail_label_id = get_or_create_label(user_email, old_label["label_name"], user_id, gmail_labels_cache)
             else:
                 old_gmail_label_id = None
 
             # Use existing change_label() from Phase 34
-            change_label(service, email_id, old_gmail_label_id, new_gmail_label_id)
+            change_label(user_email, email_id, old_gmail_label_id, new_gmail_label_id)
 
         # Update DB: mark as applied and record which label was applied
         cursor.execute("""
@@ -722,12 +727,11 @@ async def update_email_label(request: Request, email_id: str):
     except Exception as e:
         return JSONResponse(status_code=400, content={"error": f"Invalid JSON: {e}"})
 
-    # Get Gmail service
-    from gmail import get_gmail_service
-    service = get_gmail_service(_request_user_email(request))
+    # Get user email for thread-safe service creation
+    user_email = _request_user_email(request)
 
     # Apply label change using shared logic
-    result = _apply_label_change(email_id, new_label_name, user_id, service)
+    result = _apply_label_change(email_id, new_label_name, user_id, user_email)
 
     if not result["success"]:
         return JSONResponse(status_code=500, content={"error": result["error"]})
@@ -763,10 +767,9 @@ async def batch_label_update(request: Request):
     except Exception as e:
         return JSONResponse(status_code=400, content={"error": f"Invalid JSON: {e}"})
 
-    # Get Gmail service once for all changes
-    from gmail import get_gmail_service
-    service = get_gmail_service(_request_user_email(request))
-    if not service:
+    # Get user email for thread-safe service creation
+    user_email = _request_user_email(request)
+    if not user_email:
         return JSONResponse(status_code=500, content={"error": "gmail_not_authenticated"})
 
     # Process changes sequentially
@@ -787,7 +790,7 @@ async def batch_label_update(request: Request):
             continue
 
         # Apply label change using shared logic
-        result = _apply_label_change(email_id, new_label_name, user_id, service)
+        result = _apply_label_change(email_id, new_label_name, user_id, user_email)
 
         if result["success"]:
             applied += 1
@@ -874,14 +877,18 @@ async def apply_all_pending(request: Request):
     pending_emails = [row['email_id'] for row in cursor.fetchall()]
     _release_connection(conn)
 
-    # Get Gmail service once
-    from gmail import get_gmail_service
-    service = get_gmail_service(_request_user_email(request))
-    if not service:
+    # Get user email for thread-safe service creation
+    user_email = _request_user_email(request)
+    if not user_email:
         return JSONResponse(status_code=500, content={"error": "gmail_not_authenticated"})
 
     # Build gmail_labels_cache once for the entire batch (same pattern as analyze_bulk_ordered)
     import asyncio
+    from gmail import get_gmail_service
+    service = get_gmail_service(user_email)
+    if not service:
+        return JSONResponse(status_code=500, content={"error": "gmail_not_authenticated"})
+        
     gmail_labels_result = await asyncio.to_thread(
         lambda: service.users().labels().list(userId="me").execute()
     )
@@ -895,7 +902,7 @@ async def apply_all_pending(request: Request):
     errors = []
 
     for email_id in pending_emails:
-        result = _sync_label_to_gmail(email_id, user_id, service, gmail_labels_cache)
+        result = _sync_label_to_gmail(email_id, user_id, user_email, gmail_labels_cache)
 
         if result["success"]:
             applied += 1
