@@ -559,11 +559,12 @@ def _apply_label_change(email_id: str, new_label_name: str, user_id: int, servic
 
         try:
             # Get Gmail label IDs
+            gmail_labels_cache = {}  # Cache for API efficiency
             old_gmail_label_id = None
             if old_label:
-                old_gmail_label_id = get_or_create_label(service, old_label["label_name"], user_id)
+                old_gmail_label_id = get_or_create_label(service, old_label["label_name"], user_id, gmail_labels_cache)
 
-            new_gmail_label_id = get_or_create_label(service, new_label_name, user_id)
+            new_gmail_label_id = get_or_create_label(service, new_label_name, user_id, gmail_labels_cache)
             if not new_gmail_label_id:
                 raise Exception("Failed to get/create Gmail label")
 
@@ -599,9 +600,10 @@ def _sync_label_to_gmail(email_id: str, user_id: int, service) -> dict:
     Returns dict with 'success': bool, 'error': str (if failed).
     Does NOT touch scam_score, scam_indicators, or is_quarantined.
     """
-    from database import get_labels, _get_connection
+    from database import get_labels, _get_connection, _release_connection
     from gmail import get_or_create_label, change_label, apply_label
 
+    conn = None
     try:
         # Get current email state from DB
         conn = _get_connection()
@@ -641,8 +643,11 @@ def _sync_label_to_gmail(email_id: str, user_id: int, service) -> dict:
 
         current_label_name = current_label["label_name"]
 
+        # Build Gmail labels cache once for all get_or_create_label calls
+        gmail_labels_cache = {}
+
         # Get Gmail label ID for new label
-        new_gmail_label_id = get_or_create_label(service, current_label_name, user_id)
+        new_gmail_label_id = get_or_create_label(service, current_label_name, user_id, gmail_labels_cache)
         if not new_gmail_label_id:
             _release_connection(conn)
             return {"success": False, "error": "Failed to get/create Gmail label"}
@@ -657,7 +662,7 @@ def _sync_label_to_gmail(email_id: str, user_id: int, service) -> dict:
             old_label = next((l for l in labels if l["label_id"] == last_applied_label_id), None)
 
             if old_label:
-                old_gmail_label_id = get_or_create_label(service, old_label["label_name"], user_id)
+                old_gmail_label_id = get_or_create_label(service, old_label["label_name"], user_id, gmail_labels_cache)
             else:
                 old_gmail_label_id = None
 
@@ -677,6 +682,9 @@ def _sync_label_to_gmail(email_id: str, user_id: int, service) -> dict:
         return {"success": True}
 
     except Exception as e:
+        # Critical: Release connection on exception to prevent pool exhaustion
+        if conn:
+            _release_connection(conn)
         return {"success": False, "error": f"gmail_api_error: {e}"}
 
 
@@ -1228,10 +1236,10 @@ async def reanalyze_scam_email(email_id: str, request: Request, user: dict = Dep
     
     # Fallback: fetch body from Gmail if DB has empty body (metadata-only fetch)
     if not body:
+        from gmail import get_gmail_service, _get_email_body
         user_email = _request_user_email(request)
         service = get_gmail_service(user_email)
         if service:
-            from gmail import _get_email_body
             body = await asyncio.to_thread(_get_email_body, service, email_id)
 
     # Available labels for classification
