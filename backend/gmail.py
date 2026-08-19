@@ -546,7 +546,7 @@ async def analyze_bulk_ordered(limit: int = 50, user_id: int = None, user_email:
     if user_email is None and user_id is not None:
         user_email = get_user_email_by_id(user_id)
 
-    semaphore = asyncio.Semaphore(4)
+    semaphore = asyncio.Semaphore(2)
     url_semaphore = asyncio.Semaphore(8)
     service = get_gmail_service(user_email)
     if not service or user_id is None:
@@ -1061,7 +1061,7 @@ async def label_only_pipeline(limit: int = None, user_id: int = None, user_email
     if user_email is None and user_id is not None:
         user_email = get_user_email_by_id(user_id)
 
-    semaphore = asyncio.Semaphore(4)
+    semaphore = asyncio.Semaphore(2)
     url_semaphore = asyncio.Semaphore(8)
     service = get_gmail_service(user_email)
 

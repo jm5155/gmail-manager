@@ -1408,8 +1408,7 @@ async def emails_batch_delete(request: Request):
 @app.post("/emails/retry-failed")
 async def retry_failed_emails(request: Request):
     """
-    POST /emails/retry-failed — Reset status='failed' emails back to status='fetched'
-    so they can be picked up by the next analysis run.
+    POST /emails/retry-failed — Retry failed analysis records through the analysis pipeline.
     """
     if not _is_authenticated(request):
         return JSONResponse(status_code=401, content={"error": "Not logged in."})
@@ -1419,29 +1418,40 @@ async def retry_failed_emails(request: Request):
         return JSONResponse(status_code=401, content={"error": "User session not found."})
 
     try:
-        # Get all failed emails for this user
-        from database import get_emails_by_status, _get_connection, _execute, _release_connection
-        failed_emails = get_emails_by_status(user_id, status='failed')
-        
-        if not failed_emails:
-            return {"success": True, "reset_count": 0, "message": "No failed emails found"}
+        from database import get_pending_retry_queue, mark_retry_attempt
+        retry_rows = get_pending_retry_queue(user_id, max_retries=5)
+        if not retry_rows:
+            return {"success": True, "retried": 0, "message": "No retryable failed emails found"}
 
-        # Reset their status to 'fetched' so they'll be analyzed on next run
         conn = _get_connection()
         try:
             cursor = conn.cursor()
-            for email in failed_emails:
+            for row in retry_rows:
                 _execute(cursor, """
                     UPDATE analyzed_emails
                     SET status = 'fetched'
                     WHERE email_id = %s AND user_id = %s
-                """, (email['email_id'], user_id))
+                """, (row["email_id"], user_id))
             conn.commit()
-            reset_count = len(failed_emails)
-            print(f"[RETRY] Reset {reset_count} failed emails to 'fetched' status for user {user_id}")
-            return {"success": True, "reset_count": reset_count, "message": f"Reset {reset_count} failed emails. Run analysis again to retry them."}
         finally:
             _release_connection(conn)
+
+        for row in retry_rows:
+            mark_retry_attempt(row["email_id"])
+
+        from gmail import label_only_pipeline
+        final_event = {"analyzed": 0, "failed": 0}
+        async for event in label_only_pipeline(
+            limit=len(retry_rows), user_id=user_id,
+            user_email=_request_user_email(request),
+        ):
+            final_event = event
+
+        return {
+            "success": True,
+            "retried": len(retry_rows),
+            "result": final_event,
+        }
 
     except Exception as e:
         print(f"[RETRY ERROR] {type(e).__name__}: {str(e)}")

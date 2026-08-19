@@ -8,6 +8,7 @@ Supports both SQLite (local dev) and Postgres (production/Railway).
 
 import os
 import json
+import time
 from pathlib import Path
 from datetime import datetime, timedelta
 
@@ -21,10 +22,10 @@ if USE_POSTGRES:
     from psycopg2 import pool as psycopg2_pool
     from psycopg2.extras import RealDictCursor
     _pg_pool = psycopg2_pool.ThreadedConnectionPool(
-        minconn=2, maxconn=20, dsn=DATABASE_URL,
+        minconn=2, maxconn=50, dsn=DATABASE_URL,
         cursor_factory=RealDictCursor
     )
-    print("[DB] Using Postgres (DATABASE_URL detected) with connection pool (2-20 connections)")
+    print("[DB] Using Postgres (DATABASE_URL detected) with connection pool (2-50 connections)")
 else:
     import sqlite3
     DB_PATH = Path(__file__).parent / "gmail_manager.db"
@@ -42,9 +43,15 @@ def _get_connection():
     global _PLACEHOLDER
     if USE_POSTGRES:
         # Postgres connection from pool
-        conn = _pg_pool.getconn()
-        _PLACEHOLDER = "%s"
-        return conn
+        for attempt in range(5):
+            try:
+                conn = _pg_pool.getconn()
+                _PLACEHOLDER = "%s"
+                return conn
+            except psycopg2_pool.PoolError:
+                if attempt == 4:
+                    raise
+                time.sleep(0.1 * (2 ** attempt))
     else:
         # SQLite connection (local development)
         conn = sqlite3.connect(str(DB_PATH), timeout=30.0)
@@ -889,6 +896,45 @@ def add_to_retry_queue(email_id: str, error_reason: str) -> None:
 
         conn.commit()
         print(f"[DB] Added/updated {email_id[:12]}... in retry queue")
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        _release_connection(conn)
+
+
+def get_pending_retry_queue(user_id: int, max_retries: int = 5) -> list[dict]:
+    """Return retryable queue rows for a user below the retry limit."""
+    conn = _get_connection()
+    try:
+        cursor = conn.cursor()
+        _execute(cursor, """
+            SELECT rq.retry_id, rq.email_id, rq.retry_count, rq.last_attempted, rq.error_reason,
+                   ae.subject, ae.sender, ae.snippet, ae.body
+            FROM retry_queue rq
+            JOIN analyzed_emails ae ON rq.email_id = ae.email_id
+            WHERE ae.user_id = %s AND rq.retry_count < %s
+            ORDER BY rq.last_attempted ASC
+        """, (user_id, max_retries))
+        return [dict(row) for row in cursor.fetchall()]
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        _release_connection(conn)
+
+
+def mark_retry_attempt(email_id: str) -> None:
+    """Increment retry count and record the current retry attempt."""
+    conn = _get_connection()
+    try:
+        cursor = conn.cursor()
+        _execute(cursor, """
+            UPDATE retry_queue
+            SET retry_count = retry_count + 1, last_attempted = CURRENT_TIMESTAMP
+            WHERE email_id = %s
+        """, (email_id,))
+        conn.commit()
     except Exception:
         conn.rollback()
         raise
