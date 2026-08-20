@@ -856,11 +856,16 @@ async def get_pending_count(request: Request):
 
 
 @app.post("/emails/apply-all-pending")
-async def apply_all_pending(request: Request):
+async def apply_all_pending(request: Request, limit: int = None):
     """
-    POST /emails/apply-all-pending — Apply all unapplied labels to Gmail.
-    Processes all emails where status='labeled' AND applied_to_gmail=0.
+    POST /emails/apply-all-pending — Apply unapplied labels to Gmail.
+    Processes emails where status='labeled' AND applied_to_gmail=0.
     Uses _sync_label_to_gmail() which handles label removal correctly.
+    
+    Args:
+        limit: Optional batch size limit. If provided, only processes up to 
+               that many pending emails per call. Allows frontend to call in 
+               smaller batches (e.g. 100 at a time) to avoid request timeouts.
     """
     if not _is_authenticated(request):
         return JSONResponse(status_code=401, content={"error": "Not logged in."})
@@ -869,15 +874,25 @@ async def apply_all_pending(request: Request):
     if not user_id:
         return JSONResponse(status_code=401, content={"error": "User session not found."})
 
-    # Get all pending email IDs from DB
+    # Get pending email IDs from DB (with optional limit)
     conn = _get_connection()
     cursor = conn.cursor()
-    _execute(cursor, f"""
-        SELECT email_id
-        FROM analyzed_emails
-        WHERE user_id = %s
-{PENDING_GMAIL_SYNC_CONDITION}
-    """, (user_id,))
+    
+    if limit is not None and limit > 0:
+        _execute(cursor, f"""
+            SELECT email_id
+            FROM analyzed_emails
+            WHERE user_id = %s
+    {PENDING_GMAIL_SYNC_CONDITION}
+            LIMIT %s
+        """, (user_id, limit))
+    else:
+        _execute(cursor, f"""
+            SELECT email_id
+            FROM analyzed_emails
+            WHERE user_id = %s
+    {PENDING_GMAIL_SYNC_CONDITION}
+        """, (user_id,))
 
     pending_emails = [row['email_id'] for row in cursor.fetchall()]
     _release_connection(conn)
@@ -901,19 +916,27 @@ async def apply_all_pending(request: Request):
         lbl["name"]: lbl["id"] for lbl in gmail_labels_result.get("labels", [])
     }
 
-    # Apply each using corrected _sync_label_to_gmail()
-    applied = 0
-    failed = 0
-    errors = []
-
-    for email_id in pending_emails:
-        result = _sync_label_to_gmail(email_id, user_id, user_email, gmail_labels_cache)
-
-        if result["success"]:
-            applied += 1
-        else:
-            failed += 1
-            errors.append({"email_id": email_id, "error": result["error"]})
+    # Move the entire sync loop off the event loop using asyncio.to_thread()
+    # This prevents blocking the single-worker process during large batches
+    def _apply_batch():
+        """Synchronous function to process the batch off the event loop."""
+        applied = 0
+        failed = 0
+        errors = []
+        
+        for email_id in pending_emails:
+            result = _sync_label_to_gmail(email_id, user_id, user_email, gmail_labels_cache)
+            
+            if result["success"]:
+                applied += 1
+            else:
+                failed += 1
+                errors.append({"email_id": email_id, "error": result["error"]})
+        
+        return applied, failed, errors
+    
+    # Run the blocking batch processing in a thread pool
+    applied, failed, errors = await asyncio.to_thread(_apply_batch)
 
     return {
         "success": True,

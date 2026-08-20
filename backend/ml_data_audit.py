@@ -14,7 +14,8 @@ def audit_data():
         print("=" * 60)
         
         _execute(cur, "SELECT COUNT(*) as total FROM analyzed_emails")
-        total = cur.fetchone()[0]
+        row = cur.fetchone()
+        total = row['total'] if isinstance(row, dict) else row[0]
         print(f"\nTotal analyzed emails: {total}")
         
         _execute(cur, """
@@ -25,17 +26,17 @@ def audit_data():
         """)
         print("\nLabel distribution:")
         for row in cur.fetchall():
-            label = row[0] if row[0] else "NULL"
-            count = row[1]
+            label = (row['label_id'] if isinstance(row, dict) else row[0]) or "NULL"
+            count = row['count'] if isinstance(row, dict) else row[1]
             pct = (count / total * 100) if total > 0 else 0
             print(f"  Label {label}: {count} rows ({pct:.1f}%)")
         
         _execute(cur, """
             SELECT 
                 CASE 
-                    WHEN scam_score < 0.3 THEN 'low (0-0.3)'
-                    WHEN scam_score < 0.6 THEN 'medium (0.3-0.6)'
-                    ELSE 'high (0.6-1.0)'
+                    WHEN scam_score < 30 THEN 'low (0-30)'
+                    WHEN scam_score < 60 THEN 'medium (30-60)'
+                    ELSE 'high (60-100)'
                 END as risk_bucket,
                 COUNT(*) as count
             FROM analyzed_emails
@@ -45,14 +46,17 @@ def audit_data():
         """)
         print("\nScam score distribution:")
         for row in cur.fetchall():
-            print(f"  {row[0]}: {row[1]} rows")
+            bucket = row['risk_bucket'] if isinstance(row, dict) else row[0]
+            count = row['count'] if isinstance(row, dict) else row[1]
+            print(f"  {bucket}: {count} rows")
         
         _execute(cur, """
             SELECT COUNT(*) 
             FROM analyzed_emails 
             WHERE label_id IS NOT NULL AND scam_score IS NOT NULL
         """)
-        labeled_count = cur.fetchone()[0]
+        row = cur.fetchone()
+        labeled_count = row[0] if isinstance(row, tuple) else (row['count'] if 'count' in row else row[list(row.keys())[0]])
         print(f"\nRows with both label_id and scam_score: {labeled_count}")
         
         print("\n" + "=" * 60)
