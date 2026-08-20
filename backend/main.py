@@ -308,6 +308,16 @@ async def auth_callback(request: Request):
         )
 
 
+@app.get("/ml/status")
+async def ml_status():
+    '''GET /ml/status - Check if ML model is loaded'''
+    from ml_inference import is_model_available, _MODEL_VERSION
+    return {
+        'model_loaded': is_model_available(),
+        'model_version': _MODEL_VERSION,
+        'timestamp': '2026-08-20T03:57:00Z'
+    }
+
 @app.get("/auth/status")
 async def auth_status(request: Request):
     """GET /auth/status — Returns login status and user email. Supports JWT and session auth."""
@@ -1543,3 +1553,4 @@ if __name__ == "__main__":
         reload=True,
         log_level="info",
     )
+
