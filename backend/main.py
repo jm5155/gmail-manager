@@ -183,6 +183,8 @@ PENDING_GMAIL_SYNC_CONDITION = """
 @app.on_event("startup")
 async def startup_event():
     """Initialize the database and ML model on server startup."""
+    print("[STARTUP] BEGIN - Railway deployment 2026-08-20T04:05Z")
+    
     # Set explicit thread pool size for asyncio.to_thread() to prevent exhaustion
     import asyncio
     from concurrent.futures import ThreadPoolExecutor
@@ -190,17 +192,27 @@ async def startup_event():
     loop.set_default_executor(ThreadPoolExecutor(max_workers=32))
     print("[SERVER] Configured asyncio executor with 32 worker threads")
     
+    print("[STARTUP] Calling init_db()...")
     init_db()
+    print("[STARTUP] init_db() complete")
     
     # Load active ML model if available
-    load_active_model()
+    print("[STARTUP] Calling load_active_model()...")
+    try:
+        load_active_model()
+        print("[STARTUP] load_active_model() complete")
+    except Exception as e:
+        print(f"[STARTUP ERROR] load_active_model() failed: {e}")
+        import traceback
+        traceback.print_exc()
     
     # Import legacy file-based tokens into the DB (no-op on ephemeral hosts with no files)
     try:
         migrate_legacy_tokens()
     except Exception as e:
         print(f"[SERVER] Token migration skipped: {e}")
-    print("[SERVER] Gmail Manager API started on port 8000")
+    
+    print("[STARTUP] COMPLETE - Gmail Manager API ready on port 8000")
 
 
 # ---------- AUTH ENDPOINTS ----------
