@@ -2,6 +2,7 @@
 Phase 6: ML Inference Module
 Loads trained model at startup and provides prediction API.
 Designed for async FastAPI integration with asyncio.to_thread wrapping.
+Deployment: 2026-08-20 03:38 UTC - ML model v20260820_001758 active
 """
 import pickle
 import asyncio
