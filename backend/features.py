@@ -195,11 +195,16 @@ def get_sender_history(sender: str, conn) -> Dict[str, Any]:
     """, (sender,))
     
     row = cursor.fetchone()
-    if row and row[0] > 0:
-        return {
-            'sent_count': row[0] or 0,
-            'scam_count': row[1] or 0,
-            'avg_score': float(row[2]) if row[2] is not None else 0.5
-        }
+    if row:
+        sent_count = row['sent_count'] if isinstance(row, dict) else row[0]
+        scam_count = row['scam_count'] if isinstance(row, dict) else row[1]
+        avg_score = row['avg_score'] if isinstance(row, dict) else row[2]
+        
+        if sent_count and sent_count > 0:
+            return {
+                'sent_count': sent_count or 0,
+                'scam_count': scam_count or 0,
+                'avg_score': float(avg_score) if avg_score is not None else 0.5
+            }
     
     return {'sent_count': 0, 'scam_count': 0, 'avg_score': 0.5}

@@ -47,6 +47,37 @@ def load_training_data():
                 f"Run AI cascade longer before training ML model."
             )
         
+        # OPTIMIZATION: Batch sender history lookups to avoid N+1 query problem
+        # Original approach: get_sender_history() called once per row = ~2,900 queries
+        # New approach: Single GROUP BY query for all senders = 1 query
+        print("Computing sender histories (batched)...")
+        _execute(cursor, """
+            SELECT 
+                sender,
+                COUNT(*) as sent_count,
+                SUM(CASE WHEN scam_score >= 60 THEN 1 ELSE 0 END) as scam_count,
+                AVG(scam_score) as avg_score
+            FROM analyzed_emails
+            WHERE scam_score IS NOT NULL
+            GROUP BY sender
+        """)
+        
+        # Build in-memory lookup dict: sender -> {sent_count, scam_count, avg_score}
+        sender_history_cache = {}
+        for hist_row in cursor.fetchall():
+            sender = hist_row['sender'] if isinstance(hist_row, dict) else hist_row[0]
+            sent_count = hist_row['sent_count'] if isinstance(hist_row, dict) else hist_row[1]
+            scam_count = hist_row['scam_count'] if isinstance(hist_row, dict) else hist_row[2]
+            avg_score = hist_row['avg_score'] if isinstance(hist_row, dict) else hist_row[3]
+            
+            sender_history_cache[sender] = {
+                'sent_count': sent_count or 0,
+                'scam_count': scam_count or 0,
+                'avg_score': float(avg_score) if avg_score is not None else 0.5
+            }
+        
+        print(f"Cached history for {len(sender_history_cache)} unique senders")
+        
         X_features = []
         X_text = []
         y_labels = []
@@ -54,11 +85,19 @@ def load_training_data():
         providers = []
         
         for row in rows:
-            sender_hist = get_sender_history(row['sender'] if isinstance(row, dict) else row[2], conn)
+            sender = row['sender'] if isinstance(row, dict) else row[2]
+            
+            # Look up pre-computed sender history from cache
+            # Fallback to default if sender not in cache (same as get_sender_history)
+            sender_hist = sender_history_cache.get(sender, {
+                'sent_count': 0, 
+                'scam_count': 0, 
+                'avg_score': 0.5
+            })
             
             features = extract_features(
                 subject=row['subject'] if isinstance(row, dict) else row[1],
-                sender=row['sender'] if isinstance(row, dict) else row[2],
+                sender=sender,
                 body=row['body'] if isinstance(row, dict) else row[3],
                 snippet=row['snippet'] if isinstance(row, dict) else row[4],
                 sender_history=sender_hist
@@ -122,30 +161,54 @@ def train_model(X_features, X_text, y_labels, min_rows_per_class=MIN_ROWS_PER_CL
     from scipy.sparse import hstack
     import pandas as pd
     
-    train_struct = pd.DataFrame(train_feat).fillna(0).values
-    cal_struct = pd.DataFrame(cal_feat).fillna(0).values
-    test_struct = pd.DataFrame(test_feat).fillna(0).values
+    # Convert feature dicts to DataFrame and select only numeric columns
+    # (sender_domain is a string and can't be used in sparse matrix)
+    train_struct_df = pd.DataFrame(train_feat).fillna(0)
+    train_struct = train_struct_df.select_dtypes(include=[np.number]).values
+    
+    cal_struct_df = pd.DataFrame(cal_feat).fillna(0)
+    cal_struct = cal_struct_df.select_dtypes(include=[np.number]).values
+    
+    test_struct_df = pd.DataFrame(test_feat).fillna(0)
+    test_struct = test_struct_df.select_dtypes(include=[np.number]).values
     
     X_train_combined = hstack([train_text_features, train_struct])
     X_cal_combined = hstack([cal_text_features, cal_struct])
     X_test_combined = hstack([test_text_features, test_struct])
     
+    print("Training base classifier...")
     base_clf = LogisticRegression(
-        max_iter=1000, 
+        max_iter=2000,  # Increased from 1000 to help convergence
         class_weight='balanced',
         random_state=42
     )
-    
-    print("Training base classifier...")
     base_clf.fit(X_train_combined, y_train)
     
     print("Calibrating with isotonic regression...")
+    # sklearn 1.9.0: Use CalibratedClassifierCV with custom CV split
+    # Train on train set, calibrate on cal set, validate on test set
+    from sklearn.model_selection import PredefinedSplit
+    from scipy.sparse import vstack
+    
+    # Combine train + cal for calibrated training
+    X_train_cal_combined = vstack([X_train_combined, X_cal_combined])
+    y_train_cal = list(y_train) + list(y_cal)
+    
+    # Create split indicator: -1 = training fold, 0 = calibration fold
+    test_fold = [-1] * len(y_train) + [0] * len(y_cal)
+    ps = PredefinedSplit(test_fold)
+    
+    # Train with calibration
     calibrated_clf = CalibratedClassifierCV(
-        base_clf, 
+        estimator=LogisticRegression(
+            max_iter=2000,
+            class_weight='balanced',
+            random_state=42
+        ),
         method='isotonic',
-        cv='prefit'
+        cv=ps
     )
-    calibrated_clf.fit(X_cal_combined, y_cal)
+    calibrated_clf.fit(X_train_cal_combined, y_train_cal)
     
     y_pred = calibrated_clf.predict(X_test_combined)
     y_proba = calibrated_clf.predict_proba(X_test_combined)
