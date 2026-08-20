@@ -1310,20 +1310,31 @@ async def reanalyze_scam_email(email_id: str, request: Request, user: dict = Dep
     # Step B — URL extraction and Google Safe Browsing scan
     from security import extract_urls, scan_url
     urls = extract_urls(body)
-    url_threat_found = False
+    
+    # Three-state signal: confirmed_threat (verdict_unsafe), scan_unavailable (scan_failed), or no threat
+    url_threat_confirmed = False
+    url_scan_unavailable = False
+    
     if urls:
         async with httpx.AsyncClient(timeout=10.0) as url_client:
             url_semaphore = asyncio.Semaphore(10)
             scan_tasks = [scan_url(url, email_id, url_client, url_semaphore) for url in urls]
             results = await asyncio.gather(*scan_tasks)
-            url_threat_found = any(r["is_safe"] == 0 for r in results)
+            
+            # Separate real threats (is_safe=0, threat_type set) from scan failures (is_safe=None or scan_failed=True)
+            for r in results:
+                if r.get("is_safe") == 0 and r.get("threat_type") is not None:
+                    url_threat_confirmed = True  # API confirmed real threat
+                elif r.get("scan_failed") or r.get("is_safe") is None:
+                    url_scan_unavailable = True  # API call failed, no verdict obtained
 
     # Step C — AI cascade classification and scam scoring
     prompt = CLASSIFICATION_PROMPT.format(
         sender=sender,
         subject=subject,
         body=body[:1500],
-        url_threat_found=url_threat_found,
+        url_threat_confirmed=url_threat_confirmed,
+        url_scan_unavailable=url_scan_unavailable,
         available_labels=", ".join(available_label_names),
     )
     ai_result = await ai_router.analyze_json(prompt)
@@ -1363,7 +1374,7 @@ async def reanalyze_scam_email(email_id: str, request: Request, user: dict = Dep
     # Quarantine flag — same rule as the bulk pipeline
     is_quarantined = 0
     label_is_spam_like = label == "Spam" or "scam" in label.lower()
-    if scam_score >= 70 and url_threat_found and label_is_spam_like:
+    if scam_score >= 70 and url_threat_confirmed and label_is_spam_like:
         is_quarantined = 1
 
     # Resolve label_id and persist

@@ -107,7 +107,7 @@ COHERE_RATE_LIMITER = _FixedWindowRateLimiter(max_calls=20, period=60.0, max_wai
 
 # ---------- PROMPT TEMPLATES ----------
 
-CLASSIFICATION_PROMPT = """You are an email classification and scam detection AI. You will be given an email's sender, subject, body, a flag indicating if a malicious URL was found in the email, and a list of available classification labels.
+CLASSIFICATION_PROMPT = """You are an email classification and scam detection AI. You will be given an email's sender, subject, body, URL security scan results, and a list of available classification labels.
 
 Your job is to:
 1. Classify the email into exactly ONE label from the provided available_labels list. You MUST copy the label name EXACTLY as it appears in the list, character-for-character, with exact capitalization and spacing. Do not paraphrase or use similar words.
@@ -118,7 +118,8 @@ Your job is to:
 IMPORTANT: The "label" field in your JSON response must be an EXACT MATCH (including capitalization) to one of the labels in the Available Labels list below. If none fit perfectly, choose the closest match from the list and copy its exact spelling.
 
 Use these rules when deciding the scam_score:
-- If url_threat_found is true, the scam_score must be at least 70.
+- If url_threat_confirmed is true, a malicious URL was confirmed by Google Safe Browsing - the scam_score must be at least 70.
+- If url_scan_unavailable is true, URL scanning failed (network error, timeout, etc.) - treat this as NEUTRAL information. Do not increase the score solely because scanning failed. Base your score on the email's content, sender, and other indicators.
 - If the email contains urgency language such as "act now", "limited time", "your account will be suspended", "verify immediately", or similar phrases, add 20 to the base score.
 - If the sender domain does not match the brand or company name mentioned in the subject or body, add 15 to the base score.
 - If the email offers prizes, lottery winnings, inheritance, or unexpected money, add 25 to the base score.
@@ -131,7 +132,8 @@ Input:
 Sender: {sender}
 Subject: {subject}
 Body: {body}
-URL Threat Found: {url_threat_found}
+URL Threat Confirmed (Google Safe Browsing): {url_threat_confirmed}
+URL Scan Unavailable (network/API failure): {url_scan_unavailable}
 Available Labels: {available_labels}
 
 Remember: Copy one label from the Available Labels list EXACTLY as written above.

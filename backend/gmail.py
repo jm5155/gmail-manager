@@ -789,11 +789,27 @@ async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
             if len(urls) > 10:
                 print(f"[SECURITY] Capping URL scan from {len(urls)} to 10 URLs for email {email_id[:12]}...")
                 urls = urls[:10]
-            url_threat_found = False
+            
+            # Three-state signal: confirmed_threat (verdict_unsafe), scan_unavailable (scan_failed), or no threat
+            url_threat_confirmed = False
+            url_scan_unavailable = False
+            
             if urls:
                 scan_tasks = [scan_url(url, email_id, url_client, url_semaphore) for url in urls]
                 results = await asyncio.gather(*scan_tasks)
-                url_threat_found = any(r["is_safe"] == 0 for r in results)
+                
+                # Separate real threats (is_safe=0, threat_type set) from scan failures (is_safe=None or scan_failed=True)
+                for r in results:
+                    if r.get("is_safe") == 0 and r.get("threat_type") is not None:
+                        url_threat_confirmed = True  # API confirmed real threat
+                    elif r.get("scan_failed") or r.get("is_safe") is None:
+                        url_scan_unavailable = True  # API call failed, no verdict obtained
+                
+                if url_threat_confirmed:
+                    print(f"[SECURITY] Confirmed URL threat for email {email_id[:12]}...")
+                if url_scan_unavailable:
+                    print(f"[SECURITY] URL scan unavailable for some URLs in email {email_id[:12]}...")
+            
             t_url_scan = time.perf_counter() - t0
 
             # Step C — ML model pre-filter (Phase 6: hybrid routing)
@@ -828,7 +844,8 @@ async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
                     sender=sender,
                     subject=subject,
                     body=body[:1500],  # First 1500 characters, truncated
-                    url_threat_found=url_threat_found,
+                    url_threat_confirmed=url_threat_confirmed,
+                    url_scan_unavailable=url_scan_unavailable,
                     available_labels=", ".join(available_label_names),
                 )
 
@@ -914,7 +931,7 @@ async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
             # is_quarantined = 1 if ALL THREE conditions are true
             is_quarantined = 0
             label_is_spam_like = label == "Spam" or "scam" in label.lower()
-            if scam_score >= 70 and url_threat_found and label_is_spam_like:
+            if scam_score >= 70 and url_threat_confirmed and label_is_spam_like:
                 is_quarantined = 1
 
             # Step G — Resolve label_id
@@ -932,6 +949,9 @@ async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
                     scam_indicators=json.dumps(scam_indicators),
                     is_quarantined=is_quarantined,
                     status='labeled',
+                    source=source,
+                    ml_confidence=ml_confidence if source == 'ml' else None,
+                    provider_used=provider_used,
                 )
             else:
                 # New email from analyze_bulk_ordered (overwrites placeholder)
@@ -997,6 +1017,9 @@ async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
                         scam_indicators='[]',
                         is_quarantined=0,
                         status='failed',      # Marks as failed, not fetched
+                        source='ai',          # Default to ai since analysis was attempted
+                        ml_confidence=None,
+                        provider_used=None,   # NULL for failed analysis (no provider succeeded)
                     )
                 else:
                     # INSERT placeholder for new emails (original behavior)

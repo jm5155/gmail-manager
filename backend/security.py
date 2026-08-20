@@ -148,9 +148,17 @@ async def scan_url(url: str, email_id: str,
         },
     }
 
-    is_safe = 0  # Default to UNSAFE when API call fails (security-first)
+    # Three-state result: None = scan_failed, 0 = verdict_unsafe, 1 = verdict_safe
+    # Using None instead of is_safe=0 prevents conflating "API error" with "confirmed threat"
+    is_safe = None  # Default to None when scan hasn't completed yet
     threat_type = None
+    scan_failed = False
 
+    exception_type = None
+    exception_message = None
+    response_status = None
+    response_body = None
+    
     try:
         async with semaphore:
             response = await client.post(
@@ -158,29 +166,141 @@ async def scan_url(url: str, email_id: str,
                 json=body,
                 timeout=URL_CHECK_TIMEOUT_SECONDS,
             )
+        
+        response_status = response.status_code
 
         if response.status_code != 200:
+            # Capture response body for diagnosis
+            try:
+                response_body = response.text[:500]  # First 500 chars
+            except:
+                response_body = "<unable to read response body>"
+            
             print(f"[SECURITY] Safe Browsing API error: {response.status_code}")
+            print(f"[SECURITY] Response body: {response_body}")
+            
+            # Check for specific error types
+            if response.status_code == 429:
+                print(f"[SECURITY] DIAGNOSIS: Rate limit / quota exceeded (HTTP 429)")
+                exception_type = "RATE_LIMIT"
+                exception_message = f"HTTP 429: {response_body}"
+            elif response.status_code == 400:
+                print(f"[SECURITY] DIAGNOSIS: Bad request / malformed URL (HTTP 400)")
+                exception_type = "BAD_REQUEST"
+                exception_message = f"HTTP 400: {response_body}"
+            elif response.status_code >= 500:
+                print(f"[SECURITY] DIAGNOSIS: Server error (HTTP {response.status_code})")
+                exception_type = "SERVER_ERROR"
+                exception_message = f"HTTP {response.status_code}: {response_body}"
+            else:
+                exception_type = f"HTTP_{response.status_code}"
+                exception_message = response_body
+            
+            scan_failed = True
         else:
             data = response.json()
             if data.get("matches"):
-                is_safe = 0
+                is_safe = 0  # verdict_unsafe: API confirmed threat
                 threat_type = data["matches"][0].get("threatType", "UNKNOWN")
                 print(f"[SECURITY] WARNING: UNSAFE URL detected: {url[:60]} - {threat_type}")
             else:
                 # API returned 200 with no matches = safe
-                is_safe = 1
+                is_safe = 1  # verdict_safe: API confirmed safe
 
+    except asyncio.TimeoutError as e:
+        import traceback
+        exception_type = "TIMEOUT"
+        exception_message = f"Timeout after {URL_CHECK_TIMEOUT_SECONDS}s"
+        print(f"[SECURITY] DIAGNOSIS: Timeout checking URL {url[:60]}")
+        print(f"[SECURITY] Timeout value: {URL_CHECK_TIMEOUT_SECONDS}s")
+        print(f"[SECURITY] Full traceback:\n{traceback.format_exc()}")
+        scan_failed = True
+    except httpx.TimeoutException as e:
+        import traceback
+        exception_type = "TIMEOUT"
+        exception_message = f"httpx.TimeoutException: {str(e)}"
+        print(f"[SECURITY] DIAGNOSIS: httpx Timeout checking URL {url[:60]}")
+        print(f"[SECURITY] Timeout value: {URL_CHECK_TIMEOUT_SECONDS}s")
+        print(f"[SECURITY] Exception details: {e!r}")
+        print(f"[SECURITY] Full traceback:\n{traceback.format_exc()}")
+        scan_failed = True
+    except httpx.HTTPStatusError as e:
+        import traceback
+        exception_type = "HTTP_ERROR"
+        exception_message = f"HTTPStatusError: {e.response.status_code}"
+        response_status = e.response.status_code
+        print(f"[SECURITY] DIAGNOSIS: HTTP status error for {url[:60]}: {e.response.status_code}")
+        print(f"[SECURITY] Full traceback:\n{traceback.format_exc()}")
+        scan_failed = True
     except Exception as e:
         import traceback
-        print(f"[SECURITY] Error checking URL safety for {url[:60]}: {type(e).__name__}: {e!r}")
+        exception_type = type(e).__name__
+        exception_message = str(e)
+        print(f"[SECURITY] DIAGNOSIS: {exception_type} checking URL {url[:60]}: {e!r}")
         print(f"[SECURITY] Full traceback:\n{traceback.format_exc()}")
-        # is_safe already defaulted to 0 (unsafe) when connection fails
+        scan_failed = True
 
     # Step 4: Save results to persistent and in-memory caches.
-    async with _cache_lock:
-        URL_SAFETY_CACHE[url] = (is_safe, threat_type)
-    # Offload blocking DB call to thread to prevent event loop blocking
-    await asyncio.to_thread(save_url_result, email_id, url, is_safe, threat_type)
+    # Only cache actual verdicts (is_safe = 0 or 1), not scan failures (is_safe = None)
+    if is_safe is not None:
+        async with _cache_lock:
+            URL_SAFETY_CACHE[url] = (is_safe, threat_type)
+        # Offload blocking DB call to thread to prevent event loop blocking
+        await asyncio.to_thread(save_url_result, email_id, url, is_safe, threat_type)
+    else:
+        print(f"[SECURITY] Scan failed for {url[:60]}, not caching result")
+        # Log scan failure for diagnosis (Step 4 of task)
+        await _log_scan_failure(url, email_id, exception_type, exception_message, response_status)
 
-    return {"url": url, "is_safe": is_safe, "threat_type": threat_type}
+    return {
+        "url": url, 
+        "is_safe": is_safe,  # None = scan_failed, 0 = verdict_unsafe, 1 = verdict_safe
+        "threat_type": threat_type,
+        "scan_failed": scan_failed
+    }
+
+
+async def _log_scan_failure(url: str, email_id: str, exception_type: str, exception_message: str, response_status: int):
+    """
+    Log scan failures for visibility and diagnosis.
+    Writes to console and attempts to persist to database for queryable history.
+    """
+    from datetime import datetime
+    timestamp = datetime.utcnow().isoformat()
+    
+    print(f"[SECURITY] SCAN_FAILURE_LOG | {timestamp} | {exception_type} | {url[:80]} | {exception_message[:200]}")
+    
+    # Attempt to save to database for queryable record
+    try:
+        from database import _get_connection, _execute, _release_connection
+        conn = _get_connection()
+        try:
+            cursor = conn.cursor()
+            
+            # Check if scan_failures table exists, create if not
+            _execute(cursor, """
+                CREATE TABLE IF NOT EXISTS scan_failures (
+                    failure_id SERIAL PRIMARY KEY,
+                    timestamp TIMESTAMP DEFAULT NOW(),
+                    url TEXT NOT NULL,
+                    email_id TEXT,
+                    exception_type TEXT,
+                    exception_message TEXT,
+                    response_status INTEGER
+                )
+            """)
+            
+            # Insert failure record
+            _execute(cursor, """
+                INSERT INTO scan_failures (url, email_id, exception_type, exception_message, response_status)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (url, email_id, exception_type, exception_message, response_status))
+            
+            conn.commit()
+        except Exception as db_err:
+            print(f"[SECURITY] Warning: Could not persist scan failure to database: {db_err}")
+        finally:
+            _release_connection(conn)
+    except Exception as e:
+        # Don't let logging failures break the main flow
+        print(f"[SECURITY] Warning: Failed to log scan failure: {e}")
