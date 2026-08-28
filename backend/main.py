@@ -210,9 +210,7 @@ async def startup_event():
         load_active_model()
         logger.info("[STARTUP] load_active_model() complete")
     except Exception as e:
-        logger.error(f"[STARTUP ERROR] load_active_model() failed: {e}")
-        import traceback
-        traceback.print_exc()
+        logger.error(f"[STARTUP ERROR] load_active_model() failed: {e}", exc_info=True)
     
     # Import legacy file-based tokens into the DB (no-op on ephemeral hosts with no files)
     try:
@@ -440,9 +438,7 @@ async def emails_get(request: Request, user: dict = Depends(require_auth)):
         logger.info(f"[EMAILS-GET] Found {len(emails)} emails")
         return {"emails": emails, "count": len(emails)}
     except Exception as e:
-        logger.error(f"[EMAILS-GET ERROR] {type(e).__name__}: {str(e)}")
-        import traceback
-        traceback.print_exc()
+        logger.error(f"[EMAILS-GET ERROR] {type(e).__name__}: {str(e)}", exc_info=True)
         return JSONResponse(status_code=500, content={"error": "Failed to fetch emails. Please try again."})
 
 
@@ -834,9 +830,7 @@ async def get_pending_count(request: Request, user: dict = Depends(require_auth)
         finally:
             _release_connection(conn)
     except Exception as e:
-        logger.error(f"[PENDING-COUNT ERROR] {type(e).__name__}: {str(e)}")
-        import traceback
-        traceback.print_exc()
+        logger.error(f"[PENDING-COUNT ERROR] {type(e).__name__}: {str(e)}", exc_info=True)
         return JSONResponse(status_code=500, content={"error": "Failed to fetch pending count. Please try again."})
 
 
@@ -1406,9 +1400,7 @@ async def retry_failed_emails(request: Request, user: dict = Depends(require_aut
         }
 
     except Exception as e:
-        logger.error(f"[RETRY ERROR] {type(e).__name__}: {str(e)}")
-        import traceback
-        traceback.print_exc()
+        logger.error(f"[RETRY ERROR] {type(e).__name__}: {str(e)}", exc_info=True)
         return JSONResponse(status_code=500, content={"error": "Failed to retry emails. Please try again."})
 
 
