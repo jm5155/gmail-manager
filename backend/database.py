@@ -6,6 +6,9 @@ All queries are parameterized to prevent SQL injection.
 Supports both SQLite (local dev) and Postgres (production/Railway).
 """
 
+from logger_setup import get_logger
+logger = get_logger(__name__)
+
 import os
 import json
 import time
@@ -25,11 +28,11 @@ if USE_POSTGRES:
         minconn=2, maxconn=50, dsn=DATABASE_URL,
         cursor_factory=RealDictCursor
     )
-    print("[DB] Using Postgres (DATABASE_URL detected) with connection pool (2-50 connections)")
+    logger.info("[DB] Using Postgres (DATABASE_URL detected) with connection pool (2-50 connections)")
 else:
     import sqlite3
     DB_PATH = Path(__file__).parent / "gmail_manager.db"
-    print(f"[DB] Using SQLite (local dev mode): {DB_PATH}")
+    logger.info(f"[DB] Using SQLite (local dev mode): {DB_PATH}")
 
 
 _PLACEHOLDER = "%s"
@@ -122,18 +125,18 @@ def init_db():
         if not USE_POSTGRES:
             if not _column_exists(cursor, "users", "delete_mode"):
                 _execute(cursor, "ALTER TABLE users ADD COLUMN delete_mode TEXT DEFAULT 'trash'")
-                print("[DB] Migrated: added delete_mode column to users table")
+                logger.info("[DB] Migrated: added delete_mode column to users table")
 
         # Migration: add token column (DB-backed OAuth tokens; replaces file storage)
         if not _column_exists(cursor, "users", "token"):
             _execute(cursor, "ALTER TABLE users ADD COLUMN token TEXT")
-            print("[DB] Migrated: added token column to users table")
+            logger.info("[DB] Migrated: added token column to users table")
 
         # Migration: add per-user encrypted AI provider key columns (BYOK feature)
         for col in ("groq_api_key", "gemini_api_key", "cohere_api_key", "nvidia_api_key"):
             if not _column_exists(cursor, "users", col):
                 _execute(cursor, f"ALTER TABLE users ADD COLUMN {col} TEXT")
-                print(f"[DB] Migrated: added {col} column to users table")
+                logger.info(f"[DB] Migrated: added {col} column to users table")
 
         # TABLE 2: custom_labels
         _execute(cursor, f"""
@@ -223,22 +226,22 @@ def init_db():
             columns = [row[1] for row in cursor.fetchall()]
 
         if 'applied_to_gmail' not in columns:
-            print("[DB MIGRATION] Adding applied_to_gmail column to analyzed_emails...")
+            logger.info("[DB MIGRATION] Adding applied_to_gmail column to analyzed_emails...")
             _execute(cursor,"""
                 ALTER TABLE analyzed_emails
                 ADD COLUMN applied_to_gmail INTEGER DEFAULT 0
             """)
             conn.commit()
-            print("[DB MIGRATION] applied_to_gmail column added successfully.")
+            logger.info("[DB MIGRATION] applied_to_gmail column added successfully.")
 
         if 'last_applied_label_id' not in columns:
-            print("[DB MIGRATION] Adding last_applied_label_id column to analyzed_emails...")
+            logger.info("[DB MIGRATION] Adding last_applied_label_id column to analyzed_emails...")
             _execute(cursor,"""
                 ALTER TABLE analyzed_emails
                 ADD COLUMN last_applied_label_id INTEGER DEFAULT NULL
             """)
             conn.commit()
-            print("[DB MIGRATION] last_applied_label_id column added successfully.")
+            logger.info("[DB MIGRATION] last_applied_label_id column added successfully.")
 
         for column, definition in (
             ("source", "TEXT DEFAULT 'ai'"),
@@ -269,7 +272,7 @@ def init_db():
         conn.commit()
         db_type = "Postgres" if USE_POSTGRES else "SQLite"
         db_location = DATABASE_URL[:50] + "..." if USE_POSTGRES else str(DB_PATH)
-        print(f"[DB] Database initialized ({db_type}): {db_location}")
+        logger.info(f"[DB] Database initialized ({db_type}): {db_location}")
     except Exception:
         conn.rollback()
         raise
@@ -307,9 +310,9 @@ def seed_default_labels(user_id: int):
             for default in defaults:
                 _execute(cursor, query, default)
             conn.commit()
-            print(f"[DB] Seeded 8 default labels for user_id={user_id}")
+            logger.info(f"[DB] Seeded 8 default labels for user_id={user_id}")
         else:
-            print(f"[DB] User {user_id} already has {count} labels, skipping seed.")
+            logger.info(f"[DB] User {user_id} already has {count} labels, skipping seed.")
     except Exception:
         conn.rollback()
         raise
@@ -338,7 +341,7 @@ def upsert_user(gmail_address: str, access_token: str) -> int:
         _execute(cursor,"SELECT user_id FROM users WHERE gmail_address = %s", (gmail_address,))
         user_id = cursor.fetchone()['user_id']
 
-        print(f"[DB] Upserted user '{gmail_address}' -> user_id={user_id}")
+        logger.info(f"[DB] Upserted user '{gmail_address}' -> user_id={user_id}")
         return user_id
     except Exception:
         conn.rollback()
@@ -570,7 +573,7 @@ def get_label_id_by_name(user_id: int, label_name: str) -> int:
         fallback = cursor.fetchone()
 
         if fallback:
-            print(f"[DB] Label '{label_name}' not found, falling back to '{fallback[1]}' (id={fallback[0]})")
+            logger.info(f"[DB] Label '{label_name}' not found, falling back to '{fallback[1]}' (id={fallback[0]})")
             return fallback[0]
 
         raise ValueError(f"No labels found for user_id={user_id}. Create at least one label.")
@@ -592,7 +595,7 @@ def add_label(user_id: int, label_name: str, bg_color: str, text_color: str) -> 
         )
         conn.commit()
         label_id = cursor.lastrowid
-        print(f"[DB] Added label '{label_name}' (id={label_id}) for user_id={user_id}")
+        logger.info(f"[DB] Added label '{label_name}' (id={label_id}) for user_id={user_id}")
         return label_id
     except Exception:
         conn.rollback()
@@ -611,7 +614,7 @@ def delete_label(label_id: int, user_id: int) -> None:
             (label_id, user_id),
         )
         conn.commit()
-        print(f"[DB] Deleted label_id={label_id} for user_id={user_id}")
+        logger.info(f"[DB] Deleted label_id={label_id} for user_id={user_id}")
     except Exception:
         conn.rollback()
         raise
@@ -662,7 +665,7 @@ def save_analyzed_email(email_id: str, user_id: int, label_id: int, scam_score: 
             """, (email_id, user_id, label_id, scam_score, scam_indicators, is_quarantined, snippet, sender, subject, status, body, source, ml_confidence, provider_used))
         
         conn.commit()
-        print(f"[DB] Saved email {email_id[:12]}... label_id={label_id}, scam_score={scam_score}, status={status}, source={source}")
+        logger.info(f"[DB] Saved email {email_id[:12]}... label_id={label_id}, scam_score={scam_score}, status={status}, source={source}")
     except Exception:
         conn.rollback()
         raise
@@ -696,7 +699,7 @@ def update_analyzed_email(email_id: str, label_id: int, scam_score: int,
          """, (label_id, scam_score, scam_indicators, is_quarantined, status,
                source, ml_confidence, provider_used, email_id))
         conn.commit()
-        print(f"[DB] Updated email {email_id[:12]}... to status={status}, label_id={label_id}, score={scam_score}")
+        logger.info(f"[DB] Updated email {email_id[:12]}... to status={status}, label_id={label_id}, score={scam_score}")
     except Exception:
         conn.rollback()
         raise
@@ -720,7 +723,7 @@ def update_email_label_id(email_id: str, label_id: int) -> None:
             WHERE email_id = %s
         """, (label_id, email_id))
         conn.commit()
-        print(f"[DB] Updated label_id for email {email_id[:12]}... to {label_id}, marked as pending")
+        logger.info(f"[DB] Updated label_id for email {email_id[:12]}... to {label_id}, marked as pending")
     except Exception:
         conn.rollback()
         raise
@@ -915,7 +918,7 @@ def add_to_retry_queue(email_id: str, error_reason: str) -> None:
 
         if row is not None:
             if row['retry_count'] >= 3:
-                print(f"[DB] Retry limit reached for {email_id[:12]}..., not re-adding")
+                logger.info(f"[DB] Retry limit reached for {email_id[:12]}..., not re-adding")
                 return
             _execute(cursor,
                 """
@@ -935,7 +938,7 @@ def add_to_retry_queue(email_id: str, error_reason: str) -> None:
             )
 
         conn.commit()
-        print(f"[DB] Added/updated {email_id[:12]}... in retry queue")
+        logger.info(f"[DB] Added/updated {email_id[:12]}... in retry queue")
     except Exception:
         conn.rollback()
         raise
@@ -1013,7 +1016,7 @@ def remove_from_retry_queue(email_id: str) -> None:
         cursor = conn.cursor()
         _execute(cursor,"DELETE FROM retry_queue WHERE email_id = %s", (email_id,))
         conn.commit()
-        print(f"[DB] Removed {email_id[:12]}... from retry queue")
+        logger.info(f"[DB] Removed {email_id[:12]}... from retry queue")
     except Exception:
         conn.rollback()
         raise
@@ -1053,7 +1056,7 @@ def save_scan_cursor(user_id: int, last_page_token: str) -> None:
             (user_id, last_page_token),
         )
         conn.commit()
-        print(f"[DB] Saved scan cursor for user_id={user_id}: {last_page_token[:20] if last_page_token else 'None'}...")
+        logger.info(f"[DB] Saved scan cursor for user_id={user_id}: {last_page_token[:20] if last_page_token else 'None'}...")
     except Exception:
         conn.rollback()
         raise
@@ -1071,7 +1074,7 @@ def clear_scan_cursor(user_id: int) -> None:
             (user_id,),
         )
         conn.commit()
-        print(f"[DB] Cleared scan cursor for user_id={user_id}")
+        logger.info(f"[DB] Cleared scan cursor for user_id={user_id}")
     except Exception:
         conn.rollback()
         raise
@@ -1104,7 +1107,7 @@ def reset_database(user_id: int) -> None:
         _execute(cursor,"DELETE FROM scan_cursor WHERE user_id = %s", (user_id,))
 
         conn.commit()
-        print(f"[DB] Reset all analysis data for user_id={user_id}")
+        logger.info(f"[DB] Reset all analysis data for user_id={user_id}")
     except Exception:
         conn.rollback()
         raise
@@ -1122,7 +1125,7 @@ def mark_email_safe(email_id: str, user_id: int) -> None:
             (email_id, user_id),
         )
         conn.commit()
-        print(f"[DB] Marked email {email_id[:12]}... as safe for user_id={user_id}")
+        logger.info(f"[DB] Marked email {email_id[:12]}... as safe for user_id={user_id}")
     except Exception:
         conn.rollback()
         raise
@@ -1159,7 +1162,7 @@ def set_delete_mode(user_id: int, mode: str) -> None:
             (mode, user_id),
         )
         conn.commit()
-        print(f"[DB] Set delete_mode={mode} for user_id={user_id}")
+        logger.info(f"[DB] Set delete_mode={mode} for user_id={user_id}")
     except Exception:
         conn.rollback()
         raise

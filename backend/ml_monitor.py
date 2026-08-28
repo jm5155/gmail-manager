@@ -2,6 +2,10 @@
 Phase 9: ML Pipeline Monitoring Script
 Tracks ML/AI agreement rate, drift detection, and model health.
 """
+
+from logger_setup import get_logger
+logger = get_logger(__name__)
+
 from datetime import datetime, timedelta
 from database import _get_connection, _release_connection, _execute
 from ml_inference import get_disagreement_rate
@@ -13,10 +17,10 @@ def monitor_ml_pipeline():
     try:
         cursor = conn.cursor()
         
-        print("="*80)
-        print("ML PIPELINE MONITORING REPORT")
-        print(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        print("="*80)
+        logger.info("="*80)
+        logger.info("ML PIPELINE MONITORING REPORT")
+        logger.info(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        logger.info("="*80)
         
         # Active model info
         _execute(cursor, """
@@ -28,9 +32,9 @@ def monitor_ml_pipeline():
         model_row = cursor.fetchone()
         
         if not model_row:
-            print("\n⚠ NO ACTIVE MODEL")
-            print("  Status: Running in AI-only mode")
-            print("  Action: Train and activate a model with train_ml_model.py + activate_model.py")
+            logger.info("\n⚠ NO ACTIVE MODEL")
+            logger.info("  Status: Running in AI-only mode")
+            logger.info("  Action: Train and activate a model with train_ml_model.py + activate_model.py")
             return
         
         version = model_row[0] if isinstance(model_row, tuple) else model_row['version']
@@ -40,13 +44,13 @@ def monitor_ml_pipeline():
         recall = model_row[4] if isinstance(model_row, tuple) else model_row['validation_recall']
         cal_err = model_row[5] if isinstance(model_row, tuple) else model_row['calibration_error']
         
-        print("\n[ACTIVE MODEL]")
-        print(f"  Version: {version}")
-        print(f"  Trained: {trained_at}")
-        print(f"  Training rows: {row_count}")
-        print(f"  Validation precision: {precision:.3f}")
-        print(f"  Validation recall: {recall:.3f}")
-        print(f"  Calibration error: {cal_err:.4f}")
+        logger.info("\n[ACTIVE MODEL]")
+        logger.info(f"  Version: {version}")
+        logger.info(f"  Trained: {trained_at}")
+        logger.info(f"  Training rows: {row_count}")
+        logger.info(f"  Validation precision: {precision:.3f}")
+        logger.info(f"  Validation recall: {recall:.3f}")
+        logger.info(f"  Calibration error: {cal_err:.4f}")
         
         # Prediction distribution (last 7 days)
         _execute(cursor, """
@@ -56,7 +60,7 @@ def monitor_ml_pipeline():
             GROUP BY source
         """)
         
-        print("\n[PREDICTION SOURCES - Last 7 days]")
+        logger.info("\n[PREDICTION SOURCES - Last 7 days]")
         source_counts = {}
         total = 0
         for row in cursor.fetchall():
@@ -66,27 +70,27 @@ def monitor_ml_pipeline():
             total += count
         
         if total == 0:
-            print("  No emails analyzed in last 7 days")
+            logger.info("  No emails analyzed in last 7 days")
         else:
             for source in ['ml', 'ai', 'ml_audit_escalated']:
                 count = source_counts.get(source, 0)
                 pct = (count / total * 100) if total > 0 else 0
-                print(f"  {source:20s}: {count:5d} ({pct:5.1f}%)")
+                logger.info(f"  {source:20s}: {count:5d} ({pct:5.1f}%)")
         
         # Disagreement rate monitoring (drift detection)
         for days in [1, 7, 30]:
             rate = get_disagreement_rate(days)
-            print(f"\n[DISAGREEMENT RATE - Last {days} days]")
-            print(f"  Rate: {rate:.1%}")
+            logger.info(f"\n[DISAGREEMENT RATE - Last {days} days]")
+            logger.info(f"  Rate: {rate:.1%}")
             
             if rate > 0.25:
-                print(f"  ⚠ WARNING: High disagreement rate (>{25:.0%})")
-                print("  Action: Review recent disagreements and consider retraining")
+                logger.info(f"  ⚠ WARNING: High disagreement rate (>{25:.0%})")
+                logger.info("  Action: Review recent disagreements and consider retraining")
             elif rate > 0.15:
-                print(f"  ⚠ CAUTION: Elevated disagreement rate (>{15:.0%})")
-                print("  Action: Monitor closely, retrain if trend continues")
+                logger.info(f"  ⚠ CAUTION: Elevated disagreement rate (>{15:.0%})")
+                logger.info("  Action: Monitor closely, retrain if trend continues")
             else:
-                print("  ✓ Normal range")
+                logger.info("  ✓ Normal range")
         
         # Recent disagreements
         _execute(cursor, """
@@ -104,8 +108,8 @@ def monitor_ml_pipeline():
         
         disagreement_rows = cursor.fetchall()
         if disagreement_rows:
-            print("\n[RECENT DISAGREEMENTS - Last 3 days]")
-            print("  (Showing up to 10 most recent)")
+            logger.info("\n[RECENT DISAGREEMENTS - Last 3 days]")
+            logger.info("  (Showing up to 10 most recent)")
             for row in disagreement_rows:
                 email_id = (row[0] if isinstance(row, tuple) else row['email_id'])[:12]
                 ml_pred = row[1] if isinstance(row, tuple) else row['ml_prediction']
@@ -114,10 +118,10 @@ def monitor_ml_pipeline():
                 logged_at = row[5] if isinstance(row, tuple) else row['logged_at']
                 subject = (row[6] if isinstance(row, tuple) else row['subject'])[:40]
                 
-                print(f"\n  Email: {email_id}... | {logged_at}")
-                print(f"    Subject: {subject}")
-                print(f"    ML: {ml_pred} (conf={ml_conf:.3f})")
-                print(f"    AI: {ai_pred}")
+                logger.info(f"\n  Email: {email_id}... | {logged_at}")
+                logger.info(f"    Subject: {subject}")
+                logger.info(f"    ML: {ml_pred} (conf={ml_conf:.3f})")
+                logger.info(f"    AI: {ai_pred}")
         
         # ML confidence distribution
         _execute(cursor, """
@@ -136,15 +140,15 @@ def monitor_ml_pipeline():
             GROUP BY conf_bucket
         """)
         
-        print("\n[ML CONFIDENCE DISTRIBUTION - Last 7 days]")
+        logger.info("\n[ML CONFIDENCE DISTRIBUTION - Last 7 days]")
         for row in cursor.fetchall():
             bucket = row[0] if isinstance(row, tuple) else row['conf_bucket']
             count = row[1] if isinstance(row, tuple) else row['count']
-            print(f"  {bucket:25s}: {count:5d}")
+            logger.info(f"  {bucket:25s}: {count:5d}")
         
-        print("\n" + "="*80)
-        print("Report complete")
-        print("="*80)
+        logger.info("\n" + "="*80)
+        logger.info("Report complete")
+        logger.info("="*80)
         
     finally:
         _release_connection(conn)

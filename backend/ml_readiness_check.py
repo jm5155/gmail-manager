@@ -4,6 +4,10 @@ Reports whether sufficient high-risk training data exists to train the ML model.
 Does NOT train anything, does NOT modify thresholds.
 Used in Railway preDeployCommand to monitor progress toward training readiness.
 """
+
+from logger_setup import get_logger
+logger = get_logger(__name__)
+
 from database import _get_connection, _release_connection, _execute
 
 # Match the thresholds from train_ml_model.py (do NOT modify these)
@@ -20,9 +24,9 @@ def check_readiness():
     try:
         cur = conn.cursor()
         
-        print("=" * 70)
-        print("ML TRAINING READINESS CHECK")
-        print("=" * 70)
+        logger.info("=" * 70)
+        logger.info("ML TRAINING READINESS CHECK")
+        logger.info("=" * 70)
         
         # Total labeled rows
         _execute(cur, """
@@ -55,12 +59,12 @@ def check_readiness():
         high_risk_count = class_counts.get('high_risk', 0)
         low_risk_count = class_counts.get('low_risk', 0)
         
-        print(f"\nCurrent data status:")
-        print(f"  Total labeled rows: {total} (need {MIN_TRAINING_ROWS}+)")
-        print(f"  Low-risk rows:      {low_risk_count}")
-        print(f"  High-risk rows:     {high_risk_count} (need {MIN_ROWS_PER_CLASS}+)")
+        logger.info(f"\nCurrent data status:")
+        logger.info(f"  Total labeled rows: {total} (need {MIN_TRAINING_ROWS}+)")
+        logger.info(f"  Low-risk rows:      {low_risk_count}")
+        logger.info(f"  High-risk rows:     {high_risk_count} (need {MIN_ROWS_PER_CLASS}+)")
         
-        print("\n" + "-" * 70)
+        logger.info("\n" + "-" * 70)
         
         # Check gates
         total_ready = total >= MIN_TRAINING_ROWS
@@ -68,36 +72,36 @@ def check_readiness():
         low_risk_ready = low_risk_count >= MIN_ROWS_PER_CLASS
         
         if total_ready and high_risk_ready and low_risk_ready:
-            print("STATUS: READY TO TRAIN")
-            print(f"\n  All thresholds met. You can now run:")
-            print(f"    python train_ml_model.py")
-            print("=" * 70)
+            logger.info("STATUS: READY TO TRAIN")
+            logger.info(f"\n  All thresholds met. You can now run:")
+            logger.info(f"    python train_ml_model.py")
+            logger.info("=" * 70)
             return 0
         
         else:
-            print("STATUS: NOT READY - Keep collecting data")
-            print("\n  Remaining requirements:")
+            logger.info("STATUS: NOT READY - Keep collecting data")
+            logger.info("\n  Remaining requirements:")
             
             if not total_ready:
                 remaining = MIN_TRAINING_ROWS - total
-                print(f"    - Need {remaining} more labeled emails (any risk level)")
+                logger.info(f"    - Need {remaining} more labeled emails (any risk level)")
             
             if not high_risk_ready:
                 remaining = MIN_ROWS_PER_CLASS - high_risk_count
-                print(f"    - Need {remaining} more HIGH-RISK emails (scam_score >= 60)")
+                logger.info(f"    - Need {remaining} more HIGH-RISK emails (scam_score >= 60)")
             
             if not low_risk_ready:
                 remaining = MIN_ROWS_PER_CLASS - low_risk_count
-                print(f"    - Need {remaining} more LOW-RISK emails (scam_score < 60)")
+                logger.info(f"    - Need {remaining} more LOW-RISK emails (scam_score < 60)")
             
-            print("\n  Continue running the AI cascade to accumulate training data.")
-            print("  This check will run automatically on each Railway deploy.")
-            print("=" * 70)
+            logger.info("\n  Continue running the AI cascade to accumulate training data.")
+            logger.info("  This check will run automatically on each Railway deploy.")
+            logger.info("=" * 70)
             return 1
         
     except Exception as e:
-        print(f"\nERROR: Readiness check failed: {e}")
-        print("=" * 70)
+        logger.info(f"\nERROR: Readiness check failed: {e}")
+        logger.info("=" * 70)
         return 2
     finally:
         _release_connection(conn)

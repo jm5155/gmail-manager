@@ -4,6 +4,9 @@ Handles the full OAuth flow: login URL generation, callback token exchange,
 token persistence (token.json), automatic token refresh, and user upsert.
 """
 
+from logger_setup import get_logger
+logger = get_logger(__name__)
+
 import os
 import json
 from pathlib import Path
@@ -76,15 +79,15 @@ def load_token(user_email: str) -> Credentials | None:
         creds = Credentials.from_authorized_user_info(json.loads(token_json), SCOPES)
 
         if creds and creds.expired and creds.refresh_token:
-            print(f"[AUTH] Token expired for {user_email}, refreshing...")
+            logger.info(f"[AUTH] Token expired for {user_email}, refreshing...")
             creds.refresh(Request())
             save_token(creds, user_email)
-            print(f"[AUTH] Token refreshed for {user_email}.")
+            logger.info(f"[AUTH] Token refreshed for {user_email}.")
 
         return creds if creds and creds.valid else None
 
     except Exception as e:
-        print(f"[AUTH] Error loading token for {user_email}: {e}")
+        logger.info(f"[AUTH] Error loading token for {user_email}: {e}")
         return None
 
 
@@ -97,7 +100,7 @@ def save_token(creds: Credentials, user_email: str) -> None:
         raise ValueError("user_email is required to save a token (no shared file storage)")
 
     save_user_token(user_email, creds.to_json())
-    print(f"[AUTH] Token saved for user: {user_email}")
+    logger.info(f"[AUTH] Token saved for user: {user_email}")
 
 
 def delete_token(user_email: str = None) -> None:
@@ -108,7 +111,7 @@ def delete_token(user_email: str = None) -> None:
     if not user_email:
         return
     delete_user_token(user_email)
-    print(f"[AUTH] Token deleted for {user_email}.")
+    logger.info(f"[AUTH] Token deleted for {user_email}.")
 
 
 def is_logged_in(user_email: str) -> bool:
@@ -136,7 +139,7 @@ def _email_from_userinfo(creds: Credentials) -> str | None:
         if resp.status_code == 200:
             return resp.json().get("email")
     except Exception as e:
-        print(f"[AUTH] Error fetching user email: {e}")
+        logger.info(f"[AUTH] Error fetching user email: {e}")
     return None
 
 
@@ -169,9 +172,9 @@ def migrate_legacy_tokens() -> None:
                 if email:
                     save_token(creds, user_email=email)
                 legacy.unlink(missing_ok=True)
-                print(f"[AUTH MIGRATE] Imported legacy token.json for {email}.")
+                logger.info(f"[AUTH MIGRATE] Imported legacy token.json for {email}.")
             except Exception as e:
-                print(f"[AUTH MIGRATE] Skipped legacy token.json: {e}")
+                logger.info(f"[AUTH MIGRATE] Skipped legacy token.json: {e}")
 
         # Per-user tokens/token_<email>.json
         token_dir = base / "tokens"
@@ -183,11 +186,11 @@ def migrate_legacy_tokens() -> None:
                     if email:
                         save_token(creds, user_email=email)
                     f.unlink(missing_ok=True)
-                    print(f"[AUTH MIGRATE] Imported {f.name} for {email}.")
+                    logger.info(f"[AUTH MIGRATE] Imported {f.name} for {email}.")
                 except Exception as e:
-                    print(f"[AUTH MIGRATE] Skipped {f.name}: {e}")
+                    logger.info(f"[AUTH MIGRATE] Skipped {f.name}: {e}")
     except Exception as e:
-        print(f"[AUTH MIGRATE] Migration failed (non-fatal): {e}")
+        logger.info(f"[AUTH MIGRATE] Migration failed (non-fatal): {e}")
 
 
 # ---------- OAUTH FLOW ----------
@@ -206,7 +209,7 @@ def get_auth_url() -> str:
         prompt="select_account consent",
     )
 
-    print(f"[AUTH] Login URL generated: {auth_url[:80]}...")
+    logger.info(f"[AUTH] Login URL generated: {auth_url[:80]}...")
     return auth_url
 
 
@@ -241,10 +244,10 @@ def handle_callback(authorization_code: str) -> dict:
         if resp.status_code == 200:
             gmail_address = resp.json().get("email")
     except Exception as e:
-        print(f"[AUTH] Error fetching user email during callback: {e}")
+        logger.info(f"[AUTH] Error fetching user email during callback: {e}")
 
     if not gmail_address:
-        print("[AUTH] WARNING: Could not retrieve Gmail address from userinfo endpoint.")
+        logger.info("[AUTH] WARNING: Could not retrieve Gmail address from userinfo endpoint.")
         return {
             "success": False,
             "message": "Could not retrieve Gmail address.",
@@ -260,7 +263,7 @@ def handle_callback(authorization_code: str) -> dict:
     # Seed default labels if this user has none
     seed_default_labels(user_id)
 
-    print(f"[AUTH] OAuth callback successful. user_id={user_id}, email={gmail_address}")
+    logger.info(f"[AUTH] OAuth callback successful. user_id={user_id}, email={gmail_address}")
 
     return {
         "success": True,

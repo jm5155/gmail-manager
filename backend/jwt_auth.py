@@ -3,6 +3,9 @@ jwt_auth.py - JWT Token Management for Cross-Domain Authentication
 Handles JWT token creation, validation, and extraction for secure cross-domain auth.
 """
 
+from logger_setup import get_logger
+logger = get_logger(__name__)
+
 import os
 import jwt
 from datetime import datetime, timedelta
@@ -17,7 +20,7 @@ JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 if not JWT_SECRET_KEY:
     raise RuntimeError(
         "JWT_SECRET_KEY env var is required. "
-        "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
+        "Generate one with: python -c \"import secrets; logger.info(secrets.token_hex(32))\""
     )
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRATION_DAYS = 7
@@ -61,10 +64,10 @@ def verify_token(token: str) -> Optional[Dict]:
         payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
         return payload
     except jwt.ExpiredSignatureError:
-        print("[JWT] Token has expired")
+        logger.info("[JWT] Token has expired")
         return None
     except jwt.InvalidTokenError as e:
-        print(f"[JWT] Invalid token: {e}")
+        logger.info(f"[JWT] Invalid token: {e}")
         return None
 
 
@@ -135,7 +138,7 @@ def require_auth(request: Request) -> Dict:
     user = get_user_from_token(request)
     
     if user:
-        print(f"[JWT AUTH] Authenticated via JWT: {user['email']}")
+        logger.info(f"[JWT AUTH] Authenticated via JWT: {user['email']}")
         return user
     
     # Fallback to session for backward compatibility
@@ -143,9 +146,9 @@ def require_auth(request: Request) -> Dict:
     email = request.session.get("gmail_address")
     
     if user_id and email:
-        print(f"[SESSION AUTH] Authenticated via session: {email}")
+        logger.info(f"[SESSION AUTH] Authenticated via session: {email}")
         return {"user_id": user_id, "email": email}
     
     # Not authenticated
-    print("[AUTH] No valid JWT token or session found")
+    logger.info("[AUTH] No valid JWT token or session found")
     raise HTTPException(status_code=401, detail="Not authenticated. Please log in.")

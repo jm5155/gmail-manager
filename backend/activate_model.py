@@ -3,6 +3,10 @@ Phase 4/8: Model Activation Script
 Activates a trained model version after manual review of metrics.
 Includes atomic swap to prevent race conditions.
 """
+
+from logger_setup import get_logger
+logger = get_logger(__name__)
+
 import sys
 from database import _get_connection, _release_connection, _execute
 
@@ -23,12 +27,12 @@ def list_candidate_models():
         
         rows = cursor.fetchall()
         
-        print("="*80)
-        print("AVAILABLE ML MODELS")
-        print("="*80)
+        logger.info("="*80)
+        logger.info("AVAILABLE ML MODELS")
+        logger.info("="*80)
         
         if not rows:
-            print("No models found. Run train_ml_model.py first.")
+            logger.info("No models found. Run train_ml_model.py first.")
             return []
         
         for row in rows:
@@ -43,15 +47,15 @@ def list_candidate_models():
             
             status = "ACTIVE" if is_active else "candidate"
             
-            print(f"\nModel ID: {model_id} [{status}]")
-            print(f"  Version: {version}")
-            print(f"  Trained: {trained_at}")
-            print(f"  Training rows: {row_count}")
-            print(f"  High-risk precision: {precision:.3f}")
-            print(f"  High-risk recall: {recall:.3f}")
-            print(f"  Calibration error: {cal_error:.4f}")
+            logger.info(f"\nModel ID: {model_id} [{status}]")
+            logger.info(f"  Version: {version}")
+            logger.info(f"  Trained: {trained_at}")
+            logger.info(f"  Training rows: {row_count}")
+            logger.info(f"  High-risk precision: {precision:.3f}")
+            logger.info(f"  High-risk recall: {recall:.3f}")
+            logger.info(f"  Calibration error: {cal_error:.4f}")
         
-        print("="*80)
+        logger.info("="*80)
         return rows
         
     finally:
@@ -75,7 +79,7 @@ def activate_model(model_id: int):
         
         row = cursor.fetchone()
         if not row:
-            print(f"Error: Model ID {model_id} not found")
+            logger.info(f"Error: Model ID {model_id} not found")
             return False
         
         recall = row[1] if isinstance(row, tuple) else row['validation_recall']
@@ -83,8 +87,8 @@ def activate_model(model_id: int):
         
         MIN_RECALL = 0.90
         if recall < MIN_RECALL:
-            print(f"Error: Model does not meet minimum bar (recall {recall:.3f} < {MIN_RECALL})")
-            print("Cannot activate - retrain with more data or better features")
+            logger.info(f"Error: Model does not meet minimum bar (recall {recall:.3f} < {MIN_RECALL})")
+            logger.info("Cannot activate - retrain with more data or better features")
             return False
         
         _execute(cursor, "UPDATE ml_models SET is_active = 0")
@@ -93,15 +97,15 @@ def activate_model(model_id: int):
         
         conn.commit()
         
-        print(f"\n✓ Model {model_id} activated successfully")
-        print(f"  Recall: {recall:.3f}, Calibration error: {cal_error:.4f}")
-        print("\nRestart the FastAPI server to load the new model.")
+        logger.info(f"\n✓ Model {model_id} activated successfully")
+        logger.info(f"  Recall: {recall:.3f}, Calibration error: {cal_error:.4f}")
+        logger.info("\nRestart the FastAPI server to load the new model.")
         
         return True
         
     except Exception as e:
         conn.rollback()
-        print(f"Error activating model: {e}")
+        logger.info(f"Error activating model: {e}")
         return False
     finally:
         _release_connection(conn)
@@ -119,11 +123,11 @@ def main():
             model_id = int(sys.argv[1])
             return 0 if activate_model(model_id) else 1
         except ValueError:
-            print("Error: Model ID must be an integer")
+            logger.info("Error: Model ID must be an integer")
             return 1
     else:
-        print("\nUsage: python activate_model.py <model_id>")
-        print("Example: python activate_model.py 1")
+        logger.info("\nUsage: python activate_model.py <model_id>")
+        logger.info("Example: python activate_model.py 1")
         return 1
 
 

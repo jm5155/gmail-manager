@@ -10,6 +10,9 @@ fail-fast pattern.
 IMPORTANT: decrypted keys are never logged or printed.
 """
 
+from logger_setup import get_logger
+logger = get_logger(__name__)
+
 import os
 from cryptography.fernet import Fernet, InvalidToken
 
@@ -19,7 +22,7 @@ if not _DB_ENCRYPTION_KEY:
     raise RuntimeError(
         "DB_ENCRYPTION_KEY env var is required to encrypt/decrypt stored API keys. "
         "Generate one with: python -c \"from cryptography.fernet import Fernet; "
-        "print(Fernet.generate_key().decode())\""
+        "logger.info(Fernet.generate_key().decode())\""
     )
 
 # Fernet keys are base64-encoded bytes; the env var holds the string form.

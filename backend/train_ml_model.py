@@ -3,6 +3,10 @@ Phase 3: Offline Training + Calibration Script
 Trains the local ML model on historical analyzed_emails data.
 Run manually/offline - not wired into live app initially.
 """
+
+from logger_setup import get_logger
+logger = get_logger(__name__)
+
 import json
 import pickle
 from datetime import datetime
@@ -39,7 +43,7 @@ def load_training_data():
         """)
         
         rows = cursor.fetchall()
-        print(f"Loaded {len(rows)} training samples")
+        logger.info(f"Loaded {len(rows)} training samples")
         
         if len(rows) < MIN_TRAINING_ROWS:
             raise ValueError(
@@ -50,7 +54,7 @@ def load_training_data():
         # OPTIMIZATION: Batch sender history lookups to avoid N+1 query problem
         # Original approach: get_sender_history() called once per row = ~2,900 queries
         # New approach: Single GROUP BY query for all senders = 1 query
-        print("Computing sender histories (batched)...")
+        logger.info("Computing sender histories (batched)...")
         _execute(cursor, """
             SELECT 
                 sender,
@@ -76,7 +80,7 @@ def load_training_data():
                 'avg_score': float(avg_score) if avg_score is not None else 0.5
             }
         
-        print(f"Cached history for {len(sender_history_cache)} unique senders")
+        logger.info(f"Cached history for {len(sender_history_cache)} unique senders")
         
         X_features = []
         X_text = []
@@ -128,7 +132,7 @@ def train_model(X_features, X_text, y_labels, min_rows_per_class=MIN_ROWS_PER_CL
     from collections import Counter
     
     class_counts = Counter(y_labels)
-    print(f"Class distribution: {dict(class_counts)}")
+    logger.info(f"Class distribution: {dict(class_counts)}")
     
     for label, count in class_counts.items():
         if count < min_rows_per_class:
@@ -151,7 +155,7 @@ def train_model(X_features, X_text, y_labels, min_rows_per_class=MIN_ROWS_PER_CL
         random_state=42
     )
     
-    print(f"Split: {len(y_train)} train, {len(y_cal)} calibration, {len(y_test)} validation")
+    logger.info(f"Split: {len(y_train)} train, {len(y_cal)} calibration, {len(y_test)} validation")
     
     tfidf = TfidfVectorizer(max_features=500, ngram_range=(1, 2), min_df=2)
     train_text_features = tfidf.fit_transform(train_text)
@@ -176,7 +180,7 @@ def train_model(X_features, X_text, y_labels, min_rows_per_class=MIN_ROWS_PER_CL
     X_cal_combined = hstack([cal_text_features, cal_struct])
     X_test_combined = hstack([test_text_features, test_struct])
     
-    print("Training base classifier...")
+    logger.info("Training base classifier...")
     base_clf = LogisticRegression(
         max_iter=2000,  # Increased from 1000 to help convergence
         class_weight='balanced',
@@ -184,7 +188,7 @@ def train_model(X_features, X_text, y_labels, min_rows_per_class=MIN_ROWS_PER_CL
     )
     base_clf.fit(X_train_combined, y_train)
     
-    print("Calibrating with isotonic regression...")
+    logger.info("Calibrating with isotonic regression...")
     # sklearn 1.9.0: Use CalibratedClassifierCV with custom CV split
     # Train on train set, calibrate on cal set, validate on test set
     from sklearn.model_selection import PredefinedSplit
@@ -235,14 +239,14 @@ def train_model(X_features, X_text, y_labels, min_rows_per_class=MIN_ROWS_PER_CL
         'support': support.tolist()
     }
     
-    print("\n" + "="*60)
-    print("VALIDATION METRICS:")
-    print("="*60)
-    print(f"Low-risk:  Precision={metrics['precision_low_risk']:.3f}, Recall={metrics['recall_low_risk']:.3f}")
-    print(f"High-risk: Precision={metrics['precision_high_risk']:.3f}, Recall={metrics['recall_high_risk']:.3f}")
-    print(f"Calibration Error: {metrics['calibration_error']:.4f}")
-    print(f"Confusion Matrix:\n{cm}")
-    print("="*60)
+    logger.info("\n" + "="*60)
+    logger.info("VALIDATION METRICS:")
+    logger.info("="*60)
+    logger.info(f"Low-risk:  Precision={metrics['precision_low_risk']:.3f}, Recall={metrics['recall_low_risk']:.3f}")
+    logger.info(f"High-risk: Precision={metrics['precision_high_risk']:.3f}, Recall={metrics['recall_high_risk']:.3f}")
+    logger.info(f"Calibration Error: {metrics['calibration_error']:.4f}")
+    logger.info(f"Confusion Matrix:\n{cm}")
+    logger.info("="*60)
     
     # Phase 3 Initial Deployment: Lower threshold to 25% to get model into production
     # Rationale: 27.8% recall catches 5/18 scams. Not ideal, but better than pure AI cost.
@@ -316,8 +320,8 @@ def save_model_to_db(model_package, metrics, training_row_count):
         ))
         
         conn.commit()
-        print(f"\nModel saved to database (version {version}, is_active=0)")
-        print("Run activate_model.py to make it live")
+        logger.info(f"\nModel saved to database (version {version}, is_active=0)")
+        logger.info("Run activate_model.py to make it live")
         
     finally:
         _release_connection(conn)
@@ -325,9 +329,9 @@ def save_model_to_db(model_package, metrics, training_row_count):
 
 def main():
     """Main training pipeline."""
-    print("="*60)
-    print("ML MODEL TRAINING - Phase 3")
-    print("="*60)
+    logger.info("="*60)
+    logger.info("ML MODEL TRAINING - Phase 3")
+    logger.info("="*60)
     
     try:
         X_features, X_text, y_labels, y_scores, providers = load_training_data()
@@ -336,13 +340,13 @@ def main():
         
         save_model_to_db(model_package, metrics, len(y_labels))
         
-        print("\n✓ Training complete. Model ready for activation.")
+        logger.info("\n✓ Training complete. Model ready for activation.")
         
     except ValueError as e:
-        print(f"\n✗ Training aborted: {e}")
+        logger.info(f"\n✗ Training aborted: {e}")
         return 1
     except Exception as e:
-        print(f"\n✗ Training failed: {e}")
+        logger.info(f"\n✗ Training failed: {e}")
         raise
     
     return 0

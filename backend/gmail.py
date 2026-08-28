@@ -5,6 +5,9 @@ Uses the OAuth token from auth.py for authentication.
 Includes the hybrid ML + AI cascade pipeline (Steps A through I).
 """
 
+from logger_setup import get_logger
+logger = get_logger(__name__)
+
 import json
 import asyncio
 import socket
@@ -33,11 +36,11 @@ def get_gmail_service(user_email: str = None):
     """
     creds = get_credentials(user_email)
     if not creds:
-        print("[GMAIL] No valid credentials found. User needs to log in.")
+        logger.info("[GMAIL] No valid credentials found. User needs to log in.")
         return None
 
     service = build("gmail", "v1", credentials=creds)
-    print("[GMAIL] Gmail service initialized.")
+    logger.info("[GMAIL] Gmail service initialized.")
     return service
 
 
@@ -68,10 +71,10 @@ def fetch_emails(limit: int = 50, page_token: str | None = None, user_email: str
 
         import sys
 
-        print(f"[GMAIL] Starting list loop... limit={limit}, token={page_token}", flush=True)
+        logger.info(f"[GMAIL] Starting list loop... limit={limit}, token={page_token}")
 
         while len(message_ids) < limit:
-            print(f"[GMAIL] Requesting list batch...", flush=True)
+            logger.info(f"[GMAIL] Requesting list batch...")
             response = service.users().messages().list(
                 userId="me",
                 maxResults=min(limit - len(message_ids), 50),
@@ -79,19 +82,19 @@ def fetch_emails(limit: int = 50, page_token: str | None = None, user_email: str
             ).execute()
 
             messages = response.get("messages", [])
-            print(f"[GMAIL] Received batch of {len(messages)} messages.", flush=True)
+            logger.info(f"[GMAIL] Received batch of {len(messages)} messages.")
             if not messages:
                 break
 
             message_ids.extend([msg["id"] for msg in messages])
 
             current_token = response.get("nextPageToken")
-            print(f"[GMAIL] current message batch size is {len(message_ids)}. Next token is {current_token}", flush=True)
+            logger.info(f"[GMAIL] current message batch size is {len(message_ids)}. Next token is {current_token}")
             if not current_token:
                 break
 
         message_ids = message_ids[:limit]
-        print(f"[GMAIL] Got {len(message_ids)} message IDs. Fetching details via batch HTTP...", flush=True)
+        logger.info(f"[GMAIL] Got {len(message_ids)} message IDs. Fetching details via batch HTTP...")
 
         # Step 2: Fetch full details using Gmail's batch endpoint.
         # Gmail enforces a hard cap of 50 sub-requests per batch, so we chunk
@@ -113,7 +116,7 @@ def fetch_emails(limit: int = 50, page_token: str | None = None, user_email: str
         id_order = {mid: idx for idx, mid in enumerate(message_ids)}
         collected.sort(key=lambda e: id_order.get(e["id"], 999))
 
-        print(f"[GMAIL] Fetched {len(collected)} emails (batched). Next cursor: {current_token}")
+        logger.info(f"[GMAIL] Fetched {len(collected)} emails (batched). Next cursor: {current_token}")
 
         return {
             "emails": collected,
@@ -121,7 +124,7 @@ def fetch_emails(limit: int = 50, page_token: str | None = None, user_email: str
         }
 
     except Exception as e:
-        print(f"[GMAIL] Error fetching emails: {e}")
+        logger.info(f"[GMAIL] Error fetching emails: {e}")
         return {"emails": [], "next_page_token": None}
 
 
@@ -156,7 +159,7 @@ def _get_email_details_batch_threadsafe(creds, email_ids: list[str]) -> list[dic
         svc = build("gmail", "v1", credentials=creds, cache_discovery=False)
         return _get_email_details_batch(svc, email_ids)
     except Exception as e:
-        print(f"[GMAIL] Batch fetch failed for chunk of {len(email_ids)}: {e}")
+        logger.info(f"[GMAIL] Batch fetch failed for chunk of {len(email_ids)}: {e}")
         return []
 
 
@@ -206,17 +209,17 @@ def _get_email_details_batch(service, email_ids: list[str]) -> list[dict]:
             if status == 429:
                 retry_ids.append(mid)
             else:
-                print(f"[GMAIL] Error fetching email {mid} (batch): {exc}")
+                logger.info(f"[GMAIL] Error fetching email {mid} (batch): {exc}")
 
         if retry_ids:
             pending_ids = retry_ids
             if attempt < 2:
                 delay = 2 ** attempt
-                print(f"[GMAIL] Batch fetch rate-limited for {len(retry_ids)} emails; retrying in {delay}s", flush=True)
+                logger.info(f"[GMAIL] Batch fetch rate-limited for {len(retry_ids)} emails; retrying in {delay}s")
                 time.sleep(delay)
 
     for mid in pending_ids:
-        print(f"[GMAIL] Dropping email {mid} after batch fetch retries", flush=True)
+        logger.info(f"[GMAIL] Dropping email {mid} after batch fetch retries")
 
     return [_parse_email_metadata(mid, results[mid]) for mid in email_ids if mid in results]
 
@@ -230,7 +233,7 @@ def _get_email_details_threadsafe(creds, email_id: str) -> dict | None:
         svc = build("gmail", "v1", credentials=creds, cache_discovery=False)
         return _get_email_details(svc, email_id)
     except Exception as e:
-        print(f"[GMAIL] Thread-safe fetch failed for {email_id}: {e}")
+        logger.info(f"[GMAIL] Thread-safe fetch failed for {email_id}: {e}")
         return None
 
 
@@ -251,7 +254,7 @@ def _get_email_details(service, email_id: str) -> dict | None:
         return _parse_email_metadata(email_id, msg)
 
     except Exception as e:
-        print(f"[GMAIL] Error fetching email {email_id}: {e}")
+        logger.info(f"[GMAIL] Error fetching email {email_id}: {e}")
         return None
 
 
@@ -270,7 +273,7 @@ def _get_email_body(service, email_id: str) -> str:
         return _extract_body(msg.get("payload", {}))
 
     except Exception as e:
-        print(f"[GMAIL] Error fetching body for email {email_id}: {e}")
+        logger.info(f"[GMAIL] Error fetching body for email {email_id}: {e}")
         return ""
 
 
@@ -415,12 +418,12 @@ def get_or_create_label(user_email: str, label_name: str, user_id: int, gmail_la
 
         created = service.users().labels().create(userId="me", body=label_body).execute()
         gmail_labels_cache[prefix] = created["id"]
-        print(f"[GMAIL] Created new label '{prefix}' (ID: {created['id']}, color: {gmail_bg}).")
+        logger.info(f"[GMAIL] Created new label '{prefix}' (ID: {created['id']}, color: {gmail_bg}).")
         return created["id"]
 
     except Exception as e:
         # Surface the full error so label sync issues are visible
-        print(f"[GMAIL] ERROR creating/getting label '{label_name}': {type(e).__name__}: {e}")
+        logger.info(f"[GMAIL] ERROR creating/getting label '{label_name}': {type(e).__name__}: {e}")
         return None
 
 
@@ -432,7 +435,7 @@ def apply_label(user_email: str, email_id: str, label_id: str):
     # Build fresh service per call for thread safety (httplib2.Http is not thread-safe)
     service = get_gmail_service(user_email)
     if not service:
-        print(f"[GMAIL] Cannot apply label: service unavailable for {user_email}")
+        logger.info(f"[GMAIL] Cannot apply label: service unavailable for {user_email}")
         return
         
     try:
@@ -441,9 +444,9 @@ def apply_label(user_email: str, email_id: str, label_id: str):
             id=email_id,
             body={"addLabelIds": [label_id]},
         ).execute()
-        print(f"[GMAIL] Applied label {label_id} to email {email_id[:12]}...")
+        logger.info(f"[GMAIL] Applied label {label_id} to email {email_id[:12]}...")
     except Exception as e:
-        print(f"[GMAIL] Error applying label to {email_id}: {e}")
+        logger.info(f"[GMAIL] Error applying label to {email_id}: {e}")
 
 
 def change_label(user_email: str, email_id: str, old_label_id: str | None, new_label_id: str):
@@ -455,7 +458,7 @@ def change_label(user_email: str, email_id: str, old_label_id: str | None, new_l
     # Build fresh service per call for thread safety (httplib2.Http is not thread-safe)
     service = get_gmail_service(user_email)
     if not service:
-        print(f"[GMAIL] Cannot change label: service unavailable for {user_email}")
+        logger.info(f"[GMAIL] Cannot change label: service unavailable for {user_email}")
         return
         
     try:
@@ -470,9 +473,9 @@ def change_label(user_email: str, email_id: str, old_label_id: str | None, new_l
             id=email_id,
             body=body,
         ).execute()
-        print(f"[GMAIL] Changed label on {email_id[:12]}... (removed: {old_label_id or 'none'}, added: {new_label_id})")
+        logger.info(f"[GMAIL] Changed label on {email_id[:12]}... (removed: {old_label_id or 'none'}, added: {new_label_id})")
     except Exception as e:
-        print(f"[GMAIL] Error changing label on {email_id}: {e}")
+        logger.info(f"[GMAIL] Error changing label on {email_id}: {e}")
         raise
 
 
@@ -484,10 +487,10 @@ def trash_email(email_id: str, user_email: str = None) -> bool:
 
     try:
         service.users().messages().trash(userId="me", id=email_id).execute()
-        print(f"[GMAIL] Trashed email {email_id[:12]}...")
+        logger.info(f"[GMAIL] Trashed email {email_id[:12]}...")
         return True
     except Exception as e:
-        print(f"[GMAIL] Error trashing email {email_id}: {e}")
+        logger.info(f"[GMAIL] Error trashing email {email_id}: {e}")
         return False
 
 
@@ -499,10 +502,10 @@ def permanently_delete_email(email_id: str, user_email: str = None) -> bool:
 
     try:
         service.users().messages().delete(userId="me", id=email_id).execute()
-        print(f"[GMAIL] PERMANENTLY DELETED email {email_id[:12]}...")
+        logger.info(f"[GMAIL] PERMANENTLY DELETED email {email_id[:12]}...")
         return True
     except Exception as e:
-        print(f"[GMAIL] Error permanently deleting email {email_id}: {e}")
+        logger.info(f"[GMAIL] Error permanently deleting email {email_id}: {e}")
         return False
 
 
@@ -616,7 +619,7 @@ async def analyze_bulk_ordered(limit: int = 50, user_id: int = None, user_email:
 
         new_emails, skipped_count = await asyncio.to_thread(_dedup_emails)
 
-        print(f"[PIPELINE] {len(new_emails)} new emails to analyze, {skipped_count} already cached.")
+        logger.info(f"[PIPELINE] {len(new_emails)} new emails to analyze, {skipped_count} already cached.")
 
         total = len(new_emails)
         if total == 0:
@@ -680,7 +683,7 @@ async def analyze_bulk_ordered(limit: int = 50, user_id: int = None, user_email:
             analyzed_count = sum(1 for r in all_results if r["status"] == "success")
 
             t_bulk_total = time.perf_counter() - t_bulk_start
-            print(f"[TIMING] BULK COMPLETE: total_time={t_bulk_total:.2f}s analyzed={analyzed_count} "
+            logger.info(f"[TIMING] BULK COMPLETE: total_time={t_bulk_total:.2f}s analyzed={analyzed_count} "
                   f"skipped={skipped_count} failed={failed_count} "
                   f"(fetched {len(fetched_emails)} emails, {len(new_emails)} were new)")
 
@@ -787,7 +790,7 @@ async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
             urls = extract_urls(body)
             # Cap at 10 URLs per email to prevent 3+ minute scan delays on emails with 79-88 URLs
             if len(urls) > 10:
-                print(f"[SECURITY] Capping URL scan from {len(urls)} to 10 URLs for email {email_id[:12]}...")
+                logger.info(f"[SECURITY] Capping URL scan from {len(urls)} to 10 URLs for email {email_id[:12]}...")
                 urls = urls[:10]
             
             # Three-state signal: confirmed_threat (verdict_unsafe), scan_unavailable (scan_failed), or no threat
@@ -806,9 +809,9 @@ async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
                         url_scan_unavailable = True  # API call failed, no verdict obtained
                 
                 if url_threat_confirmed:
-                    print(f"[SECURITY] Confirmed URL threat for email {email_id[:12]}...")
+                    logger.info(f"[SECURITY] Confirmed URL threat for email {email_id[:12]}...")
                 if url_scan_unavailable:
-                    print(f"[SECURITY] URL scan unavailable for some URLs in email {email_id[:12]}...")
+                    logger.info(f"[SECURITY] URL scan unavailable for some URLs in email {email_id[:12]}...")
             
             t_url_scan = time.perf_counter() - t0
 
@@ -835,7 +838,7 @@ async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
                     
                     if not should_use_ai:
                         source = 'ml'
-                        print(f"[ML] Confident prediction for {email_id[:12]}... ({ml_prediction}, conf={ml_confidence:.3f})")
+                        logger.info(f"[ML] Confident prediction for {email_id[:12]}... ({ml_prediction}, conf={ml_confidence:.3f})")
 
             # Step D — AI cascade classification (if ML escalated or no model)
             provider_used = None
@@ -912,7 +915,7 @@ async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
                 label = label_match
             else:
                 # No match found - log the mismatch and fall back to default
-                print(f"[AI LABEL MISMATCH] email={email_id[:12]}... AI returned label='{label}' but not in available_labels={available_label_names}, falling back to '{default_label}'", flush=True)
+                logger.info(f"[AI LABEL MISMATCH] email={email_id[:12]}... AI returned label='{label}' but not in available_labels={available_label_names}, falling back to '{default_label}'")
                 label = default_label
 
             # scam_score must be 0-100
@@ -982,12 +985,12 @@ async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
                 if gmail_label_id:
                     await asyncio.to_thread(apply_label, user_email, email_id, gmail_label_id)
             except Exception as e:
-                print(f"[PIPELINE] Failed to apply Gmail label for {email_id[:12]}...: {e}")
+                logger.info(f"[PIPELINE] Failed to apply Gmail label for {email_id[:12]}...: {e}")
                 # Do not crash — continue to next email
             t_label_apply = time.perf_counter() - t0
 
             t_total = time.perf_counter() - t_start
-            print(f"[TIMING] email={email_id[:12]} body={t_body_fetch:.2f}s url_scan={t_url_scan:.2f}s "
+            logger.info(f"[TIMING] email={email_id[:12]} body={t_body_fetch:.2f}s url_scan={t_url_scan:.2f}s "
                   f"ai_call={t_ai_call:.2f}s(provider={provider_used}) label={t_label_apply:.2f}s "
                   f"db={t_db_write:.2f}s total={t_total:.2f}s")
 
@@ -1002,7 +1005,7 @@ async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
             }
 
         except Exception as e:
-            print(f"[PIPELINE] FAIL: Analysis failed for {email_id[:12]}...: {e}")
+            logger.error(f"[PIPELINE] FAIL: Analysis failed for {email_id[:12]}...: {e}")
 
             # Add to retry queue — need a placeholder analyzed_emails row first
             # since retry_queue has FK to analyzed_emails
@@ -1042,7 +1045,7 @@ async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
                 add_to_retry_queue(email_id, str(e))
 
             except Exception as retry_err:
-                print(f"[PIPELINE] FAIL: Failed to add {email_id[:12]}... to retry queue: {retry_err}")
+                logger.error(f"[PIPELINE] FAIL: Failed to add {email_id[:12]}... to retry queue: {retry_err}")
 
             return {
                 "email_id": email_id,
@@ -1052,7 +1055,7 @@ async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
                 "scam_score": 0,
                 "is_quarantined": 0,
                 "status": "failed",
-                "error": str(e),
+                "error": "An internal error occurred during analysis.",
             }
 
 
@@ -1084,7 +1087,7 @@ async def fetch_only_pipeline(limit: int = 50, user_id: int = None, user_email: 
     try:
         fetch_result = await asyncio.to_thread(fetch_emails, limit=limit, page_token=cursor, user_email=user_email)
     except Exception as e:
-        yield {"type": "complete", "fetched": 0, "error": str(e)}
+        yield {"type": "complete", "fetched": 0, "error": "An internal error occurred during analysis."}
         return
 
     fetched_emails = fetch_result["emails"]
@@ -1119,7 +1122,7 @@ async def fetch_only_pipeline(limit: int = 50, user_id: int = None, user_email: 
             saved_count += 1
             yield {"type": "progress", "current": saved_count, "total": len(new_emails)}
         except Exception as e:
-            print(f"[FETCH-ONLY] Failed to save {email['id']}: {e}")
+            logger.info(f"[FETCH-ONLY] Failed to save {email['id']}: {e}")
             continue
 
     yield {"type": "complete", "fetched": saved_count, "skipped": len(fetched_emails) - len(new_emails)}

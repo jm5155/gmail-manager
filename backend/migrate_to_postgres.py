@@ -1,3 +1,6 @@
+from logger_setup import get_logger
+logger = get_logger(__name__)
+
 #!/usr/bin/env python3
 """
 Gmail Intelligence Manager - SQLite to Postgres Data Migration Script
@@ -49,7 +52,7 @@ def connect_sqlite():
     
     conn = sqlite3.connect(str(SQLITE_DB_PATH))
     conn.row_factory = sqlite3.Row
-    print(f"✅ Connected to SQLite: {SQLITE_DB_PATH}")
+    logger.info(f"✅ Connected to SQLite: {SQLITE_DB_PATH}")
     return conn
 
 def connect_postgres():
@@ -58,7 +61,7 @@ def connect_postgres():
         raise ValueError("DATABASE_URL environment variable not set")
     
     conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
-    print(f"✅ Connected to Postgres: {DATABASE_URL[:30]}...")
+    logger.info(f"✅ Connected to Postgres: {DATABASE_URL[:30]}...")
     return conn
 
 def get_row_count(conn, table_name, is_postgres=False):
@@ -76,7 +79,7 @@ def get_row_count(conn, table_name, is_postgres=False):
 
 def migrate_table(sqlite_conn, postgres_conn, table_name):
     """Migrate data from one table"""
-    print(f"\n📦 Migrating table: {table_name}")
+    logger.info(f"\n📦 Migrating table: {table_name}")
     
     # Get data from SQLite
     sqlite_cursor = sqlite_conn.cursor()
@@ -84,13 +87,13 @@ def migrate_table(sqlite_conn, postgres_conn, table_name):
     rows = sqlite_cursor.fetchall()
     
     if not rows:
-        print(f"   ⚠️  No data to migrate (table is empty)")
+        logger.info(f"   ⚠️  No data to migrate (table is empty)")
         return 0
     
     # Get column names
     columns = [description[0] for description in sqlite_cursor.description]
-    print(f"   Columns: {', '.join(columns)}")
-    print(f"   Rows in SQLite: {len(rows)}")
+    logger.info(f"   Columns: {', '.join(columns)}")
+    logger.info(f"   Rows in SQLite: {len(rows)}")
     
     # Prepare INSERT statement for Postgres
     placeholders = ', '.join(['%s'] * len(columns))
@@ -110,22 +113,22 @@ def migrate_table(sqlite_conn, postgres_conn, table_name):
             migrated += 1
         except Exception as e:
             failed += 1
-            print(f"   ❌ Failed to insert row: {e}")
-            print(f"      Data: {dict(row)}")
+            logger.info(f"   ❌ Failed to insert row: {e}")
+            logger.info(f"      Data: {dict(row)}")
     
     postgres_conn.commit()
     postgres_cursor.close()
     sqlite_cursor.close()
     
-    print(f"   ✅ Migrated: {migrated} rows")
+    logger.info(f"   ✅ Migrated: {migrated} rows")
     if failed > 0:
-        print(f"   ⚠️  Failed: {failed} rows")
+        logger.info(f"   ⚠️  Failed: {failed} rows")
     
     return migrated
 
 def reset_sequences(postgres_conn):
     """Reset Postgres sequences to match migrated data"""
-    print(f"\n🔄 Resetting auto-increment sequences...")
+    logger.info(f"\n🔄 Resetting auto-increment sequences...")
     
     cursor = postgres_conn.cursor()
     
@@ -149,16 +152,16 @@ def reset_sequences(postgres_conn):
             sequence_name = f"{table}_{id_column}_seq"
             cursor.execute(f"SELECT setval('{sequence_name}', {max_id}, true)")
             
-            print(f"   ✅ {table}.{id_column} sequence reset to {max_id}")
+            logger.info(f"   ✅ {table}.{id_column} sequence reset to {max_id}")
         except Exception as e:
-            print(f"   ⚠️  Failed to reset {table}.{id_column}: {e}")
+            logger.info(f"   ⚠️  Failed to reset {table}.{id_column}: {e}")
     
     postgres_conn.commit()
     cursor.close()
 
 def validate_migration(sqlite_conn, postgres_conn):
     """Validate that migration was successful"""
-    print(f"\n🔍 Validating migration...")
+    logger.info(f"\n🔍 Validating migration...")
     
     all_valid = True
     
@@ -167,20 +170,20 @@ def validate_migration(sqlite_conn, postgres_conn):
         postgres_count = get_row_count(postgres_conn, table, is_postgres=True)
         
         if sqlite_count == postgres_count:
-            print(f"   ✅ {table}: {postgres_count} rows (matches SQLite)")
+            logger.info(f"   ✅ {table}: {postgres_count} rows (matches SQLite)")
         else:
-            print(f"   ❌ {table}: SQLite={sqlite_count}, Postgres={postgres_count} (MISMATCH)")
+            logger.info(f"   ❌ {table}: SQLite={sqlite_count}, Postgres={postgres_count} (MISMATCH)")
             all_valid = False
     
     return all_valid
 
 def main():
     """Main migration process"""
-    print("=" * 60)
-    print("Gmail Intelligence Manager - Data Migration")
-    print("SQLite → Postgres (Railway)")
-    print(f"Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print("=" * 60)
+    logger.info("=" * 60)
+    logger.info("Gmail Intelligence Manager - Data Migration")
+    logger.info("SQLite → Postgres (Railway)")
+    logger.info(f"Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    logger.info("=" * 60)
     
     try:
         # Connect to both databases
@@ -188,25 +191,25 @@ def main():
         postgres_conn = connect_postgres()
         
         # Show current state
-        print(f"\n📊 Pre-migration state:")
+        logger.info(f"\n📊 Pre-migration state:")
         total_rows = 0
         for table in TABLES:
             count = get_row_count(sqlite_conn, table, is_postgres=False)
             total_rows += count
-            print(f"   {table}: {count} rows")
-        print(f"   TOTAL: {total_rows} rows")
+            logger.info(f"   {table}: {count} rows")
+        logger.info(f"   TOTAL: {total_rows} rows")
         
         # Confirm migration
-        print(f"\n⚠️  WARNING: This will insert {total_rows} rows into Postgres")
-        print(f"   Target database: {DATABASE_URL[:50]}...")
+        logger.info(f"\n⚠️  WARNING: This will insert {total_rows} rows into Postgres")
+        logger.info(f"   Target database: {DATABASE_URL[:50]}...")
         response = input(f"\nProceed with migration? (yes/no): ")
         
         if response.lower() != 'yes':
-            print("\n❌ Migration cancelled by user")
+            logger.info("\n❌ Migration cancelled by user")
             return
         
         # Migrate each table
-        print(f"\n🚀 Starting migration...")
+        logger.info(f"\n🚀 Starting migration...")
         total_migrated = 0
         
         for table in TABLES:
@@ -218,32 +221,32 @@ def main():
         
         # Validate migration
         if validate_migration(sqlite_conn, postgres_conn):
-            print(f"\n✅ Migration completed successfully!")
-            print(f"   Total rows migrated: {total_migrated}")
-            print(f"\n💡 Next steps:")
-            print(f"   1. Set DATABASE_URL in Railway environment variables")
-            print(f"   2. Deploy updated backend code to Railway")
-            print(f"   3. Test OAuth login and email analysis")
-            print(f"   4. Keep gmail_manager.db as backup (don't delete)")
+            logger.info(f"\n✅ Migration completed successfully!")
+            logger.info(f"   Total rows migrated: {total_migrated}")
+            logger.info(f"\n💡 Next steps:")
+            logger.info(f"   1. Set DATABASE_URL in Railway environment variables")
+            logger.info(f"   2. Deploy updated backend code to Railway")
+            logger.info(f"   3. Test OAuth login and email analysis")
+            logger.info(f"   4. Keep gmail_manager.db as backup (don't delete)")
         else:
-            print(f"\n⚠️  Migration completed with validation errors")
-            print(f"   Review the mismatches above and investigate")
+            logger.info(f"\n⚠️  Migration completed with validation errors")
+            logger.info(f"   Review the mismatches above and investigate")
         
         # Close connections
         sqlite_conn.close()
         postgres_conn.close()
         
-        print(f"\n✅ Database connections closed")
-        print(f"Finished: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        print("=" * 60)
+        logger.info(f"\n✅ Database connections closed")
+        logger.info(f"Finished: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        logger.info("=" * 60)
         
     except Exception as e:
-        print(f"\n❌ Migration failed: {e}")
-        print(f"\n💡 Rollback instructions:")
-        print(f"   1. Connect to Railway Postgres via psql or pg_admin")
-        print(f"   2. Run: DROP TABLE IF EXISTS retry_queue, url_cache, analyzed_emails, scan_cursor, custom_labels, users CASCADE;")
-        print(f"   3. Re-run postgres_schema.sql to recreate tables")
-        print(f"   4. Re-run this migration script")
+        logger.info(f"\n❌ Migration failed: {e}")
+        logger.info(f"\n💡 Rollback instructions:")
+        logger.info(f"   1. Connect to Railway Postgres via psql or pg_admin")
+        logger.info(f"   2. Run: DROP TABLE IF EXISTS retry_queue, url_cache, analyzed_emails, scan_cursor, custom_labels, users CASCADE;")
+        logger.info(f"   3. Re-run postgres_schema.sql to recreate tables")
+        logger.info(f"   4. Re-run this migration script")
         return 1
 
 if __name__ == "__main__":

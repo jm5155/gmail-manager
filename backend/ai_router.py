@@ -8,6 +8,9 @@ Each provider has a 30-second timeout. If a provider returns 429 (quota exceeded
 the router automatically switches to the next provider in the cascade.
 """
 
+from logger_setup import get_logger
+logger = get_logger(__name__)
+
 import os
 import json
 import asyncio
@@ -181,14 +184,13 @@ class AIRouter:
         self._groq_key_index = 0
         self._groq_index_lock = asyncio.Lock()  # Protects Groq key rotation
         # OpenRouter does not need key rotation (single key)
-        print(
+        logger.info(
             f"[AI ROUTER] Providers loaded: "
             f"groq={len(GROQ_API_KEYS)} keys, "
             f"gemini={bool(GEMINI_API_KEY)}, "
             f"cohere={bool(COHERE_API_KEY)}, "
             f"nvidia={bool(NVIDIA_API_KEY)}, "
             f"openrouter={bool(OPENROUTER_API_KEY)}",
-            flush=True,
         )
 
     # ---------- PROVIDER: NVIDIA (PLACEHOLDER — NOT IN ACTIVE CASCADE) ----------
@@ -244,7 +246,7 @@ class AIRouter:
 
             data = response.json()
             raw_content = data["choices"][0]["message"]["content"]
-            print(f"[AI NVIDIA RAW] {raw_content!r}", flush=True)
+            logger.info(f"[AI NVIDIA RAW] {raw_content!r}")
             return raw_content.strip()
 
         except httpx.TimeoutException:
@@ -305,13 +307,13 @@ class AIRouter:
                 if response.status_code == 429:
                     quota_errors += 1
                     retry_after = response.headers.get("Retry-After")
-                    print(f"[AI] Groq key #{key_index + 1} quota hit, trying next key...", flush=True)
+                    logger.info(f"[AI] Groq key #{key_index + 1} quota hit, trying next key...")
                     continue  # Try next key immediately
 
                 if response.status_code != 200:
                     error_msg = f"Groq key #{key_index + 1} error {response.status_code}: {response.text[:200]}"
                     other_errors.append(error_msg)
-                    print(f"[AI] {error_msg}, trying next key...", flush=True)
+                    logger.info(f"[AI] {error_msg}, trying next key...")
                     continue  # Try next key
 
                 # Success - update index for next call and return
@@ -323,12 +325,12 @@ class AIRouter:
             except httpx.TimeoutException:
                 error_msg = f"Groq key #{key_index + 1} timed out (30s)"
                 other_errors.append(error_msg)
-                print(f"[AI] {error_msg}, trying next key...", flush=True)
+                logger.info(f"[AI] {error_msg}, trying next key...")
                 continue  # Try next key
             except Exception as e:
                 error_msg = f"Groq key #{key_index + 1} exception: {e}"
                 other_errors.append(error_msg)
-                print(f"[AI] {error_msg}, trying next key...", flush=True)
+                logger.info(f"[AI] {error_msg}, trying next key...")
                 continue  # Try next key
 
         # All keys exhausted - raise appropriate error
@@ -521,17 +523,17 @@ class AIRouter:
         errors = []
         for name, call_fn in providers:
             try:
-                print(f"[AI] Trying {name}...", flush=True)
+                logger.info(f"[AI] Trying {name}...")
                 async with AI_CALL_SEMAPHORE:
                     response = await call_fn(prompt)
-                print(f"[AI] {name} responded successfully.", flush=True)
+                logger.info(f"[AI] {name} responded successfully.")
                 return {"response": response, "provider_used": name}
             except QuotaError as exc:
                 errors.append(f"{name}: quota: {exc}")
-                print(f"[AI] {name} quota hit; switching provider.", flush=True)
+                logger.info(f"[AI] {name} quota hit; switching provider.")
             except (ProviderError, Exception) as exc:
                 errors.append(f"{name}: {type(exc).__name__}: {exc}")
-                print(f"[AI] {name} failed; switching provider: {exc}", flush=True)
+                logger.info(f"[AI] {name} failed; switching provider: {exc}")
 
         return {
             "error": "All AI providers exhausted: " + " | ".join(errors),
@@ -550,7 +552,7 @@ class AIRouter:
         errors = []
         for name, call_fn in providers:
             try:
-                print(f"[AI] Trying {name}...", flush=True)
+                logger.info(f"[AI] Trying {name}...")
                 async with AI_CALL_SEMAPHORE:
                     response = await call_fn(prompt)
                 cleaned = response.strip().replace("```json", "").replace("```", "").strip()
@@ -562,14 +564,14 @@ class AIRouter:
                     if start < 0 or end <= start:
                         raise ValueError("AI response was not valid JSON")
                     data = json.loads(cleaned[start:end + 1])
-                print(f"[AI] {name} responded successfully with valid JSON.", flush=True)
+                logger.info(f"[AI] {name} responded successfully with valid JSON.")
                 return {"data": data, "provider_used": name}
             except QuotaError as exc:
                 errors.append(f"{name}: quota: {exc}")
-                print(f"[AI] {name} quota hit; switching provider.", flush=True)
+                logger.info(f"[AI] {name} quota hit; switching provider.")
             except Exception as exc:
                 errors.append(f"{name}: {type(exc).__name__}: {exc}")
-                print(f"[AI] {name} failed; switching provider: {exc}", flush=True)
+                logger.info(f"[AI] {name} failed; switching provider: {exc}")
         return {"error": "All AI providers exhausted: " + " | ".join(errors), "provider_used": None}
 
 

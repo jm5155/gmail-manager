@@ -2,6 +2,10 @@
 Phase 0: Data Audit Script
 Checks analyzed_emails for class balance, row counts, and label quality.
 """
+
+from logger_setup import get_logger
+logger = get_logger(__name__)
+
 from database import _get_connection, _release_connection, _execute
 
 def audit_data():
@@ -9,14 +13,14 @@ def audit_data():
     try:
         cur = conn.cursor()
         
-        print("=" * 60)
-        print("ML PIPELINE DATA AUDIT - Phase 0")
-        print("=" * 60)
+        logger.info("=" * 60)
+        logger.info("ML PIPELINE DATA AUDIT - Phase 0")
+        logger.info("=" * 60)
         
         _execute(cur, "SELECT COUNT(*) as total FROM analyzed_emails")
         row = cur.fetchone()
         total = row['total'] if isinstance(row, dict) else row[0]
-        print(f"\nTotal analyzed emails: {total}")
+        logger.info(f"\nTotal analyzed emails: {total}")
         
         _execute(cur, """
             SELECT label_id, COUNT(*) as count 
@@ -24,12 +28,12 @@ def audit_data():
             GROUP BY label_id 
             ORDER BY count DESC
         """)
-        print("\nLabel distribution:")
+        logger.info("\nLabel distribution:")
         for row in cur.fetchall():
             label = (row['label_id'] if isinstance(row, dict) else row[0]) or "NULL"
             count = row['count'] if isinstance(row, dict) else row[1]
             pct = (count / total * 100) if total > 0 else 0
-            print(f"  Label {label}: {count} rows ({pct:.1f}%)")
+            logger.info(f"  Label {label}: {count} rows ({pct:.1f}%)")
         
         _execute(cur, """
             SELECT 
@@ -44,11 +48,11 @@ def audit_data():
             GROUP BY risk_bucket
             ORDER BY risk_bucket
         """)
-        print("\nScam score distribution:")
+        logger.info("\nScam score distribution:")
         for row in cur.fetchall():
             bucket = row['risk_bucket'] if isinstance(row, dict) else row[0]
             count = row['count'] if isinstance(row, dict) else row[1]
-            print(f"  {bucket}: {count} rows")
+            logger.info(f"  {bucket}: {count} rows")
         
         _execute(cur, """
             SELECT COUNT(*) 
@@ -57,20 +61,20 @@ def audit_data():
         """)
         row = cur.fetchone()
         labeled_count = row[0] if isinstance(row, tuple) else (row['count'] if 'count' in row else row[list(row.keys())[0]])
-        print(f"\nRows with both label_id and scam_score: {labeled_count}")
+        logger.info(f"\nRows with both label_id and scam_score: {labeled_count}")
         
-        print("\n" + "=" * 60)
-        print("ASSESSMENT:")
+        logger.info("\n" + "=" * 60)
+        logger.info("ASSESSMENT:")
         if total < 500:
-            print("INSUFFICIENT DATA: Need at least 500 rows total")
-            print("   Recommendation: Keep AI cascade running, delay ML implementation")
+            logger.info("INSUFFICIENT DATA: Need at least 500 rows total")
+            logger.info("   Recommendation: Keep AI cascade running, delay ML implementation")
         elif labeled_count < 300:
-            print(f"LIMITED LABELED DATA: Only {labeled_count} fully labeled rows")
-            print("   Recommendation: Run in shadow mode only (Phase 5)")
+            logger.info(f"LIMITED LABELED DATA: Only {labeled_count} fully labeled rows")
+            logger.info("   Recommendation: Run in shadow mode only (Phase 5)")
         else:
-            print("OK - Sufficient data for initial training")
-            print("  Proceed with Phase 1 (schema changes)")
-        print("=" * 60)
+            logger.info("OK - Sufficient data for initial training")
+            logger.info("  Proceed with Phase 1 (schema changes)")
+        logger.info("=" * 60)
         
     finally:
         _release_connection(conn)

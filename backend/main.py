@@ -5,6 +5,9 @@ security scanning, scam alerts, and email rewriting.
 Uses SessionMiddleware to store user_id and gmail_address after login.
 """
 
+from logger_setup import get_logger
+logger = get_logger(__name__)
+
 import os
 import sys
 import json
@@ -52,7 +55,7 @@ SESSION_SECRET_KEY = os.getenv("SESSION_SECRET_KEY")
 if not SESSION_SECRET_KEY:
     raise RuntimeError(
         "SESSION_SECRET_KEY env var is required. "
-        "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
+        "Generate one with: python -c \"import secrets; logger.info(secrets.token_hex(32))\""
     )
 
 app.add_middleware(
@@ -86,8 +89,8 @@ if IS_PRODUCTION:
     env_origin = os.getenv("ALLOWED_ORIGIN")
     if env_origin:
         origins.extend([env_origin, env_origin + "/"])
-        print(f"[CORS] Added ALLOWED_ORIGIN from env: {env_origin}")
-    print(f"[CORS] Production mode - Allowed origins: {origins}")
+        logger.info(f"[CORS] Added ALLOWED_ORIGIN from env: {env_origin}")
+    logger.info(f"[CORS] Production mode - Allowed origins: {origins}")
 else:
     # Local dev: Specific localhost origins
     origins = [
@@ -96,7 +99,7 @@ else:
         "http://localhost:5174",
         "https://gmail-manager-gamma.vercel.app",  # Allow testing prod frontend
     ]
-    print(f"[CORS] Dev mode - Allowed origins: {origins}")
+    logger.info(f"[CORS] Dev mode - Allowed origins: {origins}")
 
 app.add_middleware(
     CORSMiddleware,
@@ -188,26 +191,26 @@ PENDING_GMAIL_SYNC_CONDITION = """
 @app.on_event("startup")
 async def startup_event():
     """Initialize the database and ML model on server startup."""
-    print("[STARTUP] BEGIN - Railway deployment 2026-08-20T04:05Z")
+    logger.info("[STARTUP] BEGIN - Railway deployment 2026-08-20T04:05Z")
     
     # Set explicit thread pool size for asyncio.to_thread() to prevent exhaustion
     import asyncio
     from concurrent.futures import ThreadPoolExecutor
     loop = asyncio.get_running_loop()
     loop.set_default_executor(ThreadPoolExecutor(max_workers=32))
-    print("[SERVER] Configured asyncio executor with 32 worker threads")
+    logger.info("[SERVER] Configured asyncio executor with 32 worker threads")
     
-    print("[STARTUP] Calling init_db()...")
+    logger.info("[STARTUP] Calling init_db()...")
     init_db()
-    print("[STARTUP] init_db() complete")
+    logger.info("[STARTUP] init_db() complete")
     
     # Load active ML model if available
-    print("[STARTUP] Calling load_active_model()...")
+    logger.info("[STARTUP] Calling load_active_model()...")
     try:
         load_active_model()
-        print("[STARTUP] load_active_model() complete")
+        logger.info("[STARTUP] load_active_model() complete")
     except Exception as e:
-        print(f"[STARTUP ERROR] load_active_model() failed: {e}")
+        logger.error(f"[STARTUP ERROR] load_active_model() failed: {e}")
         import traceback
         traceback.print_exc()
     
@@ -215,9 +218,9 @@ async def startup_event():
     try:
         migrate_legacy_tokens()
     except Exception as e:
-        print(f"[SERVER] Token migration skipped: {e}")
+        logger.info(f"[SERVER] Token migration skipped: {e}")
     
-    print("[STARTUP] COMPLETE - Gmail Manager API ready on port 8000")
+    logger.info("[STARTUP] COMPLETE - Gmail Manager API ready on port 8000")
 
 
 # ---------- AUTH ENDPOINTS ----------
@@ -239,35 +242,35 @@ async def auth_callback(request: Request):
     Stores the user's OAuth token in the database (keyed by gmail_address).
     """
     try:
-        print(f"[AUTH CALLBACK] Received callback request")
+        logger.info(f"[AUTH CALLBACK] Received callback request")
         code = request.query_params.get("code")
         
         if not code:
-            print("[AUTH CALLBACK ERROR] No authorization code in request")
+            logger.error("[AUTH CALLBACK ERROR] No authorization code in request")
             return JSONResponse(
                 status_code=400,
                 content={"error": "No authorization code received from Google"},
             )
         
-        print(f"[AUTH CALLBACK] Processing authorization code (length: {len(code)})")
+        logger.info(f"[AUTH CALLBACK] Processing authorization code (length: {len(code)})")
         result = handle_callback(code)
-        print(f"[AUTH CALLBACK] handle_callback result: {result}")
+        logger.info(f"[AUTH CALLBACK] handle_callback result: {result}")
         
         # Store user_id and gmail_address in session (for backward compatibility)
         if result.get("success") and result.get("user_id"):
             user_id = result["user_id"]
             user_email = result["gmail_address"]
             
-            print(f"[AUTH CALLBACK] Setting session for user_id={user_id}, email={user_email}")
+            logger.info(f"[AUTH CALLBACK] Setting session for user_id={user_id}, email={user_email}")
             request.session["user_id"] = user_id
             request.session["gmail_address"] = user_email
 
             # Generate JWT token for cross-domain authentication
-            print(f"[AUTH CALLBACK] Creating JWT token for {user_email}")
+            logger.info(f"[AUTH CALLBACK] Creating JWT token for {user_email}")
             jwt_token = create_access_token(user_id, user_email)
-            print(f"[AUTH CALLBACK] Generated JWT token for {user_email}")
+            logger.info(f"[AUTH CALLBACK] Generated JWT token for {user_email}")
 
-            print(f"[AUTH CALLBACK] Session set: user_id={user_id}, email={user_email}")
+            logger.info(f"[AUTH CALLBACK] Session set: user_id={user_id}, email={user_email}")
             
             # Redirect to frontend with JWT token as URL parameter
             frontend_url = os.getenv("FRONTEND_URL", "https://gmail-manager-gamma.vercel.app")
@@ -305,23 +308,23 @@ async def auth_callback(request: Request):
             </body>
             </html>
             """
-            print(f"[AUTH CALLBACK] Returning success HTML redirect")
+            logger.info(f"[AUTH CALLBACK] Returning success HTML redirect")
             return HTMLResponse(content=html_content)
         
         # If authentication failed
-        print(f"[AUTH CALLBACK ERROR] Authentication failed: {result.get('message', 'Unknown error')}")
+        logger.error(f"[AUTH CALLBACK ERROR] Authentication failed: {result.get('message', 'Unknown error')}")
         return JSONResponse(
             status_code=401,
             content={"error": result.get("message", "Authentication failed")}
         )
     
     except Exception as e:
-        print(f"[AUTH CALLBACK EXCEPTION] {type(e).__name__}: {str(e)}")
+        logger.error(f"[AUTH CALLBACK EXCEPTION] {type(e, exc_info=True).__name__}: {str(e)}")
         import traceback
         traceback.print_exc()
         return JSONResponse(
             status_code=500,
-            content={"error": f"Authentication error: {str(e)}"}
+            content={"error": "Authentication failed due to an internal server error."}
         )
 
 
@@ -340,8 +343,8 @@ async def auth_status(request: Request):
     """GET /auth/status — Returns login status and user email. Supports JWT and session auth."""
     # DEBUG: Log authentication headers
     auth_header = request.headers.get("Authorization")
-    print(f"[AUTH/STATUS DEBUG] Authorization header: {auth_header[:50] if auth_header else 'None'}...")
-    print(f"[AUTH/STATUS DEBUG] Session data: {dict(request.session)}")
+    logger.info(f"[AUTH/STATUS DEBUG] Authorization header: {auth_header[:50] if auth_header else 'None'}...")
+    logger.info(f"[AUTH/STATUS DEBUG] Session data: {dict(request.session)}")
     
     # Try JWT authentication first (for cross-domain)
     user_data = get_user_from_token(request)
@@ -350,7 +353,7 @@ async def auth_status(request: Request):
         # User authenticated via JWT token
         user_email = user_data["email"]
         user_id = user_data["user_id"]
-        print(f"[AUTH/STATUS DEBUG] JWT auth successful: {user_email}")
+        logger.info(f"[AUTH/STATUS DEBUG] JWT auth successful: {user_email}")
         
         # Verify the Gmail token is still valid
         logged_in = is_logged_in(user_email)
@@ -366,16 +369,16 @@ async def auth_status(request: Request):
     user_email = request.session.get("gmail_address")
     user_id = request.session.get("user_id")
     
-    print(f"[AUTH/STATUS DEBUG] Session auth: user_email={user_email}, user_id={user_id}")
+    logger.info(f"[AUTH/STATUS DEBUG] Session auth: user_email={user_email}, user_id={user_id}")
     
     if user_email:
         # User has active session, check if token is valid
         logged_in = is_logged_in(user_email)
-        print(f"[AUTH/STATUS DEBUG] Token valid for {user_email}: {logged_in}")
+        logger.info(f"[AUTH/STATUS DEBUG] Token valid for {user_email}: {logged_in}")
     else:
         # No session, check stored token for the session user
         logged_in = is_logged_in(user_email)
-        print(f"[AUTH/STATUS DEBUG] Token check: {logged_in}")
+        logger.info(f"[AUTH/STATUS DEBUG] Token check: {logged_in}")
     
     result = {"logged_in": logged_in}
     if logged_in:
@@ -383,7 +386,7 @@ async def auth_status(request: Request):
         if email:
             result["email"] = email
     
-    print(f"[AUTH/STATUS DEBUG] Returning: {result}")
+    logger.info(f"[AUTH/STATUS DEBUG] Returning: {result}")
     return result
 
 
@@ -403,9 +406,9 @@ async def auth_logout(request: Request):
         try:
             from auth import delete_token as delete_user_token
             delete_user_token(user_email)
-            print(f"[AUTH] Deleted user-specific token for {user_email}")
+            logger.info(f"[AUTH] Deleted user-specific token for {user_email}")
         except Exception as e:
-            print(f"[AUTH] Error deleting user token: {e}")
+            logger.info(f"[AUTH] Error deleting user token: {e}")
     
     # Clear session
     request.session.clear()
@@ -416,10 +419,8 @@ async def auth_logout(request: Request):
 # ---------- EMAIL ENDPOINTS ----------
 
 @app.get("/emails/fetch")
-async def emails_fetch(request: Request, limit: int = 50, page_token: str = None):
+async def emails_fetch(request: Request, user: dict = Depends(require_auth), limit: int = 50, page_token: str = None):
     """GET /emails/fetch — Fetches emails from Gmail."""
-    if not _is_authenticated(request):
-        return JSONResponse(status_code=401, content={"error": "Not logged in."})
 
     result = fetch_emails(limit=limit, page_token=page_token, user_email=_request_user_email(request))
     return {
@@ -430,39 +431,27 @@ async def emails_fetch(request: Request, limit: int = 50, page_token: str = None
 
 
 @app.get("/emails")
-async def emails_get(request: Request):
+async def emails_get(request: Request, user: dict = Depends(require_auth)):
     """GET /emails — Returns all cached analyzed emails from SQLite."""
     try:
-        print("[EMAILS-GET] Request received")
-        if not _is_authenticated(request):
-            print("[EMAILS-GET] Not authenticated")
-            return JSONResponse(status_code=401, content={"error": "Not logged in."})
+        logger.info("[EMAILS-GET] Request received")
+        user_id = user["user_id"]
 
-        user_id = _require_user_id(request)
-        if not user_id:
-            print("[EMAILS-GET] No user_id found")
-            return JSONResponse(status_code=401, content={"error": "User session not found."})
-
-        print(f"[EMAILS-GET] Fetching emails for user_id={user_id}")
+        logger.info(f"[EMAILS-GET] Fetching emails for user_id={user_id}")
         emails = get_analyzed_emails(user_id)
-        print(f"[EMAILS-GET] Found {len(emails)} emails")
+        logger.info(f"[EMAILS-GET] Found {len(emails)} emails")
         return {"emails": emails, "count": len(emails)}
     except Exception as e:
-        print(f"[EMAILS-GET ERROR] {type(e).__name__}: {str(e)}")
+        logger.error(f"[EMAILS-GET ERROR] {type(e).__name__}: {str(e)}")
         import traceback
         traceback.print_exc()
-        return JSONResponse(status_code=500, content={"error": f"Failed to fetch emails: {str(e)}"})
+        return JSONResponse(status_code=500, content={"error": "Failed to fetch emails. Please try again."})
 
 
 @app.get("/emails/analyzed")
-async def emails_analyzed(request: Request):
+async def emails_analyzed(request: Request, user: dict = Depends(require_auth)):
     """GET /emails/analyzed — Alias for GET /emails for backward compatibility."""
-    if not _is_authenticated(request):
-        return JSONResponse(status_code=401, content={"error": "Not logged in."})
-
-    user_id = _require_user_id(request)
-    if not user_id:
-        return JSONResponse(status_code=401, content={"error": "User session not found."})
+    user_id = user["user_id"]
 
     emails = get_analyzed_emails(user_id)
     return {"emails": emails, "count": len(emails)}
@@ -471,20 +460,16 @@ async def emails_analyzed(request: Request):
 # ---------- BULK ANALYSIS ENDPOINT WITH SSE ----------
 
 @app.post("/emails/analyze-bulk")
-async def emails_analyze_bulk(request: Request, limit: int = 50):
+async def emails_analyze_bulk(request: Request, user: dict = Depends(require_auth), limit: int = 50):
     """
     POST /emails/analyze-bulk?limit=50
     Runs the AI-only bulk analysis pipeline.
     Streams results back as Server-Sent Events (SSE).
     """
-    if not _is_authenticated(request):
-        return JSONResponse(status_code=401, content={"error": "Not logged in."})
 
     limit = min(max(limit, 1), 200)  # clamp to prevent AI/Gmail quota exhaustion
+    user_id = user["user_id"]
 
-    user_id = _require_user_id(request)
-    if not user_id:
-        return JSONResponse(status_code=401, content={"error": "User session not found."})
 
     # Item 1: Block analysis if user has zero labels
     user_labels = get_labels(user_id)
@@ -515,14 +500,10 @@ async def emails_analyze_bulk(request: Request, limit: int = 50):
 
 
 @app.post("/emails/fetch-only")
-async def emails_fetch_only(request: Request, limit: int = 50):
+async def emails_fetch_only(request: Request, user: dict = Depends(require_auth), limit: int = 50):
     """POST /emails/fetch-only - Fetch emails from Gmail, save as status='fetched' (no AI)"""
-    if not _is_authenticated(request):
-        return JSONResponse(status_code=401, content={"error": "Not logged in."})
-    
-    user_id = _require_user_id(request)
-    if not user_id:
-        return JSONResponse(status_code=401, content={"error": "User session not found."})
+    user_id = user["user_id"]
+
     
     from gmail import fetch_only_pipeline
     
@@ -534,14 +515,10 @@ async def emails_fetch_only(request: Request, limit: int = 50):
 
 
 @app.post("/emails/label-only")
-async def emails_label_only(request: Request, limit: int = None):
+async def emails_label_only(request: Request, user: dict = Depends(require_auth), limit: int = None):
     """POST /emails/label-only - Run AI analysis on status='fetched' emails"""
-    if not _is_authenticated(request):
-        return JSONResponse(status_code=401, content={"error": "Not logged in."})
-    
-    user_id = _require_user_id(request)
-    if not user_id:
-        return JSONResponse(status_code=401, content={"error": "User session not found."})
+    user_id = user["user_id"]
+
     
     user_labels = get_labels(user_id)
     if not user_labels:
@@ -624,7 +601,7 @@ def _apply_label_change(email_id: str, new_label_name: str, user_id: int, user_e
                 update_email_label_id(email_id, old_label_id)
             else:
                 # If there was no old label, we can't fully rollback - log error
-                print(f"[ERROR] Gmail label change failed, but can't rollback to NULL label: {e}")
+                logger.error(f"[ERROR] Gmail label change failed, but can't rollback to NULL label: {e}")
             return {"success": False, "error": f"gmail_api_error: {e}"}
 
         return {"success": True}
@@ -737,18 +714,13 @@ def _sync_label_to_gmail(email_id: str, user_id: int, user_email: str, gmail_lab
 
 
 @app.put("/emails/{email_id}/label")
-async def update_email_label(request: Request, email_id: str):
+async def update_email_label(request: Request, email_id: str, user: dict = Depends(require_auth)):
     """
     PUT /emails/{email_id}/label — Update email label (manual override).
     Does NOT touch scam_score, scam_indicators, or is_quarantined.
     Atomically updates both database and Gmail, with rollback on Gmail failure.
     """
-    if not _is_authenticated(request):
-        return JSONResponse(status_code=401, content={"error": "Not logged in."})
-
-    user_id = _require_user_id(request)
-    if not user_id:
-        return JSONResponse(status_code=401, content={"error": "User session not found."})
+    user_id = user["user_id"]
 
     # Parse request body
     try:
@@ -757,7 +729,7 @@ async def update_email_label(request: Request, email_id: str):
         if not new_label_name:
             return JSONResponse(status_code=400, content={"error": "label_name is required"})
     except Exception as e:
-        return JSONResponse(status_code=400, content={"error": f"Invalid JSON: {e}"})
+        return JSONResponse(status_code=400, content={"error": "Invalid JSON payload."})
 
     # Get user email for thread-safe service creation
     user_email = _request_user_email(request)
@@ -777,18 +749,13 @@ async def update_email_label(request: Request, email_id: str):
 
 
 @app.post("/emails/batch-label")
-async def batch_label_update(request: Request):
+async def batch_label_update(request: Request, user: dict = Depends(require_auth)):
     """
     POST /emails/batch-label — Batch update email labels (manual override).
     Does NOT touch scam_score, scam_indicators, or is_quarantined.
     Processes changes sequentially, returns partial success results.
     """
-    if not _is_authenticated(request):
-        return JSONResponse(status_code=401, content={"error": "Not logged in."})
-
-    user_id = _require_user_id(request)
-    if not user_id:
-        return JSONResponse(status_code=401, content={"error": "User session not found."})
+    user_id = user["user_id"]
 
     # Parse request body
     try:
@@ -797,7 +764,7 @@ async def batch_label_update(request: Request):
         if not changes:
             return JSONResponse(status_code=400, content={"error": "changes array is required"})
     except Exception as e:
-        return JSONResponse(status_code=400, content={"error": f"Invalid JSON: {e}"})
+        return JSONResponse(status_code=400, content={"error": "Invalid JSON payload."})
 
     # Get user email for thread-safe service creation
     user_email = _request_user_email(request)
@@ -842,23 +809,16 @@ async def batch_label_update(request: Request):
 
 
 @app.get("/emails/pending-count")
-async def get_pending_count(request: Request):
+async def get_pending_count(request: Request, user: dict = Depends(require_auth)):
     """
     GET /emails/pending-count — Count emails needing Gmail sync.
     Returns count of emails where status='labeled' AND applied_to_gmail=0.
     """
     try:
-        print("[PENDING-COUNT] Request received")
-        if not _is_authenticated(request):
-            print("[PENDING-COUNT] Not authenticated")
-            return JSONResponse(status_code=401, content={"error": "Not logged in."})
+        logger.info("[PENDING-COUNT] Request received")
+        user_id = user["user_id"]
 
-        user_id = _require_user_id(request)
-        if not user_id:
-            print("[PENDING-COUNT] No user_id found")
-            return JSONResponse(status_code=401, content={"error": "User session not found."})
-
-        print(f"[PENDING-COUNT] Fetching count for user_id={user_id}")
+        logger.info(f"[PENDING-COUNT] Fetching count for user_id={user_id}")
         conn = _get_connection()
         try:
             cursor = conn.cursor()
@@ -871,19 +831,19 @@ async def get_pending_count(request: Request):
 
             result = cursor.fetchone()
             count = result['count'] if isinstance(result, dict) else result[0]
-            print(f"[PENDING-COUNT] Count={count}")
+            logger.info(f"[PENDING-COUNT] Count={count}")
             return {"pending_count": count}
         finally:
             _release_connection(conn)
     except Exception as e:
-        print(f"[PENDING-COUNT ERROR] {type(e).__name__}: {str(e)}")
+        logger.error(f"[PENDING-COUNT ERROR] {type(e).__name__}: {str(e)}")
         import traceback
         traceback.print_exc()
-        return JSONResponse(status_code=500, content={"error": f"Failed to fetch pending count: {str(e)}"})
+        return JSONResponse(status_code=500, content={"error": "Failed to fetch pending count. Please try again."})
 
 
 @app.post("/emails/apply-all-pending")
-async def apply_all_pending(request: Request, limit: int = None):
+async def apply_all_pending(request: Request, user: dict = Depends(require_auth), limit: int = None):
     """
     POST /emails/apply-all-pending — Apply unapplied labels to Gmail.
     Processes emails where status='labeled' AND applied_to_gmail=0.
@@ -894,12 +854,7 @@ async def apply_all_pending(request: Request, limit: int = None):
                that many pending emails per call. Allows frontend to call in 
                smaller batches (e.g. 100 at a time) to avoid request timeouts.
     """
-    if not _is_authenticated(request):
-        return JSONResponse(status_code=401, content={"error": "Not logged in."})
-
-    user_id = _require_user_id(request)
-    if not user_id:
-        return JSONResponse(status_code=401, content={"error": "User session not found."})
+    user_id = user["user_id"]
 
     # Get pending email IDs from DB (with optional limit)
     conn = _get_connection()
@@ -976,40 +931,25 @@ async def apply_all_pending(request: Request, limit: int = None):
 # ---------- CUSTOM LABELS ENDPOINTS ----------
 
 @app.get("/labels")
-async def get_custom_labels(request: Request):
+async def get_custom_labels(request: Request, user: dict = Depends(require_auth)):
     """GET /labels — Returns all labels for the current user."""
-    if not _is_authenticated(request):
-        return JSONResponse(status_code=401, content={"error": "Not logged in."})
-
-    user_id = _require_user_id(request)
-    if not user_id:
-        return JSONResponse(status_code=401, content={"error": "User session not found."})
+    user_id = user["user_id"]
 
     return {"labels": get_labels(user_id)}
 
 
 @app.get("/settings/labels")
-async def get_settings_labels(request: Request):
+async def get_settings_labels(request: Request, user: dict = Depends(require_auth)):
     """GET /settings/labels — Alias for GET /labels for backward compatibility."""
-    if not _is_authenticated(request):
-        return JSONResponse(status_code=401, content={"error": "Not logged in."})
-
-    user_id = _require_user_id(request)
-    if not user_id:
-        return JSONResponse(status_code=401, content={"error": "User session not found."})
+    user_id = user["user_id"]
 
     return {"labels": get_labels(user_id)}
 
 
 @app.post("/labels")
-async def create_label(request: Request):
+async def create_label(request: Request, user: dict = Depends(require_auth)):
     """POST /labels — Create a new custom label."""
-    if not _is_authenticated(request):
-        return JSONResponse(status_code=401, content={"error": "Not logged in."})
-
-    user_id = _require_user_id(request)
-    if not user_id:
-        return JSONResponse(status_code=401, content={"error": "User session not found."})
+    user_id = user["user_id"]
 
     data = await request.json()
     label_name = data.get("name") or data.get("label_name")
@@ -1032,14 +972,9 @@ async def create_label(request: Request):
 
 
 @app.post("/settings/labels")
-async def create_settings_label(request: Request):
+async def create_settings_label(request: Request, user: dict = Depends(require_auth)):
     """POST /settings/labels — Alias for POST /labels for backward compatibility."""
-    if not _is_authenticated(request):
-        return JSONResponse(status_code=401, content={"error": "Not logged in."})
-
-    user_id = _require_user_id(request)
-    if not user_id:
-        return JSONResponse(status_code=401, content={"error": "User session not found."})
+    user_id = user["user_id"]
 
     data = await request.json()
     label_name = data.get("name") or data.get("label_name")
@@ -1062,28 +997,18 @@ async def create_settings_label(request: Request):
 
 
 @app.delete("/labels/{label_id}")
-async def remove_label(label_id: int, request: Request):
+async def remove_label(label_id: int, request: Request, user: dict = Depends(require_auth)):
     """DELETE /labels/{label_id} — Delete a custom label."""
-    if not _is_authenticated(request):
-        return JSONResponse(status_code=401, content={"error": "Not logged in."})
-
-    user_id = _require_user_id(request)
-    if not user_id:
-        return JSONResponse(status_code=401, content={"error": "User session not found."})
+    user_id = user["user_id"]
 
     delete_label(label_id, user_id)
     return {"message": "Label deleted"}
 
 
 @app.delete("/settings/labels/{label_name}")
-async def remove_settings_label(label_name: str, request: Request):
+async def remove_settings_label(label_name: str, request: Request, user: dict = Depends(require_auth)):
     """DELETE /settings/labels/{label_name} — Backward compat delete by name."""
-    if not _is_authenticated(request):
-        return JSONResponse(status_code=401, content={"error": "Not logged in."})
-
-    user_id = _require_user_id(request)
-    if not user_id:
-        return JSONResponse(status_code=401, content={"error": "User session not found."})
+    user_id = user["user_id"]
 
     from database import get_label_id_by_name
     try:
@@ -1097,14 +1022,9 @@ async def remove_settings_label(label_name: str, request: Request):
 # ---------- SETTINGS ENDPOINTS ----------
 
 @app.post("/settings/reset-database")
-async def reset_database_endpoint(request: Request):
+async def reset_database_endpoint(request: Request, user: dict = Depends(require_auth)):
     """POST /settings/reset-database — Wipes analysis data for the current user."""
-    if not _is_authenticated(request):
-        return JSONResponse(status_code=401, content={"error": "Not logged in."})
-
-    user_id = _require_user_id(request)
-    if not user_id:
-        return JSONResponse(status_code=401, content={"error": "User session not found."})
+    user_id = user["user_id"]
 
     reset_database(user_id)
     return {"message": "Database wiped successfully. You can now re-fetch emails from the beginning."}
@@ -1121,14 +1041,9 @@ async def get_delete_mode_endpoint(request: Request, user: dict = Depends(requir
 
 
 @app.put("/settings/delete-mode")
-async def update_delete_mode_endpoint(request: Request):
+async def update_delete_mode_endpoint(request: Request, user: dict = Depends(require_auth)):
     """PUT /settings/delete-mode — Update delete mode to 'trash' or 'permanent'."""
-    if not _is_authenticated(request):
-        return JSONResponse(status_code=401, content={"error": "Not logged in."})
-
-    user_id = _require_user_id(request)
-    if not user_id:
-        return JSONResponse(status_code=401, content={"error": "User session not found."})
+    user_id = user["user_id"]
 
     data = await request.json()
     mode = data.get("delete_mode", "trash")
@@ -1143,14 +1058,9 @@ async def update_delete_mode_endpoint(request: Request):
 # ---------- MARK EMAIL SAFE ----------
 
 @app.patch("/emails/{email_id}/mark-safe")
-async def patch_mark_email_safe(email_id: str, request: Request):
+async def patch_mark_email_safe(email_id: str, request: Request, user: dict = Depends(require_auth)):
     """PATCH /emails/{email_id}/mark-safe — Mark an email as safe."""
-    if not _is_authenticated(request):
-        return JSONResponse(status_code=401, content={"error": "Not logged in."})
-
-    user_id = _require_user_id(request)
-    if not user_id:
-        return JSONResponse(status_code=401, content={"error": "User session not found."})
+    user_id = user["user_id"]
 
     mark_email_safe(email_id, user_id)
     return {"success": True, "message": f"Email {email_id} marked as safe."}
@@ -1205,10 +1115,8 @@ async def ai_status():
 # ---------- SECURITY SCAN ENDPOINT ----------
 
 @app.post("/security/scan-email")
-async def security_scan_email(request: Request):
+async def security_scan_email(request: Request, user: dict = Depends(require_auth)):
     """POST /security/scan-email — Scan email URLs for threats."""
-    if not _is_authenticated(request):
-        return JSONResponse(status_code=401, content={"error": "Not logged in."})
 
     from security import extract_urls, scan_url
     import httpx
@@ -1239,14 +1147,9 @@ async def security_scan_email(request: Request):
 # ---------- QUARANTINE ENDPOINTS ----------
 
 @app.get("/quarantine")
-async def quarantine_list(request: Request):
+async def quarantine_list(request: Request, user: dict = Depends(require_auth)):
     """GET /quarantine — Returns all quarantined emails."""
-    if not _is_authenticated(request):
-        return JSONResponse(status_code=401, content={"error": "Not logged in."})
-
-    user_id = _require_user_id(request)
-    if not user_id:
-        return JSONResponse(status_code=401, content={"error": "User session not found."})
+    user_id = user["user_id"]
 
     emails = get_analyzed_emails(user_id)
     quarantined = [e for e in emails if e.get("is_quarantined") == 1]
@@ -1262,14 +1165,9 @@ async def quarantine_mark_safe(email_id: str, request: Request, user: dict = Dep
 
 
 @app.delete("/quarantine/{email_id}")
-async def quarantine_delete(email_id: str, request: Request):
+async def quarantine_delete(email_id: str, request: Request, user: dict = Depends(require_auth)):
     """DELETE /quarantine/{email_id} — Delete email using user's preferred mode."""
-    if not _is_authenticated(request):
-        return JSONResponse(status_code=401, content={"error": "Not logged in."})
-
-    user_id = _require_user_id(request)
-    if not user_id:
-        return JSONResponse(status_code=401, content={"error": "User session not found."})
+    user_id = user["user_id"]
 
     mode = get_delete_mode(user_id)
     success = delete_email(email_id, user_id, user_email=_request_user_email(request))
@@ -1415,7 +1313,7 @@ async def reanalyze_scam_email(email_id: str, request: Request, user: dict = Dep
         status='labeled',
     )
 
-    print(f"[SCAM REANALYZE] {email_id[:12]}... -> label={label}, scam={scam_score}, quarantine={is_quarantined}")
+    logger.info(f"[SCAM REANALYZE] {email_id[:12]}... -> label={label}, scam={scam_score}, quarantine={is_quarantined}")
     return {
         "email_id": email_id,
         "scam_score": scam_score,
@@ -1430,14 +1328,9 @@ async def reanalyze_scam_email(email_id: str, request: Request, user: dict = Dep
 # ---------- BATCH DELETE ENDPOINT ----------
 
 @app.post("/emails/batch-delete")
-async def emails_batch_delete(request: Request):
+async def emails_batch_delete(request: Request, user: dict = Depends(require_auth)):
     """POST /emails/batch-delete — Trash and delete matching emails."""
-    if not _is_authenticated(request):
-        return JSONResponse(status_code=401, content={"error": "Not logged in."})
-
-    user_id = _require_user_id(request)
-    if not user_id:
-        return JSONResponse(status_code=401, content={"error": "User session not found."})
+    user_id = user["user_id"]
 
     data = await request.json()
     mode = data.get("mode")
@@ -1472,16 +1365,11 @@ async def emails_batch_delete(request: Request):
 # ---------- STATS ENDPOINT ----------
 
 @app.post("/emails/retry-failed")
-async def retry_failed_emails(request: Request):
+async def retry_failed_emails(request: Request, user: dict = Depends(require_auth)):
     """
     POST /emails/retry-failed — Retry failed analysis records through the analysis pipeline.
     """
-    if not _is_authenticated(request):
-        return JSONResponse(status_code=401, content={"error": "Not logged in."})
-
-    user_id = _require_user_id(request)
-    if not user_id:
-        return JSONResponse(status_code=401, content={"error": "User session not found."})
+    user_id = user["user_id"]
 
     try:
         from database import get_pending_retry_queue, mark_retry_attempt
@@ -1520,21 +1408,17 @@ async def retry_failed_emails(request: Request):
         }
 
     except Exception as e:
-        print(f"[RETRY ERROR] {type(e).__name__}: {str(e)}")
+        logger.error(f"[RETRY ERROR] {type(e).__name__}: {str(e)}")
         import traceback
         traceback.print_exc()
-        return JSONResponse(status_code=500, content={"error": f"Failed to retry emails: {str(e)}"})
+        return JSONResponse(status_code=500, content={"error": "Failed to retry emails. Please try again."})
 
 
 @app.get("/emails/stats")
-async def emails_stats(request: Request):
+async def emails_stats(request: Request, user: dict = Depends(require_auth)):
     """GET /emails/stats — Returns summary statistics."""
-    if not _is_authenticated(request):
-        return JSONResponse(status_code=401, content={"error": "Not logged in."})
+    user_id = user["user_id"]
 
-    user_id = _require_user_id(request)
-    if not user_id:
-        return {"total_analyzed": 0, "total_quarantined": 0, "total_flagged": 0}
 
     emails = get_analyzed_emails(user_id)
     total_analyzed = len(emails)

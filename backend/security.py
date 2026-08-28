@@ -5,6 +5,9 @@ Contains exactly two functions:
   2. scan_url — Check URL safety via Google Safe Browsing API with caching
 """
 
+from logger_setup import get_logger
+logger = get_logger(__name__)
+
 import os
 import re
 import httpx
@@ -65,13 +68,13 @@ def extract_urls(text: str) -> list[str]:
                         text_domain = _extract_domain(anchor_text)
                         if href_domain and text_domain and href_domain != text_domain:
                             # Mismatch: anchor text shows one domain but links to another
-                            print(f"[SECURITY] WARNING: Anchor mismatch: shows '{text_domain}' but links to '{href_domain}'")
+                            logger.info(f"[SECURITY] WARNING: Anchor mismatch: shows '{text_domain}' but links to '{href_domain}'")
                             urls.add(href)  # Ensure the actual href is in the result
         except ImportError:
-            print("[SECURITY] BeautifulSoup not installed, skipping HTML anchor extraction")
+            logger.info("[SECURITY] BeautifulSoup not installed, skipping HTML anchor extraction")
 
     result = list(urls)
-    print(f"[SECURITY] Extracted {len(result)} URLs from email body.")
+    logger.info(f"[SECURITY] Extracted {len(result)} URLs from email body.")
     return result
 
 
@@ -112,7 +115,7 @@ async def scan_url(url: str, email_id: str,
     # Step 1: Check cache first (offload blocking DB call to thread)
     cached = await asyncio.to_thread(get_cached_url, url)
     if cached is not None:
-        print(f"[SECURITY] Cache hit for URL: {url[:60]}")
+        logger.info(f"[SECURITY] Cache hit for URL: {url[:60]}")
         return {
             "url": url,
             "is_safe": cached["is_safe"],
@@ -124,12 +127,12 @@ async def scan_url(url: str, email_id: str,
     async with _cache_lock:
         cached_result = URL_SAFETY_CACHE.get(url)
         if cached_result is not None:
-            print(f"[SECURITY] In-memory cache hit for URL: {url[:60]}")
+            logger.info(f"[SECURITY] In-memory cache hit for URL: {url[:60]}")
             return {"url": url, "is_safe": cached_result[0], "threat_type": cached_result[1]}
 
     # Step 3: No cache — call Google Safe Browsing API v4
     if not SAFE_BROWSING_KEY or SAFE_BROWSING_KEY == "your_key_here":
-        print(f"[SECURITY] WARNING: Safe Browsing API key not configured. Skipping URL check for: {url[:60]}")
+        logger.info(f"[SECURITY] WARNING: Safe Browsing API key not configured. Skipping URL check for: {url[:60]}")
         # Save as safe and return (offload blocking DB call to thread)
         await asyncio.to_thread(save_url_result, email_id, url, 1, None)
         return {"url": url, "is_safe": 1, "threat_type": None}
@@ -176,20 +179,20 @@ async def scan_url(url: str, email_id: str,
             except:
                 response_body = "<unable to read response body>"
             
-            print(f"[SECURITY] Safe Browsing API error: {response.status_code}")
-            print(f"[SECURITY] Response body: {response_body}")
+            logger.info(f"[SECURITY] Safe Browsing API error: {response.status_code}")
+            logger.info(f"[SECURITY] Response body: {response_body}")
             
             # Check for specific error types
             if response.status_code == 429:
-                print(f"[SECURITY] DIAGNOSIS: Rate limit / quota exceeded (HTTP 429)")
+                logger.info(f"[SECURITY] DIAGNOSIS: Rate limit / quota exceeded (HTTP 429)")
                 exception_type = "RATE_LIMIT"
                 exception_message = f"HTTP 429: {response_body}"
             elif response.status_code == 400:
-                print(f"[SECURITY] DIAGNOSIS: Bad request / malformed URL (HTTP 400)")
+                logger.info(f"[SECURITY] DIAGNOSIS: Bad request / malformed URL (HTTP 400)")
                 exception_type = "BAD_REQUEST"
                 exception_message = f"HTTP 400: {response_body}"
             elif response.status_code >= 500:
-                print(f"[SECURITY] DIAGNOSIS: Server error (HTTP {response.status_code})")
+                logger.info(f"[SECURITY] DIAGNOSIS: Server error (HTTP {response.status_code})")
                 exception_type = "SERVER_ERROR"
                 exception_message = f"HTTP {response.status_code}: {response_body}"
             else:
@@ -202,7 +205,7 @@ async def scan_url(url: str, email_id: str,
             if data.get("matches"):
                 is_safe = 0  # verdict_unsafe: API confirmed threat
                 threat_type = data["matches"][0].get("threatType", "UNKNOWN")
-                print(f"[SECURITY] WARNING: UNSAFE URL detected: {url[:60]} - {threat_type}")
+                logger.info(f"[SECURITY] WARNING: UNSAFE URL detected: {url[:60]} - {threat_type}")
             else:
                 # API returned 200 with no matches = safe
                 is_safe = 1  # verdict_safe: API confirmed safe
@@ -211,33 +214,33 @@ async def scan_url(url: str, email_id: str,
         import traceback
         exception_type = "TIMEOUT"
         exception_message = f"Timeout after {URL_CHECK_TIMEOUT_SECONDS}s"
-        print(f"[SECURITY] DIAGNOSIS: Timeout checking URL {url[:60]}")
-        print(f"[SECURITY] Timeout value: {URL_CHECK_TIMEOUT_SECONDS}s")
-        print(f"[SECURITY] Full traceback:\n{traceback.format_exc()}")
+        logger.info(f"[SECURITY] DIAGNOSIS: Timeout checking URL {url[:60]}")
+        logger.info(f"[SECURITY] Timeout value: {URL_CHECK_TIMEOUT_SECONDS}s")
+        logger.info(f"[SECURITY] Full traceback:\n{traceback.format_exc()}")
         scan_failed = True
     except httpx.TimeoutException as e:
         import traceback
         exception_type = "TIMEOUT"
         exception_message = f"httpx.TimeoutException: {str(e)}"
-        print(f"[SECURITY] DIAGNOSIS: httpx Timeout checking URL {url[:60]}")
-        print(f"[SECURITY] Timeout value: {URL_CHECK_TIMEOUT_SECONDS}s")
-        print(f"[SECURITY] Exception details: {e!r}")
-        print(f"[SECURITY] Full traceback:\n{traceback.format_exc()}")
+        logger.info(f"[SECURITY] DIAGNOSIS: httpx Timeout checking URL {url[:60]}")
+        logger.info(f"[SECURITY] Timeout value: {URL_CHECK_TIMEOUT_SECONDS}s")
+        logger.info(f"[SECURITY] Exception details: {e!r}")
+        logger.info(f"[SECURITY] Full traceback:\n{traceback.format_exc()}")
         scan_failed = True
     except httpx.HTTPStatusError as e:
         import traceback
         exception_type = "HTTP_ERROR"
         exception_message = f"HTTPStatusError: {e.response.status_code}"
         response_status = e.response.status_code
-        print(f"[SECURITY] DIAGNOSIS: HTTP status error for {url[:60]}: {e.response.status_code}")
-        print(f"[SECURITY] Full traceback:\n{traceback.format_exc()}")
+        logger.info(f"[SECURITY] DIAGNOSIS: HTTP status error for {url[:60]}: {e.response.status_code}")
+        logger.info(f"[SECURITY] Full traceback:\n{traceback.format_exc()}")
         scan_failed = True
     except Exception as e:
         import traceback
         exception_type = type(e).__name__
         exception_message = str(e)
-        print(f"[SECURITY] DIAGNOSIS: {exception_type} checking URL {url[:60]}: {e!r}")
-        print(f"[SECURITY] Full traceback:\n{traceback.format_exc()}")
+        logger.info(f"[SECURITY] DIAGNOSIS: {exception_type} checking URL {url[:60]}: {e!r}")
+        logger.info(f"[SECURITY] Full traceback:\n{traceback.format_exc()}")
         scan_failed = True
 
     # Step 4: Save results to persistent and in-memory caches.
@@ -248,7 +251,7 @@ async def scan_url(url: str, email_id: str,
         # Offload blocking DB call to thread to prevent event loop blocking
         await asyncio.to_thread(save_url_result, email_id, url, is_safe, threat_type)
     else:
-        print(f"[SECURITY] Scan failed for {url[:60]}, not caching result")
+        logger.info(f"[SECURITY] Scan failed for {url[:60]}, not caching result")
         # Log scan failure for diagnosis (Step 4 of task)
         await _log_scan_failure(url, email_id, exception_type, exception_message, response_status)
 
@@ -268,7 +271,7 @@ async def _log_scan_failure(url: str, email_id: str, exception_type: str, except
     from datetime import datetime
     timestamp = datetime.utcnow().isoformat()
     
-    print(f"[SECURITY] SCAN_FAILURE_LOG | {timestamp} | {exception_type} | {url[:80]} | {exception_message[:200]}")
+    logger.error(f"[SECURITY] SCAN_FAILURE_LOG | {timestamp} | {exception_type} | {url[:80]} | {exception_message[:200]}")
     
     # Attempt to save to database for queryable record
     try:
@@ -298,9 +301,9 @@ async def _log_scan_failure(url: str, email_id: str, exception_type: str, except
             
             conn.commit()
         except Exception as db_err:
-            print(f"[SECURITY] Warning: Could not persist scan failure to database: {db_err}")
+            logger.info(f"[SECURITY] Warning: Could not persist scan failure to database: {db_err}")
         finally:
             _release_connection(conn)
     except Exception as e:
         # Don't let logging failures break the main flow
-        print(f"[SECURITY] Warning: Failed to log scan failure: {e}")
+        logger.info(f"[SECURITY] Warning: Failed to log scan failure: {e}")

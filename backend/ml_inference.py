@@ -4,6 +4,10 @@ Loads trained model at startup and provides prediction API.
 Designed for async FastAPI integration with asyncio.to_thread wrapping.
 Deployment: 2026-08-20 03:38 UTC - ML model v20260820_001758 active
 """
+
+from logger_setup import get_logger
+logger = get_logger(__name__)
+
 import pickle
 import asyncio
 from typing import Dict, Any, Optional, Tuple
@@ -35,7 +39,7 @@ def load_active_model():
         
         row = cursor.fetchone()
         if not row:
-            print("[ML] No active model found. Running AI-only mode.")
+            logger.info("[ML] No active model found. Running AI-only mode.")
             return None
         
         version = row[0] if isinstance(row, tuple) else row['version']
@@ -45,11 +49,11 @@ def load_active_model():
         _MODEL_CACHE = pickle.loads(model_blob)
         _MODEL_VERSION = version
         
-        print(f"[ML] Loaded model version {version} (recall={recall:.3f})")
+        logger.info(f"[ML] Loaded model version {version} (recall={recall:.3f})")
         return _MODEL_CACHE
         
     except Exception as e:
-        print(f"[ML] Failed to load model: {e}")
+        logger.info(f"[ML] Failed to load model: {e}")
         return None
     finally:
         _release_connection(conn)
