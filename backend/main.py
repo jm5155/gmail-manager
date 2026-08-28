@@ -82,6 +82,11 @@ if IS_PRODUCTION:
         "http://localhost:3000",
         "http://localhost:5174",
     ]
+    # Add dynamic allowed origin from env if present
+    env_origin = os.getenv("ALLOWED_ORIGIN")
+    if env_origin:
+        origins.extend([env_origin, env_origin + "/"])
+        print(f"[CORS] Added ALLOWED_ORIGIN from env: {env_origin}")
     print(f"[CORS] Production mode - Allowed origins: {origins}")
 else:
     # Local dev: Specific localhost origins
