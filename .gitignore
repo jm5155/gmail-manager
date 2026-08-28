@@ -1,66 +1,26 @@
 # Dependencies
 node_modules/
-__pycache__/
+backend/venv/
+backend/__pycache__/
 *.pyc
-*.pyo
-venv/
-.venv/
-
-# Build output
-dist/
-build/
-frontend/dist/
-electron/resources/gmail-manager-backend*
-*.spec.bak
-
-# PyInstaller
-*.manifest
 
 # Environment & secrets
-.env
-.env.local
-.env.*.local
 backend/.env
+.env
 backend/token.json
 backend/tokens/
 
-# Database files
-*.db
-*.db-journal
-*.db-shm
-*.db-wal
+# Database (SQLite)
 backend/*.db
-backend/*.db.*
-backend/gmail_manager.db
-backend/gmail_manager.db.backup_*
-backend/gmail_manager_backup_*.db
-backend/gmail_manager_test*.db
+*.db
 
-# Logs
-*.log
-npm-debug.log*
-train_output.log
-backend/train_output.log
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*.sublime-project
-*.sublime-workspace
+# Build output
+frontend/dist/
+dist/
+electron/resources/
 
 # OS
 .DS_Store
-Thumbs.db
-desktop.ini
 
-# Kilo
-.kilo/
-
-# Backup files
-*.backup_*
-backend/*.backup_*
-
-# Test artifacts
-http_check.txt
+# Logs
+*.log
