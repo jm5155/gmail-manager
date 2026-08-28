@@ -2,6 +2,9 @@
 node_modules/
 __pycache__/
 *.pyc
+*.pyo
+venv/
+.venv/
 
 # Build output
 dist/
@@ -12,27 +15,52 @@ electron/resources/gmail-manager-backend*
 
 # PyInstaller
 *.manifest
-*.spec.bak
 
 # Environment & secrets
 .env
+.env.local
+.env.*.local
 backend/.env
 backend/token.json
 backend/tokens/
+
+# Database files
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+backend/*.db
+backend/*.db.*
 backend/gmail_manager.db
+backend/gmail_manager.db.backup_*
+backend/gmail_manager_backup_*.db
+backend/gmail_manager_test*.db
+
+# Logs
+*.log
+npm-debug.log*
+train_output.log
+backend/train_output.log
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+*.sublime-project
+*.sublime-workspace
 
 # OS
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# Logs
-*.log
-npm-debug.log*
+# Kilo
+.kilo/
 
-node_modules/
+# Backup files
+*.backup_*
+backend/*.backup_*
+
+# Test artifacts
+http_check.txt
