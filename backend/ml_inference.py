@@ -8,11 +8,16 @@ Deployment: 2026-08-20 03:38 UTC - ML model v20260820_001758 active
 from logger_setup import get_logger
 logger = get_logger(__name__)
 
+import os
 import pickle
 import asyncio
 from typing import Dict, Any, Optional, Tuple
 from database import _get_connection, _release_connection, _execute
 from features import extract_features, get_sender_history
+
+# Module-level ML threshold constants read from environment
+STRICT_CONFIDENCE_THRESHOLD = float(os.getenv("ML_CONFIDENCE_THRESHOLD", "0.85"))
+AUDIT_SAMPLE_RATE = float(os.getenv("ML_AUDIT_SAMPLE_RATE", "0.04"))
 
 
 _MODEL_CACHE = None
@@ -46,6 +51,7 @@ def load_active_model():
         model_blob = row[1] if isinstance(row, tuple) else row['model_blob']
         recall = row[2] if isinstance(row, tuple) else row['validation_recall']
         
+        # Safely deserializing: model_blob is only ever written by this project's train_ml_model.py, never user input
         _MODEL_CACHE = pickle.loads(model_blob)
         _MODEL_VERSION = version
         
@@ -53,7 +59,7 @@ def load_active_model():
         return _MODEL_CACHE
         
     except Exception as e:
-        logger.info(f"[ML] Failed to load model: {e}")
+        logger.error(f"[ML] Failed to load model: {e}", exc_info=True)
         return None
     finally:
         _release_connection(conn)
@@ -108,9 +114,6 @@ def _predict_sync(
     4. Otherwise → escalate to AI
     """
     import random
-    
-    STRICT_CONFIDENCE_THRESHOLD = 0.85
-    AUDIT_SAMPLE_RATE = 0.04
     
     conn = _get_connection()
     try:

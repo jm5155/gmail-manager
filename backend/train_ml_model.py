@@ -7,6 +7,7 @@ Run manually/offline - not wired into live app initially.
 from logger_setup import get_logger
 logger = get_logger(__name__)
 
+import os
 import json
 import pickle
 from datetime import datetime
@@ -18,6 +19,9 @@ from sklearn.calibration import CalibratedClassifierCV
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import precision_recall_fscore_support, confusion_matrix
 from database import _get_connection, _release_connection, _execute
+
+# Module-level minimum recall threshold
+MIN_RECALL_HIGH_RISK = float(os.getenv("ML_MIN_RECALL_HIGH_RISK", "0.25"))
 from features import extract_features, get_sender_history
 
 
@@ -251,7 +255,6 @@ def train_model(X_features, X_text, y_labels, min_rows_per_class=MIN_ROWS_PER_CL
     # Phase 3 Initial Deployment: Lower threshold to 25% to get model into production
     # Rationale: 27.8% recall catches 5/18 scams. Not ideal, but better than pure AI cost.
     # With 115 high-risk samples, we need ~300+ for 90% recall. Deploy now, improve later.
-    MIN_RECALL_HIGH_RISK = 0.25
     if metrics['recall_high_risk'] < MIN_RECALL_HIGH_RISK:
         raise ValueError(
             f"Model fails minimum bar: high-risk recall {metrics['recall_high_risk']:.3f} "
