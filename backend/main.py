@@ -319,9 +319,7 @@ async def auth_callback(request: Request):
         )
     
     except Exception as e:
-        logger.error(f"[AUTH CALLBACK EXCEPTION] {type(e, exc_info=True).__name__}: {str(e)}")
-        import traceback
-        traceback.print_exc()
+        logger.error(f"[AUTH CALLBACK EXCEPTION] {type(e).__name__}: {str(e)}", exc_info=True)
         return JSONResponse(
             status_code=500,
             content={"error": "Authentication failed due to an internal server error."}
