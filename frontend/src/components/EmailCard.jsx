@@ -10,6 +10,8 @@
 import React, { useState } from 'react';
 import ScamBadge from './ScamBadge';
 import { decodeHTMLEntities } from '../utils/htmlDecode';
+import { apiPost } from '../lib/api';
+import { useToast } from './ToastNotification';
 
 function EmailCard({ 
   email, 
@@ -22,6 +24,10 @@ function EmailCard({
 }) {
   const [expanded, setExpanded] = useState(false);
   const [scamExpanded, setScamExpanded] = useState(false);
+  const [replyOpen, setReplyOpen] = useState(false);
+  const [replyBody, setReplyBody] = useState('');
+  const [sending, setSending] = useState(false);
+  const toast = useToast();
 
   // Get the label display name from API field
   const labelName = email.label_name || email.label || 'Uncategorized';
@@ -86,6 +92,27 @@ function EmailCard({
   const indicators = email.scam_indicators
     ? (typeof email.scam_indicators === 'string' ? JSON.parse(email.scam_indicators) : email.scam_indicators)
     : [];
+
+  const handleSendReply = async () => {
+    if (!replyBody.trim() || sending) return;
+    setSending(true);
+    try {
+      const result = await apiPost(`/emails/${email.email_id || email.id}/reply`, {
+        body: replyBody,
+      });
+      if (result && result.error) {
+        toast.error('Failed to send reply', result.error);
+      } else {
+        toast.success('Reply sent', 'Your reply was sent successfully.');
+        setReplyBody('');
+        setReplyOpen(false);
+      }
+    } catch (err) {
+      toast.error('Failed to send reply', err.message || 'Please try again.');
+    } finally {
+      setSending(false);
+    }
+  };
 
   return (
     <div 
@@ -350,6 +377,74 @@ function EmailCard({
           >
             {decodedSnippet || 'No preview available'}
           </p>
+
+          <div className="mt-3" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setReplyOpen(!replyOpen)}
+              className="text-xs font-medium px-4 py-1.5 rounded-lg transition-all"
+              style={{
+                backgroundColor: replyOpen ? 'var(--color-border, #E1E5EB)' : 'var(--color-primary)',
+                color: replyOpen ? 'var(--color-text-primary, #20242C)' : '#fff',
+              }}
+            >
+              {replyOpen ? 'Close Reply' : 'Reply'}
+            </button>
+
+            {replyOpen && (
+              <div
+                className="mt-3 rounded-lg p-4"
+                style={{
+                  backgroundColor: 'var(--color-surface, #F8F9FB)',
+                  border: '1px solid var(--color-border, #E1E5EB)',
+                }}
+              >
+                <div className="text-xs mb-2 space-y-1" style={{ color: 'var(--color-text-secondary, #687386)' }}>
+                  <p><span className="font-medium">To:</span> {senderName}</p>
+                  <p><span className="font-medium">Subject:</span> Re: {decodedSubject}</p>
+                </div>
+                <textarea
+                  value={replyBody}
+                  onChange={(e) => setReplyBody(e.target.value)}
+                  placeholder="Write your reply..."
+                  rows={4}
+                  className="w-full text-sm rounded-lg p-3 resize-y transition-all"
+                  style={{
+                    backgroundColor: 'var(--color-background, #fff)',
+                    border: '1px solid var(--color-border, #E1E5EB)',
+                    color: 'var(--color-text-primary, #20242C)',
+                    outline: 'none',
+                  }}
+                  onFocus={(e) => { e.target.style.borderColor = 'var(--color-primary)'; }}
+                  onBlur={(e) => { e.target.style.borderColor = 'var(--color-border, #E1E5EB)'; }}
+                />
+                <div className="flex gap-2 mt-3">
+                  <button
+                    onClick={handleSendReply}
+                    disabled={sending || !replyBody.trim()}
+                    className="text-xs font-medium px-4 py-1.5 rounded-lg transition-all"
+                    style={{
+                      backgroundColor: (sending || !replyBody.trim()) ? 'var(--color-border, #E1E5EB)' : 'var(--color-primary)',
+                      color: (sending || !replyBody.trim()) ? 'var(--color-text-muted, #9AA3B2)' : '#fff',
+                      cursor: (sending || !replyBody.trim()) ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    {sending ? 'Sending...' : 'Send'}
+                  </button>
+                  <button
+                    onClick={() => { setReplyBody(''); setReplyOpen(false); }}
+                    className="text-xs font-medium px-4 py-1.5 rounded-lg transition-all"
+                    style={{
+                      backgroundColor: 'transparent',
+                      color: 'var(--color-text-secondary, #687386)',
+                      border: '1px solid var(--color-border, #E1E5EB)',
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
