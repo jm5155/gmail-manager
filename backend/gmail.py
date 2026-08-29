@@ -509,6 +509,64 @@ def permanently_delete_email(email_id: str, user_email: str = None) -> bool:
         return False
 
 
+def send_reply(email_id: str, reply_body: str, user_email: str = None) -> dict | None:
+    """
+    Send a reply to an existing email, correctly threaded via Message-ID/References
+    so Gmail displays it as a reply, not a new email.
+    Returns the sent message's Gmail ID dict on success, None on failure.
+    """
+    service = get_gmail_service(user_email)
+    if not service:
+        return None
+
+    try:
+        original = service.users().messages().get(
+            userId="me",
+            id=email_id,
+            format="metadata",
+            metadataHeaders=["Subject", "From", "Message-ID", "References"],
+        ).execute()
+
+        headers = {h["name"]: h["value"] for h in original.get("payload", {}).get("headers", [])}
+        original_subject = headers.get("Subject", "")
+        original_from = headers.get("From", "")
+        original_message_id = headers.get("Message-ID", "")
+        original_references = headers.get("References", "")
+
+        if not original_from:
+            logger.info(f"[GMAIL] Cannot reply to {email_id}: no From header found")
+            return None
+
+        reply_subject = original_subject if original_subject.lower().startswith("re:") else f"Re: {original_subject}"
+        references = f"{original_references} {original_message_id}".strip() if original_references else original_message_id
+
+        import base64
+        from email.mime.text import MIMEText
+
+        mime_message = MIMEText(reply_body)
+        mime_message["To"] = original_from
+        mime_message["Subject"] = reply_subject
+        if original_message_id:
+            mime_message["In-Reply-To"] = original_message_id
+        if references:
+            mime_message["References"] = references
+
+        raw = base64.urlsafe_b64encode(mime_message.as_bytes()).decode()
+        thread_id = original.get("threadId")
+
+        sent = service.users().messages().send(
+            userId="me",
+            body={"raw": raw, "threadId": thread_id} if thread_id else {"raw": raw},
+        ).execute()
+
+        logger.info(f"[GMAIL] Reply sent for {email_id[:12]}... -> new message {sent.get('id', '')[:12]}...")
+        return sent
+
+    except Exception as e:
+        logger.info(f"[GMAIL] Error sending reply for {email_id}: {e}")
+        return None
+
+
 def delete_email(email_id: str, user_id: int, user_email: str = None) -> bool:
     """
     Delete an email using the user's preferred mode (trash or permanent).

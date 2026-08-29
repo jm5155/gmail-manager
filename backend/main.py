@@ -22,18 +22,20 @@ if sys.platform == 'win32':
 from fastapi import FastAPI, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, HTMLResponse
+from pydantic import BaseModel
 from starlette.middleware.sessions import SessionMiddleware
 import uvicorn
 
 # Import our custom modules
 from auth import get_auth_url, handle_callback, is_logged_in, get_credentials, delete_token, get_user_email, migrate_legacy_tokens
-from gmail import fetch_emails, analyze_bulk_ordered, trash_email, delete_email
+from gmail import fetch_emails, analyze_bulk_ordered, trash_email, delete_email, send_reply
 from database import (
     init_db, get_analyzed_emails,
     get_labels, add_label, delete_label,
     reset_database, mark_email_safe,
     get_delete_mode, set_delete_mode,
     update_analyzed_email, get_label_id_by_name,
+    get_user_email_by_id,
     _get_connection, _execute, _release_connection,
 )
 from ml_inference import load_active_model
@@ -1352,6 +1354,30 @@ async def emails_batch_delete(request: Request, user: dict = Depends(require_aut
             failed += 1
 
     return {"deleted": deleted, "failed": failed, "total": len(matching)}
+
+
+# ---------- INLINE REPLY ENDPOINT ----------
+
+class ReplyRequest(BaseModel):
+    body: str
+
+@app.post("/emails/{email_id}/reply")
+async def send_reply_endpoint(email_id: str, reply: ReplyRequest, user: dict = Depends(require_auth)):
+    """POST /emails/{email_id}/reply — Sends a threaded reply to an email via Gmail."""
+    if not reply.body or not reply.body.strip():
+        return JSONResponse(status_code=400, content={"error": "Reply body cannot be empty."})
+
+    user_id = user["user_id"]
+    user_email = get_user_email_by_id(user_id)
+
+    try:
+        sent = send_reply(email_id, reply.body, user_email)
+        if not sent:
+            return JSONResponse(status_code=502, content={"error": "Failed to send reply. Please try again."})
+        return {"message": "Reply sent successfully.", "sent_message_id": sent.get("id")}
+    except Exception as e:
+        logger.error(f"[REPLY ERROR] {type(e).__name__}: {e}", exc_info=True)
+        return JSONResponse(status_code=500, content={"error": "Failed to send reply. Please try again."})
 
 
 # ---------- STATS ENDPOINT ----------
