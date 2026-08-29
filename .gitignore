@@ -12,7 +12,9 @@ backend/tokens/
 
 # Database (SQLite)
 backend/*.db
+backend/gmail_manager.db*
 *.db
+*.backup*
 
 # Build output
 frontend/dist/
