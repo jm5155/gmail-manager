@@ -10,7 +10,7 @@
 import React, { useState } from 'react';
 import ScamBadge from './ScamBadge';
 import EmailDetailModal from './EmailDetailModal';
-import { decodeHTMLEntities } from '../utils/htmlDecode';
+import { decodeHTMLEntities, stripHTML } from '../utils/htmlDecode';
 import { apiPost } from '../lib/api';
 import { useToast } from './ToastNotification';
 
@@ -66,8 +66,9 @@ function EmailCard({
   const avatarInitials = getAvatarInitials(senderName);
 
   // Decode HTML entities in subject and snippet (fixes &#39; bug)
+  // Strip HTML tags from snippet to prevent raw HTML display
   const decodedSubject = decodeHTMLEntities(email.subject) || '(No Subject)';
-  const decodedSnippet = decodeHTMLEntities(email.snippet) || '';
+  const decodedSnippet = stripHTML(email.snippet) || '';
 
   // Format date
   function formatDate(dateStr) {

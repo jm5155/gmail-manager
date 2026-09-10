@@ -9,6 +9,7 @@ import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import ScamBadge from './ScamBadge';
 import { apiGet, apiRequest } from '../lib/api';
+import { stripHTML } from '../utils/htmlDecode';
 
 function EmailDetailPanel({ email, isOpen, onClose, onLabelChange }) {
   const [selectedLabel, setSelectedLabel] = useState(email?.label_name || '');
@@ -262,7 +263,7 @@ function EmailDetailPanel({ email, isOpen, onClose, onLabelChange }) {
                 lineHeight: '1.7'
               }}
             >
-              {email.body}
+              {stripHTML(email.body)}
             </pre>
           ) : email.snippet ? (
             <div>
@@ -276,7 +277,7 @@ function EmailDetailPanel({ email, isOpen, onClose, onLabelChange }) {
                 className="text-sm"
                 style={{ color: 'var(--color-text-primary)' }}
               >
-                {email.snippet}
+                {stripHTML(email.snippet)}
               </p>
             </div>
           ) : (

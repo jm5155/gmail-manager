@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import ScamBadge from './ScamBadge';
 import { apiPost } from '../lib/api';
 import { useToast } from './ToastNotification';
+import { stripHTML } from '../utils/htmlDecode';
 
 function EmailDetailModal({ email, senderName, senderEmail, decodedSubject, indicators, onClose }) {
   const [replyBody, setReplyBody] = useState('');
@@ -177,7 +178,7 @@ function EmailDetailModal({ email, senderName, senderEmail, decodedSubject, indi
                 wordBreak: 'break-word',
               }}
             >
-              {email.body || email.snippet || 'No content available'}
+              {stripHTML(email.body || email.snippet) || 'No content available'}
             </p>
           </div>
 

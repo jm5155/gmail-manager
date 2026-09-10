@@ -38,3 +38,25 @@ export function decodeCommonEntities(text) {
   
   return text.replace(/&#?\w+;/g, match => entities[match] || match);
 }
+
+/**
+ * Strips HTML tags from text and decodes entities.
+ * Converts HTML content to plain text for display in snippets.
+ * @param {string} html - HTML string to convert
+ * @returns {string} - Plain text with entities decoded
+ */
+export function stripHTML(html) {
+  if (!html || typeof html !== 'string') return html;
+  
+  // Create a temporary div to parse HTML
+  const temp = document.createElement('div');
+  temp.innerHTML = html;
+  
+  // Get text content (automatically strips tags)
+  let text = temp.textContent || temp.innerText || '';
+  
+  // Clean up extra whitespace
+  text = text.replace(/\s+/g, ' ').trim();
+  
+  return text;
+}
