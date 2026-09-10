@@ -14,6 +14,10 @@ import ScamAlerts from './pages/ScamAlerts';
 import Quarantine from './pages/Quarantine';
 import Rewriter from './pages/Rewriter';
 import Settings from './pages/Settings';
+import PrivacyPolicy from './pages/legal/PrivacyPolicy';
+import TermsOfService from './pages/legal/TermsOfService';
+import CookiePolicy from './pages/legal/CookiePolicy';
+import RefundPolicy from './pages/legal/RefundPolicy';
 import Sidebar from './components/Sidebar';
 import AnimatedBackground from './components/AnimatedBackground';
 import ToastProvider from './components/ToastNotification';
@@ -135,6 +139,12 @@ function AppContent() {
           
           {/* Auth routes */}
           <Route path="/login" element={<Login />} />
+
+          {/* Legal pages */}
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/cookie-policy" element={<CookiePolicy />} />
+          <Route path="/refund-policy" element={<RefundPolicy />} />
 
           {/* Main app routes */}
           <Route path="/inbox" element={<Inbox />} />

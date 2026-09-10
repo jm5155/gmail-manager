@@ -400,7 +400,7 @@ function LandingPage() {
               overflowWrap: 'break-word'
             }}
           >
-            Smart labeling, phishing detection, and one-click email rewriting — powered by a self-healing AI cascade (Groq → Gemini → Cohere) that never goes down.
+            Smart labeling, phishing detection, and one-click email rewriting — powered by a self-healing AI cascade (Groq → Gemini → Cohere) built for high availability.
           </p>
 
           {/* CTA Buttons */}
@@ -435,7 +435,7 @@ function LandingPage() {
 
           {/* Trust Row */}
           <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', fontWeight: 500, marginBottom: '4rem' }}>
-            Runs on your own API keys · Emails never leave your machine · MIT Licensed
+            Self-hosted option available — or use our hosted cloud version · MIT Licensed
           </div>
 
           {/* Dashboard Screenshot Mockup Visual Container */}
@@ -630,7 +630,7 @@ Everything Your Inbox Needs
                 letterSpacing: '-0.015em'
               }}
             >
-              Never Goes Down — AI Cascade
+              Built for High Availability — AI Cascade
             </h2>
             <p style={{ fontSize: '1rem', color: 'var(--color-text-secondary)', maxWidth: '36rem', margin: '0 auto' }}>
               Automatic failover keeps analysis running even when a provider hits its limit.
@@ -1041,7 +1041,7 @@ Everything Your Inbox Needs
               © 2026 Gmail Manager. All rights reserved.
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontWeight: 550 }}>
-              Emails never leave your machine.
+              Privacy-first architecture with self-hosted and cloud options.
             </div>
           </div>
         </div>
