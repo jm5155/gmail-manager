@@ -301,7 +301,7 @@ function Settings() {
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <span className="text-lg flex-shrink-0">{field.icon}</span>
+                      <span className="text-lg flex-shrink-0" aria-hidden="true">{field.icon}</span>
                       <div className="min-w-0">
                         <p className="text-sm font-medium truncate" style={{ color: 'var(--color-text-primary)' }}>{field.label}</p>
                         <p className="text-xs text-gray truncate">{field.description}</p>
@@ -347,11 +347,14 @@ function Settings() {
           </h2>
 
           <div className="flex gap-2 mb-4">
+            <label htmlFor="new-label-input" className="sr-only">New label name</label>
             <input
+              id="new-label-input"
               type="text"
+              aria-label="New label name"
               value={newLabelName}
               onChange={(e) => setNewLabelName(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleAddLabel()}
+              onKeyDown={(e) => e.key === 'Enter' && handleAddLabel()}
               placeholder="Enter label name..."
               className="neu-input flex-1"
               disabled={labelLoading}
@@ -377,8 +380,8 @@ function Settings() {
                   <span className="text-xs">{label.label_name}</span>
                   <button
                     onClick={() => handleDeleteLabel(label)}
-                    className="ml-1 text-danger opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Delete label"
+                    aria-label={`Delete label ${label.label_name}`}
+                    className="ml-1 text-danger opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
                   >
                     ×
                   </button>

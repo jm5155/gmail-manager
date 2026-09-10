@@ -440,6 +440,8 @@ function LandingPage() {
 
           {/* Dashboard Screenshot Mockup Visual Container */}
           <div className="relative w-full max-w-4xl rounded-2xl border border-slate-700/80 p-1 md:p-3 overflow-visible"
+               aria-hidden="true"
+               role="presentation"
                style={{ 
                  background: '#0F1729', 
                  boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
@@ -987,24 +989,24 @@ Everything Your Inbox Needs
               </h4>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                 <li style={{ marginBottom: '0.5rem' }}>
-                  <a href="#" style={{ color: 'var(--color-text-secondary)', textDecoration: 'none', fontSize: '0.8125rem' }}>
+                  <a href="https://github.com/jm5155/gmail-manager#readme" style={{ color: 'var(--color-text-secondary)', textDecoration: 'none', fontSize: '0.8125rem' }}>
                     Documentation
                   </a>
                 </li>
                 <li style={{ marginBottom: '0.5rem' }}>
-                  <a href="#" style={{ color: 'var(--color-text-secondary)', textDecoration: 'none', fontSize: '0.8125rem' }}>
+                  <a href="https://github.com/jm5155/gmail-manager#api" style={{ color: 'var(--color-text-secondary)', textDecoration: 'none', fontSize: '0.8125rem' }}>
                     API Reference
                   </a>
                 </li>
                 <li style={{ marginBottom: '0.5rem' }}>
-                  <a href="#" style={{ color: 'var(--color-text-secondary)', textDecoration: 'none', fontSize: '0.8125rem' }}>
+                  <a href="https://github.com/jm5155/gmail-manager/blob/main/LICENSE" style={{ color: 'var(--color-text-secondary)', textDecoration: 'none', fontSize: '0.8125rem' }}>
                     License (MIT)
                   </a>
                 </li>
               </ul>
             </div>
 
-            {/* Connect */}
+            {/* Legal */}
             <div className="min-w-0" style={{ width: '100%' }}>
               <h4
                 style={{
@@ -1016,11 +1018,29 @@ Everything Your Inbox Needs
                   letterSpacing: '0.05em'
                 }}
               >
-                Connect
+                Legal
               </h4>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                 <li style={{ marginBottom: '0.5rem' }}>
-                  </li>
+                  <Link to="/privacy-policy" style={{ color: 'var(--color-text-secondary)', textDecoration: 'none', fontSize: '0.8125rem' }}>
+                    Privacy Policy
+                  </Link>
+                </li>
+                <li style={{ marginBottom: '0.5rem' }}>
+                  <Link to="/terms" style={{ color: 'var(--color-text-secondary)', textDecoration: 'none', fontSize: '0.8125rem' }}>
+                    Terms of Service
+                  </Link>
+                </li>
+                <li style={{ marginBottom: '0.5rem' }}>
+                  <Link to="/cookie-policy" style={{ color: 'var(--color-text-secondary)', textDecoration: 'none', fontSize: '0.8125rem' }}>
+                    Cookie Policy
+                  </Link>
+                </li>
+                <li style={{ marginBottom: '0.5rem' }}>
+                  <Link to="/refund-policy" style={{ color: 'var(--color-text-secondary)', textDecoration: 'none', fontSize: '0.8125rem' }}>
+                    Refund Policy
+                  </Link>
+                </li>
               </ul>
             </div>
           </div>
@@ -1037,8 +1057,9 @@ Everything Your Inbox Needs
               gap: '1rem'
             }}
           >
-            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-              © 2026 Gmail Manager. All rights reserved.
+            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', lineHeight: 1.6 }}>
+              © 2026 Gmail Manager. All rights reserved.<br/>
+              Contact: legal@gmailmanager.com
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontWeight: 550 }}>
               Privacy-first architecture with self-hosted and cloud options.

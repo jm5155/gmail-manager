@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { apiGet, API_BASE } from '../lib/api';
 
 function Login() {
@@ -13,6 +13,7 @@ function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [agreed, setAgreed] = useState(false);
 
   // DEBUG: Log API_BASE on component mount
   useEffect(() => {
@@ -135,16 +136,40 @@ function Login() {
           </h1>
 
           {/* Subtitle */}
-          <p className="mb-8 text-sm leading-relaxed"
+          <p className="mb-6 text-sm leading-relaxed"
             style={{ color: 'var(--color-text-secondary)' }}>
             AI-powered email management. Smart labeling,<br />
             scam detection, & intelligent sorting.
           </p>
 
+          {/* Consent Checkbox */}
+          <label style={{ 
+            display: 'flex', 
+            gap: '0.5rem', 
+            alignItems: 'flex-start', 
+            fontSize: '0.8125rem', 
+            marginBottom: '1rem', 
+            textAlign: 'left',
+            cursor: 'pointer'
+          }}>
+            <input
+              type="checkbox"
+              checked={agreed}
+              onChange={(e) => setAgreed(e.target.checked)}
+              style={{ marginTop: '0.2rem', cursor: 'pointer' }}
+            />
+            <span style={{ color: 'var(--color-text-secondary)' }}>
+              I agree to the{' '}
+              <Link to="/terms" style={{ color: 'var(--color-primary)', textDecoration: 'underline' }}>Terms of Service</Link>{' '}
+              and{' '}
+              <Link to="/privacy-policy" style={{ color: 'var(--color-primary)', textDecoration: 'underline' }}>Privacy Policy</Link>.
+            </span>
+          </label>
+
           {/* Sign In Button */}
           <button
             onClick={handleLogin}
-            disabled={isLoading}
+            disabled={!agreed || isLoading}
             className="btn-primary w-full py-3.5 px-6 flex items-center justify-center gap-2.5"
             style={{
               fontSize: '14px',

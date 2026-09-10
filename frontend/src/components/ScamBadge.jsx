@@ -11,6 +11,7 @@
  */
 
 import React from 'react';
+import InfoTooltip from './InfoTooltip';
 
 function ScamBadge({ score = 0, reason = '', indicators = [], expanded = false, onToggle = () => {} }) {
   const getRiskLevel = (score) => {
@@ -93,13 +94,16 @@ function ScamBadge({ score = 0, reason = '', indicators = [], expanded = false, 
             </div>
 
             {/* Label + Score */}
-            <div>
-              <div className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-                {config.label}
+            <div className="flex items-center gap-2">
+              <div>
+                <div className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+                  {config.label}
+                </div>
+                <div className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                  Risk Score: {score}/100
+                </div>
               </div>
-              <div className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
-                Risk Score: {score}/100
-              </div>
+              <InfoTooltip text="AI-generated estimate. Always verify suspicious emails yourself before acting." />
             </div>
           </div>
 
