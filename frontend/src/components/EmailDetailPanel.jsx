@@ -9,7 +9,8 @@ import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import ScamBadge from './ScamBadge';
 import { apiGet, apiRequest } from '../lib/api';
-import { stripHTML, sanitizeEmailHTML } from '../utils/htmlDecode';
+import { stripHTML } from '../utils/htmlDecode';
+import EmailBodyFrame from './EmailBodyFrame';
 
 function EmailDetailPanel({ email, isOpen, onClose, onLabelChange }) {
   const [selectedLabel, setSelectedLabel] = useState(email?.label_name || '');
@@ -256,16 +257,10 @@ function EmailDetailPanel({ email, isOpen, onClose, onLabelChange }) {
         {/* Email body */}
         <div className="p-6">
           {email.body ? (
-            <div 
-              className="text-sm"
-              style={{ 
-                color: 'var(--color-text-primary)',
-                lineHeight: '1.7',
-                whiteSpace: 'pre-wrap',
-                overflowWrap: 'anywhere',
-                wordBreak: 'break-word',
-              }}
-              dangerouslySetInnerHTML={{ __html: sanitizeEmailHTML(email.body) }}
+            <EmailBodyFrame 
+              body={email.body} 
+              className="text-sm" 
+              textStyle={{ color: 'var(--color-text-primary)', lineHeight: '1.7' }} 
             />
           ) : email.snippet ? (
             <div>

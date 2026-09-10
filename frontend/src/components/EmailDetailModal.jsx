@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import ScamBadge from './ScamBadge';
 import { apiPost } from '../lib/api';
 import { useToast } from './ToastNotification';
-import { stripHTML, sanitizeEmailHTML } from '../utils/htmlDecode';
+import EmailBodyFrame from './EmailBodyFrame';
 
 function EmailDetailModal({ email, senderName, senderEmail, decodedSubject, indicators, onClose }) {
   const [replyBody, setReplyBody] = useState('');
@@ -170,17 +170,10 @@ function EmailDetailModal({ email, senderName, senderEmail, decodedSubject, indi
               border: '1px solid var(--color-border)',
             }}
           >
-            <div
-              className="text-sm leading-relaxed"
-              style={{
-                color: 'var(--color-text-primary)',
-                whiteSpace: 'pre-wrap',
-                overflowWrap: 'anywhere',
-                wordBreak: 'break-word',
-              }}
-              dangerouslySetInnerHTML={{ 
-                __html: sanitizeEmailHTML(email.body || email.snippet) || 'No content available' 
-              }}
+            <EmailBodyFrame 
+              body={email.body || email.snippet} 
+              className="text-sm leading-relaxed" 
+              textStyle={{ color: 'var(--color-text-primary)' }} 
             />
           </div>
 
