@@ -70,7 +70,7 @@ function EmailDetailModal({ email, senderName, senderEmail, decodedSubject, indi
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-xl"
+        className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-xl"
         style={{
           backgroundColor: 'var(--color-surface)',
           boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',

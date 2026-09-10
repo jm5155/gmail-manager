@@ -110,7 +110,7 @@ function EmailDetailPanel({ email, isOpen, onClose, onLabelChange }) {
 
       {/* Slide-over panel */}
       <div 
-        className="absolute right-0 top-0 h-full w-full max-w-2xl overflow-y-auto shadow-2xl"
+        className="absolute right-0 top-0 h-full w-full max-w-4xl overflow-y-auto shadow-2xl"
         style={{ 
           backgroundColor: 'var(--color-surface)',
           borderLeft: '1px solid var(--color-border)'

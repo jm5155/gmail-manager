@@ -7,6 +7,7 @@
  * - Auto-sizes iframe height from content (max 2000px)
  * - All links open in new tab via <base target="_blank">
  * - Sender CSS/markup fully isolated from app
+ * - White background for readability on dark theme
  */
 
 import React, { useRef, useEffect } from 'react';
@@ -26,7 +27,7 @@ function EmailBodyFrame({ body, className = '', textStyle = {} }) {
   useEffect(() => {
     if (!isHTML || !iframeRef.current) return;
 
-    const handleResize = () => {
+    const measure = () => {
       try {
         const iframe = iframeRef.current;
         if (!iframe || !iframe.contentDocument) return;
@@ -35,20 +36,20 @@ function EmailBodyFrame({ body, className = '', textStyle = {} }) {
         // Cap at 2000px to prevent excessive heights
         iframe.style.height = `${Math.min(contentHeight + 20, 2000)}px`;
       } catch (err) {
-        // Cross-origin or blocked access - ignore
+        // Cross-origin or blocked access - fail silently
         console.debug('[EmailBodyFrame] Could not measure iframe height:', err);
       }
     };
 
     const iframe = iframeRef.current;
     if (iframe) {
-      iframe.addEventListener('load', handleResize);
+      iframe.addEventListener('load', measure);
       
       // Also check periodically for dynamic content
-      const resizeInterval = setInterval(handleResize, 500);
+      const resizeInterval = setInterval(measure, 500);
       
       return () => {
-        iframe.removeEventListener('load', handleResize);
+        iframe.removeEventListener('load', measure);
         clearInterval(resizeInterval);
       };
     }
@@ -56,7 +57,7 @@ function EmailBodyFrame({ body, className = '', textStyle = {} }) {
 
   // HTML body - render in sandboxed iframe
   if (isHTML) {
-    // Inject base target and basic styles
+    // Inject base target, white background, and basic styles
     const iframeContent = `
       <!DOCTYPE html>
       <html>
@@ -64,13 +65,17 @@ function EmailBodyFrame({ body, className = '', textStyle = {} }) {
           <meta charset="utf-8">
           <base target="_blank">
           <style>
-            body {
+            html, body {
               margin: 0;
+              padding: 0;
+              background: #ffffff;
+              color: #1a1a1a;
+            }
+            body {
               padding: 16px;
               font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
               font-size: 14px;
               line-height: 1.6;
-              color: #1a1a1a;
               word-wrap: break-word;
               overflow-wrap: anywhere;
             }
@@ -97,21 +102,29 @@ function EmailBodyFrame({ body, className = '', textStyle = {} }) {
     `;
 
     return (
-      <iframe
-        ref={iframeRef}
-        srcDoc={iframeContent}
-        sandbox="allow-popups allow-popups-to-escape-sandbox"
-        referrerPolicy="no-referrer"
-        className={className}
+      <div
         style={{
-          width: '100%',
-          border: 'none',
-          display: 'block',
-          minHeight: '200px',
-          backgroundColor: 'transparent',
+          background: '#ffffff',
+          borderRadius: '8px',
+          overflow: 'hidden',
         }}
-        title="Email content"
-      />
+      >
+        <iframe
+          ref={iframeRef}
+          srcDoc={iframeContent}
+          sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+          referrerPolicy="no-referrer"
+          className={className}
+          style={{
+            width: '100%',
+            border: 'none',
+            display: 'block',
+            minHeight: '360px',
+            backgroundColor: '#ffffff',
+          }}
+          title="Email content"
+        />
+      </div>
     );
   }
 
