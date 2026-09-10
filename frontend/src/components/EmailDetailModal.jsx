@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import ScamBadge from './ScamBadge';
 import { apiPost } from '../lib/api';
 import { useToast } from './ToastNotification';
@@ -52,7 +53,14 @@ function EmailDetailModal({ email, senderName, senderEmail, decodedSubject, indi
 
   const labelName = email.label_name || email.label || 'Uncategorized';
 
-  return (
+  // Rendered via portal directly into document.body so this overlay is never
+  // nested inside a per-row wrapper that has its own z-index (see Inbox.jsx,
+  // where each email row gets `position: relative; zIndex: ...`). Any
+  // positioned ancestor with an explicit z-index creates a NEW stacking
+  // context, which traps this modal's z-50 inside that row instead of
+  // comparing it against the whole page (header, toolbar, other cards) —
+  // that's what caused the toolbar/header to visually overlap the modal.
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{
@@ -228,7 +236,8 @@ function EmailDetailModal({ email, senderName, senderEmail, decodedSubject, indi
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
