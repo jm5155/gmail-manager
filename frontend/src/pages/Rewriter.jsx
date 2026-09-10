@@ -234,58 +234,90 @@ function Rewriter() {
 
       {/* MOBILE LAYOUT — Chat-Style */}
       <div className="md:hidden flex flex-col" style={{ height: 'calc(100vh - 140px)' }}>
-          {/* Output Area - Takes remaining space */}
-        <div className="flex-1 px-4 pt-4 pb-2 overflow-y-auto">
-          <div
-            className="min-h-full p-4 rounded-xl text-sm"
-            style={{
-              background: 'var(--color-surface)',
-              border: '1px solid var(--color-border)',
-              boxShadow: 'var(--shadow-neumorphic-sm)',
-            }}
-          >
-            {loading ? (
-              <div className="flex flex-col items-center justify-center h-full gap-3">
-                <div className="w-8 h-8 rounded-full animate-spin" style={{ borderWidth: '2px', borderStyle: 'solid', borderColor: 'var(--color-primary)', borderTopColor: 'transparent' }}></div>
-                <p className="text-gray text-sm">Rewriting...</p>
-              </div>
-            ) : rewrittenText ? (
-              <div className="whitespace-pre-wrap" style={{ color: 'var(--color-text-primary)' }}>{rewrittenText}</div>
-            ) : (
-              <div className="flex flex-col items-center justify-center gap-3 py-20" style={{ opacity: 0.5 }}>
-                <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}
-                      style={{ color: 'var(--color-text-primary)' }}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
-                </svg>
-                <p className="text-sm text-center" style={{ color: 'var(--color-text-primary)' }}>Rewritten text will appear here</p>
-              </div>
-            )}
-          </div>
-
-          {/* Copy button and provider info */}
-          <div className="px-4 pb-3 flex items-center justify-between">
-            {rewrittenText && (
-              <button
-                onClick={handleCopy}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+        {/* Chat Messages Area */}
+        <div className="flex-1 px-4 pt-4 pb-2 overflow-y-auto" style={{ paddingBottom: '160px' }}>
+          {/* Original Email Bubble (User) */}
+          {originalText && (
+            <div className="mb-4 flex justify-end">
+              <div
+                className="max-w-[85%] p-3 rounded-2xl rounded-tr-sm text-sm"
                 style={{
-                  color: '#FFFFFF',
                   background: 'var(--color-primary)',
-                  border: '1px solid var(--color-primary)',
+                  color: '#FFFFFF',
                 }}
               >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9.75a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
-                </svg>
-                Copy
-              </button>
-            )}
-            {providerUsed && (
-              <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-                {providerUsed} • {charCounts.rewritten} chars
-              </span>
-            )}
-          </div>
+                <p className="whitespace-pre-wrap break-words">{originalText}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Loading State */}
+          {loading && (
+            <div className="mb-4 flex justify-start">
+              <div
+                className="max-w-[85%] p-4 rounded-2xl rounded-tl-sm"
+                style={{
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border)',
+                }}
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-full animate-spin" style={{ borderWidth: '2px', borderStyle: 'solid', borderColor: 'var(--color-primary)', borderTopColor: 'transparent' }}></div>
+                  <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Rewriting...</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Rewritten Email Bubble (Assistant) */}
+          {rewrittenText && (
+            <div className="mb-4 flex justify-start">
+              <div className="max-w-[85%]">
+                <div
+                  className="p-3 rounded-2xl rounded-tl-sm text-sm mb-2"
+                  style={{
+                    background: 'var(--color-surface)',
+                    border: '1px solid var(--color-border)',
+                  }}
+                >
+                  <p className="whitespace-pre-wrap break-words" style={{ color: 'var(--color-text-primary)' }}>{rewrittenText}</p>
+                </div>
+                
+                {/* Action Buttons Below Bubble */}
+                <div className="flex items-center gap-2 px-2">
+                  <button
+                    onClick={handleCopy}
+                    className="p-1.5 rounded-lg transition-all"
+                    style={{
+                      background: 'var(--color-surface)',
+                      border: '1px solid var(--color-border)',
+                    }}
+                    title="Copy"
+                  >
+                    <svg className="w-4 h-4" style={{ color: 'var(--color-text-secondary)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9.75a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
+                    </svg>
+                  </button>
+                  {providerUsed && (
+                    <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                      {providerUsed}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Empty State */}
+          {!originalText && !rewrittenText && !loading && (
+            <div className="flex flex-col items-center justify-center gap-3 py-20" style={{ opacity: 0.5 }}>
+              <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}
+                    style={{ color: 'var(--color-text-primary)' }}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+              </svg>
+              <p className="text-sm text-center" style={{ color: 'var(--color-text-primary)' }}>Paste an email below to get started</p>
+            </div>
+          )}
         </div>
 
         {/* Bottom Input Bar - Fixed */}
