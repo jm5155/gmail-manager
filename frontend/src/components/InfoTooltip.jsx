@@ -83,13 +83,15 @@ function InfoTooltip({ text }) {
       {isOpen && (
         <div
           ref={tooltipRef}
-          className="absolute top-full mt-2 w-64 rounded-lg p-3 shadow-lg z-50"
+          className="absolute top-full mt-2 rounded-lg p-3 shadow-lg z-50"
           style={{
             backgroundColor: 'var(--color-surface)',
             border: '1px solid var(--color-border)',
             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
             left: position === 'left' ? '0' : 'auto',
             right: position === 'right' ? '0' : 'auto',
+            width: 'max-content',
+            maxWidth: 'min(280px, calc(100vw - 2rem))',
           }}
         >
           <p
