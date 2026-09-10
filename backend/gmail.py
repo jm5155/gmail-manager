@@ -279,30 +279,39 @@ def _get_email_body(service, email_id: str) -> str:
 
 def _extract_body(payload: dict) -> str:
     """
-    Recursively extract the plain text body from a Gmail message payload.
-    Handles multipart messages by looking for text/plain parts first.
+    Recursively extract the email body from a Gmail message payload.
+    Prioritizes text/html over text/plain to match Gmail's rendering.
+    Walks through multipart/alternative and multipart/related structures.
     """
     import base64
 
+    # If this payload has direct body data, decode it
     if "body" in payload and payload["body"].get("data"):
         data = payload["body"]["data"]
         return base64.urlsafe_b64decode(data).decode("utf-8", errors="replace")
 
+    # If this payload has parts, search recursively
     if "parts" in payload:
+        # First pass: look for text/html parts (prioritized)
         for part in payload["parts"]:
             mime_type = part.get("mimeType", "")
-
-            if mime_type == "text/plain" and part.get("body", {}).get("data"):
+            
+            # Direct HTML part found
+            if mime_type == "text/html" and part.get("body", {}).get("data"):
                 data = part["body"]["data"]
                 return base64.urlsafe_b64decode(data).decode("utf-8", errors="replace")
-
+            
+            # Recurse into multipart containers
             if mime_type.startswith("multipart/"):
                 result = _extract_body(part)
                 if result:
                     return result
-
+        
+        # Second pass: fall back to text/plain if no HTML found
         for part in payload["parts"]:
-            if part.get("mimeType") == "text/html" and part.get("body", {}).get("data"):
+            mime_type = part.get("mimeType", "")
+            
+            if mime_type == "text/plain" and part.get("body", {}).get("data"):
                 data = part["body"]["data"]
                 return base64.urlsafe_b64decode(data).decode("utf-8", errors="replace")
 

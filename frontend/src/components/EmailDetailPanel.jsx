@@ -260,7 +260,10 @@ function EmailDetailPanel({ email, isOpen, onClose, onLabelChange }) {
               className="text-sm"
               style={{ 
                 color: 'var(--color-text-primary)',
-                lineHeight: '1.7'
+                lineHeight: '1.7',
+                whiteSpace: 'pre-wrap',
+                overflowWrap: 'anywhere',
+                wordBreak: 'break-word',
               }}
               dangerouslySetInnerHTML={{ __html: sanitizeEmailHTML(email.body) }}
             />

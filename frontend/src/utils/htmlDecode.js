@@ -74,8 +74,11 @@ export function sanitizeEmailHTML(html) {
   const temp = document.createElement('div');
   temp.innerHTML = html;
   
-  // Remove dangerous elements
-  const dangerousTags = ['script', 'iframe', 'object', 'embed', 'form', 'input', 'button'];
+  // Remove dangerous and unwanted elements
+  const dangerousTags = [
+    'script', 'iframe', 'object', 'embed', 'form', 'input', 'button',
+    'html', 'head', 'meta', 'title', 'style', 'link', 'base'
+  ];
   dangerousTags.forEach(tag => {
     const elements = temp.getElementsByTagName(tag);
     while (elements.length > 0) {
@@ -92,12 +95,22 @@ export function sanitizeEmailHTML(html) {
       if (attr.name.toLowerCase().startsWith('on')) {
         element.removeAttribute(attr.name);
       }
+      // Remove javascript: URLs
+      if (attr.value && attr.value.toLowerCase().includes('javascript:')) {
+        element.removeAttribute(attr.name);
+      }
     });
     
     // Convert all links to open in new tab and add security
     if (element.tagName.toLowerCase() === 'a') {
       element.setAttribute('target', '_blank');
       element.setAttribute('rel', 'noopener noreferrer');
+    }
+    
+    // Ensure images don't break layout
+    if (element.tagName.toLowerCase() === 'img') {
+      element.style.maxWidth = '100%';
+      element.style.height = 'auto';
     }
   }
   
