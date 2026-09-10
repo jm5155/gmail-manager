@@ -193,9 +193,10 @@ function Rewriter() {
           <div
             className="flex-1 p-4 rounded-xl text-sm overflow-y-auto relative"
             style={{
-              background: 'var(--surface)',
-              border: '1px solid var(--border-default)',
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
               minHeight: '200px',
+              boxShadow: 'var(--shadow-neumorphic-sm)',
             }}
           >
             {loading ? (
@@ -237,9 +238,10 @@ function Rewriter() {
           <div
             className="h-full p-4 rounded-xl text-sm relative"
             style={{
-              background: 'var(--surface)',
-              border: '1px solid var(--border-default)',
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
               minHeight: '300px',
+              boxShadow: 'var(--shadow-neumorphic-sm)',
             }}
           >
             {loading ? (

@@ -456,14 +456,15 @@ async def emails_analyzed(request: Request, user: dict = Depends(require_auth)):
 # ---------- BULK ANALYSIS ENDPOINT WITH SSE ----------
 
 @app.post("/emails/analyze-bulk")
-async def emails_analyze_bulk(request: Request, user: dict = Depends(require_auth), limit: int = 50):
+async def emails_analyze_bulk(request: Request, user: dict = Depends(require_auth), count: int = 50):
     """
-    POST /emails/analyze-bulk?limit=50
+    POST /emails/analyze-bulk?count=50
     Runs the AI-only bulk analysis pipeline.
     Streams results back as Server-Sent Events (SSE).
+    count: Number of emails to analyze (1-500)
     """
 
-    limit = min(max(limit, 1), 200)  # clamp to prevent AI/Gmail quota exhaustion
+    limit = min(max(count, 1), 500)  # clamp to prevent AI/Gmail quota exhaustion
     user_id = user["user_id"]
 
 
@@ -1064,7 +1065,7 @@ async def patch_mark_email_safe(email_id: str, request: Request, user: dict = De
 
 @app.post("/ai/rewrite")
 async def ai_rewrite(request: Request):
-    """POST /ai/rewrite — Rewrite email text using AI."""
+    """POST /ai/rewrite — Rewrite email text using AI with support for long-form content."""
     data = await request.json()
     text = data.get("text", "")
     instruction = data.get("instruction", "")

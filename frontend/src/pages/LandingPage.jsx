@@ -431,34 +431,7 @@ function LandingPage() {
             >
               Launch Live App →
             </Link>
-            <a
-              href="https://github.com/jm5155/gmail-manager"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                backgroundColor: 'var(--color-surface)',
-                color: 'var(--color-text-primary)',
-                padding: '0.875rem 2rem',
-                borderRadius: '10px',
-                textDecoration: 'none',
-                fontWeight: 600,
-                fontSize: '1.0625rem',
-                border: '1px solid var(--color-border)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem',
-                width: '100%',
-                maxWidth: '280px',
-                boxShadow: 'var(--shadow-neumorphic-sm)',
-                transition: 'transform var(--transition-fast)'
-              }}
-              onMouseEnter={(e) => e.target.style.transform = 'translateY(-1px)'}
-              onMouseLeave={(e) => e.target.style.transform = 'none'}
-            >
-              ⭐ View Source on GitHub
-            </a>
-          </div>
+            </div>
 
           {/* Trust Row */}
           <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', fontWeight: 500, marginBottom: '4rem' }}>
@@ -931,42 +904,7 @@ Everything Your Inbox Needs
               Read the Docs
             </a>
 
-            <a
-              href="https://github.com/jm5155/gmail-manager"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                backgroundColor: 'var(--color-surface)',
-                color: 'var(--color-primary)',
-                padding: '0.875rem 2rem',
-                borderRadius: '10px',
-                textDecoration: 'none',
-                fontWeight: 600,
-                fontSize: '1.0625rem',
-                border: '1px solid var(--color-primary)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem',
-                width: '100%',
-                maxWidth: '280px',
-                whiteSpace: 'nowrap',
-                transition: 'transform var(--transition-fast), background-color var(--transition-fast), color var(--transition-fast)'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.transform = 'scale(1.03)';
-                e.target.style.backgroundColor = 'var(--color-primary)';
-                e.target.style.color = '#FFFFFF';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.transform = 'none';
-                e.target.style.backgroundColor = 'var(--color-surface)';
-                e.target.style.color = 'var(--color-primary)';
-              }}
-            >
-              ⭐ Star on GitHub
-            </a>
-          </div>
+            </div>
         </div>
       </section>
 
@@ -1082,10 +1020,7 @@ Everything Your Inbox Needs
               </h4>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                 <li style={{ marginBottom: '0.5rem' }}>
-                  <a href="https://github.com/jm5155/gmail-manager" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-text-secondary)', textDecoration: 'none', fontSize: '0.8125rem' }}>
-                    GitHub
-                  </a>
-                </li>
+                  </li>
               </ul>
             </div>
           </div>

@@ -280,7 +280,7 @@ class AIRouter:
         body = {
             "model": "openai/gpt-oss-20b",
             "messages": [{"role": "user", "content": prompt}],
-            "max_tokens": 1200,
+            "max_tokens": 8192,
             "temperature": 0.2,
             "response_format": {"type": "json_object"},
             "reasoning_effort": "low",

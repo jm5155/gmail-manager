@@ -55,8 +55,9 @@ function Inbox() {
   labelFilterRef.current = labelFilter;
   sortByRef.current = sortBy;
 
-  // Analysis limit (local UI control)
+  // Analysis limit (custom input value)
   const [analyzeLimit, setAnalyzeLimit] = useState(50);
+  const [showCustomInput, setShowCustomInput] = useState(false);
 
   // Batch delete state
   const [showBatchDelete, setShowBatchDelete] = useState(false);
@@ -388,21 +389,22 @@ function Inbox() {
 
           {/* Analyze Button Group */}
           <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+            {/* Custom Email Count Input */}
             <div className="relative group">
-              <select
+              <input
+                type="number"
+                min="1"
+                max="500"
                 value={analyzeLimit}
-                onChange={(e) => setAnalyzeLimit(Number(e.target.value))}
+                onChange={(e) => setAnalyzeLimit(Math.min(Math.max(parseInt(e.target.value) || 1, 1), 500))}
                 disabled={isAnalyzing}
-                className="select-neumorphic px-3 py-1.5 text-sm min-w-[95px]"
-                title="Batch size: number of emails to analyze per run"
-              >
-                {LIMIT_OPTIONS.map((n) => (
-                  <option key={n} value={n}>{n} emails</option>
-                ))}
-              </select>
+                className="neu-input px-3 py-1.5 text-sm w-24 text-center"
+                placeholder="Count"
+                title="Number of emails to analyze (1-500)"
+              />
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-navy-700 text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10"
                    style={{ color: 'var(--color-text-primary)', border: '1px solid var(--border-default)' }}>
-                Batch size for analysis
+                Enter number of emails (1-500)
               </div>
             </div>
             <button
