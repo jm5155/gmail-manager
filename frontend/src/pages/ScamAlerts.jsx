@@ -95,7 +95,7 @@ function ScamAlerts() {
   return (
     <div className="h-screen overflow-hidden">
       {/* Header */}
-      <div className="px-6 py-4 pt-16 md:pt-4" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+      <div className="px-4 md:px-6 py-4 pt-16 md:pt-4" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
         <h1 className="text-xl font-bold mb-1" style={{ color: 'var(--color-text-primary)' }}>Scam Alerts</h1>
         <p className="text-sm text-gray">
           Emails flagged by AI with elevated scam probability scores.
@@ -122,7 +122,7 @@ function ScamAlerts() {
       </div>
 
       {/* Alerts List */}
-      <div className="px-3 py-6 md:px-6 overflow-y-auto" style={{ height: 'calc(100vh - 160px)' }}>
+      <div className="px-4 py-6 md:px-6 overflow-y-auto" style={{ height: 'calc(100vh - 160px)' }}>
         {loading && (
           <div className="flex flex-col items-center justify-center h-64 gap-4">
             <div className="w-10 h-10 rounded-full animate-spin" style={{ borderWidth: '3px', borderStyle: 'solid', borderColor: 'var(--color-primary)', borderTopColor: 'transparent' }}></div>

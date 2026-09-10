@@ -245,7 +245,7 @@ function Settings() {
   return (
     <div className="h-screen overflow-y-auto" style={{ background: 'var(--surface)' }}>
       {/* Header */}
-      <div className="px-6 py-4 pt-16 md:pt-4" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+      <div className="px-4 md:px-6 py-4 pt-16 md:pt-4" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
         <h1 className="text-xl font-bold" style={{ color: 'var(--color-text-primary)' }}>Settings</h1>
         <p className="text-sm text-gray mt-0.5">
           Manage AI providers, labels, and account settings.

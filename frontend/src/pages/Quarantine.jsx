@@ -78,7 +78,7 @@ function Quarantine() {
   return (
     <div className="h-screen overflow-hidden">
       {/* Header */}
-      <div className="px-6 py-4 pt-16 md:pt-4" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+      <div className="px-4 md:px-6 py-4 pt-16 md:pt-4" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg flex items-center justify-center"
                style={{ background: 'rgba(239, 68, 68, 0.15)' }}>
@@ -96,7 +96,7 @@ function Quarantine() {
       </div>
 
       {/* Email List */}
-      <div className="px-3 py-6 md:px-6 overflow-y-auto" style={{ height: 'calc(100vh - 100px)' }}>
+      <div className="px-4 py-6 md:px-6 overflow-y-auto" style={{ height: 'calc(100vh - 100px)' }}>
         {loading && (
           <div className="flex flex-col items-center justify-center h-64 gap-4">
             <div className="w-10 h-10 rounded-full animate-spin" style={{ borderWidth: '3px', borderStyle: 'solid', borderColor: 'var(--color-danger)', borderTopColor: 'transparent' }}></div>

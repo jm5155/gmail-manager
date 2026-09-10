@@ -812,7 +812,7 @@ function Inbox() {
       </div>
 
       {/* Email List */}
-      <div className="px-3 py-6 md:px-6 overflow-y-auto" style={{ height: 'calc(100vh - 200px)' }}>
+      <div className="px-4 py-6 md:px-6 overflow-y-auto" style={{ height: 'calc(100vh - 200px)' }}>
         {/* Loading */}
         {loading && (
           <div className="flex flex-col items-center justify-center h-64 gap-4">
