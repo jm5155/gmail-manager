@@ -65,6 +65,9 @@ function Inbox() {
   const [batchValue, setBatchValue] = useState('');
   const [batchDeleting, setBatchDeleting] = useState(false);
 
+  // Mobile menu state
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+
   // Stats
   const [emailStats, setEmailStats] = useState({ total_analyzed: 0, total_flagged: 0 });
 
@@ -378,7 +381,7 @@ function Inbox() {
         }
       `}</style>
       {/* Page Header */}
-      <div className="px-6 py-4 pt-16 md:pt-4" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+      <div className="px-4 md:px-6 py-4 pt-16 md:pt-4" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
           <div>
             <h1 className="text-xl font-bold" style={{ color: 'var(--color-text-primary)' }}>Inbox</h1>
@@ -387,10 +390,10 @@ function Inbox() {
             </p>
           </div>
 
-          {/* Analyze Button Group */}
-          <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+          {/* Analyze Button Group - Mobile Optimized */}
+          <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 -mx-4 px-4 md:mx-0 md:px-0 md:pb-0 scrollbar-hide">
             {/* Custom Email Count Input */}
-            <div className="relative group">
+            <div className="relative group flex-shrink-0">
               <input
                 type="number"
                 min="1"
@@ -398,7 +401,8 @@ function Inbox() {
                 value={analyzeLimit}
                 onChange={(e) => setAnalyzeLimit(Math.min(Math.max(parseInt(e.target.value) || 1, 1), 500))}
                 disabled={isAnalyzing}
-                className="neu-input px-3 py-1.5 text-sm w-24 text-center"
+                className="neu-input px-3 py-2 text-sm w-20 text-center touch-manipulation"
+                style={{ minHeight: '44px' }}
                 placeholder="Count"
                 title="Number of emails to analyze (1-500)"
               />
@@ -410,10 +414,12 @@ function Inbox() {
             <button
               onClick={handleAnalyze}
               disabled={isAnalyzing}
-              className="btn-primary px-4 py-1.5 text-sm min-w-[95px] flex items-center justify-center gap-2"
+              className="btn-primary px-4 py-2 text-sm flex-shrink-0 flex items-center justify-center gap-2 touch-manipulation active:scale-95 transition-transform"
               style={{
                 background: isAnalyzing ? 'var(--color-text-muted)' : undefined,
                 boxShadow: isAnalyzing ? 'none' : undefined,
+                minHeight: '44px',
+                minWidth: '140px',
               }}
             >
               {isInitializing && total === 0 ? (
@@ -440,16 +446,18 @@ function Inbox() {
             </button>
 
             {/* Apply to Gmail Button - enabled when labeled emails exist */}
-            <div className="relative group">
+            <div className="relative group flex-shrink-0 hidden md:block">
               <button
                 onClick={handleBatchApply}
                 disabled={unappliedCount === 0 || isApplying}
-                className="btn-secondary px-4 py-1.5 text-sm min-w-[120px] flex items-center justify-center gap-2"
+                className="btn-secondary px-4 py-2 text-sm flex items-center justify-center gap-2 touch-manipulation active:scale-95 transition-transform"
                 style={{
                   background: (unappliedCount > 0 && !isApplying) ? undefined : 'var(--color-border)',
                   boxShadow: (unappliedCount > 0 && !isApplying) ? undefined : 'none',
                   cursor: (unappliedCount > 0 && !isApplying) ? 'pointer' : 'not-allowed',
                   color: (unappliedCount > 0 && !isApplying) ? undefined : 'var(--color-text-muted)',
+                  minHeight: '44px',
+                  minWidth: '140px',
                 }}
                 title={
                   unappliedCount === 0 
@@ -489,17 +497,92 @@ function Inbox() {
             <button
               onClick={() => setShowBatchDelete(prev => !prev)}
               disabled={isAnalyzing}
-              className="px-3 py-1.5 rounded-lg text-sm font-semibold transition-all min-w-[95px] flex items-center justify-center gap-1"
+              className="px-4 py-2 rounded-lg text-sm font-semibold transition-all flex-shrink-0 flex items-center justify-center gap-1 touch-manipulation active:scale-95 hidden md:flex"
               style={{
                 background: showBatchDelete ? 'var(--danger-bg)' : 'var(--color-border)',
                 border: '1px solid var(--border-default)',
                 color: showBatchDelete ? 'var(--danger)' : 'var(--color-text-muted)',
+                minHeight: '44px',
+                minWidth: '120px',
               }}
             >
               🗑 Batch Delete
             </button>
+
+            {/* Mobile: Overflow Menu */}
+            <button
+              onClick={() => setShowMobileMenu(prev => !prev)}
+              className="md:hidden px-3 py-2 rounded-lg text-sm font-semibold transition-all flex-shrink-0 flex items-center justify-center touch-manipulation active:scale-95"
+              style={{
+                background: 'var(--color-border)',
+                border: '1px solid var(--border-default)',
+                color: 'var(--color-text-primary)',
+                minHeight: '44px',
+                minWidth: '44px',
+              }}
+              aria-label="More options"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" />
+              </svg>
+            </button>
           </div>
         </div>
+
+        {/* Mobile Menu Dropdown */}
+        {showMobileMenu && (
+          <div className="md:hidden mb-3 rounded-lg overflow-hidden" style={{ border: '1px solid var(--border-default)' }}>
+            <button
+              onClick={() => {
+                handleBatchApply();
+                setShowMobileMenu(false);
+              }}
+              disabled={unappliedCount === 0 || isApplying}
+              className="w-full px-4 py-3 text-left text-sm flex items-center gap-3 touch-manipulation active:opacity-70 transition-opacity"
+              style={{
+                background: 'var(--color-surface)',
+                borderBottom: '1px solid var(--border-default)',
+                color: (unappliedCount > 0 && !isApplying) ? 'var(--color-text-primary)' : 'var(--color-text-muted)',
+              }}
+            >
+              <span className="text-lg">📧</span>
+              <div className="flex-1">
+                <div className="font-medium">Apply to Gmail</div>
+                {unappliedCount > 0 && (
+                  <div className="text-xs mt-0.5" style={{ color: 'var(--color-text-secondary)' }}>
+                    {unappliedCount} pending change{unappliedCount > 1 ? 's' : ''}
+                  </div>
+                )}
+              </div>
+              {unappliedCount > 0 && (
+                <span className="px-2 py-0.5 rounded-full text-xs font-semibold"
+                      style={{ background: 'var(--color-primary)', color: '#fff' }}>
+                  {unappliedCount}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => {
+                setShowBatchDelete(prev => !prev);
+                setShowMobileMenu(false);
+              }}
+              disabled={isAnalyzing}
+              className="w-full px-4 py-3 text-left text-sm flex items-center gap-3 touch-manipulation active:opacity-70 transition-opacity"
+              style={{
+                background: 'var(--color-surface)',
+                color: 'var(--color-text-primary)',
+              }}
+            >
+              <span className="text-lg">🗑</span>
+              <div className="flex-1">
+                <div className="font-medium">Batch Delete</div>
+                <div className="text-xs mt-0.5" style={{ color: 'var(--color-text-secondary)' }}>
+                  Delete emails by label or sender
+                </div>
+              </div>
+            </button>
+          </div>
+        )}
 
         {/* Batch Delete Panel */}
         {showBatchDelete && (
@@ -644,11 +727,11 @@ function Inbox() {
           </div>
         )}
 
-        {/* Filter Bar (Phase 7) */}
-        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
+        {/* Filter Bar (Phase 7) - Mobile Optimized */}
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-2 md:gap-3">
           {/* Search Input */}
           <div className="relative flex-1">
-            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--color-text-secondary)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: 'var(--color-text-secondary)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
             </svg>
             <input
@@ -656,31 +739,75 @@ function Inbox() {
               placeholder="Filter by sender or domain..."
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
-              className="input-neumorphic w-full pl-10 pr-4 py-2 text-sm min-h-[38px]"
+              className="input-neumorphic w-full pl-10 pr-4 py-3 text-sm touch-manipulation"
+              style={{ minHeight: '44px' }}
             />
           </div>
 
-          {/* Label Filter */}
-          <select
-            value={labelFilter}
-            onChange={(e) => handleLabelChange(e.target.value)}
-            className="select-neumorphic px-3 py-1.5 text-sm cursor-pointer min-w-[168px] min-h-[32px]"
-          >
-            {availableLabels.map((l) => (
-              <option key={l} value={l}>{l}</option>
-            ))}
-          </select>
+          {/* Mobile: Two-column layout for filters */}
+          <div className="grid grid-cols-2 gap-2 md:contents">
+            {/* Label Filter */}
+            <div className="relative">
+              <select
+                value={labelFilter}
+                onChange={(e) => handleLabelChange(e.target.value)}
+                className="w-full px-3 py-3 text-sm cursor-pointer rounded-lg appearance-none touch-manipulation transition-all active:scale-[0.98]"
+                style={{
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border)',
+                  color: 'var(--color-text-primary)',
+                  boxShadow: 'inset 0 1px 2px rgba(0, 0, 0, 0.04)',
+                  minHeight: '44px',
+                  paddingRight: '2.5rem',
+                }}
+              >
+                {availableLabels.map((l) => (
+                  <option key={l} value={l}>{l}</option>
+                ))}
+              </select>
+              <svg 
+                className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
+                style={{ color: 'var(--color-text-secondary)' }}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
 
-          {/* Sort Dropdown */}
-          <select
-            value={sortBy}
-            onChange={(e) => handleSortChange(e.target.value)}
-            className="select-neumorphic px-3 py-1.5 text-sm cursor-pointer min-w-[168px] min-h-[32px]"
-          >
-            {SORT_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
+            {/* Sort Dropdown */}
+            <div className="relative">
+              <select
+                value={sortBy}
+                onChange={(e) => handleSortChange(e.target.value)}
+                className="w-full px-3 py-3 text-sm cursor-pointer rounded-lg appearance-none touch-manipulation transition-all active:scale-[0.98]"
+                style={{
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border)',
+                  color: 'var(--color-text-primary)',
+                  boxShadow: 'inset 0 1px 2px rgba(0, 0, 0, 0.04)',
+                  minHeight: '44px',
+                  paddingRight: '2.5rem',
+                }}
+              >
+                {SORT_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+              <svg 
+                className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
+                style={{ color: 'var(--color-text-secondary)' }}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
         </div>
       </div>
 

@@ -50,16 +50,17 @@ function ScamBadge({ score = 0, reason = '', indicators = [], expanded = false, 
     <div className="w-full">
       <div
         onClick={onToggle}
-        className="w-full rounded-xl transition-all cursor-pointer"
+        className="w-full rounded-xl transition-all cursor-pointer touch-manipulation active:scale-[0.98]"
         style={{
           background: config.bg,
           border: `1px solid ${config.border}`,
           padding: '12px 16px',
+          minHeight: '44px',
         }}
       >
         {/* Badge Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
             {/* Risk Icon */}
             <div
               className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
