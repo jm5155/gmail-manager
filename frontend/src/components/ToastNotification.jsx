@@ -93,7 +93,7 @@ export function ToastProvider({ children }) {
       {children}
 
       {/* Toast Container */}
-      <div className="fixed top-4 right-4 z-[100] space-y-3 pointer-events-none" style={{ width: '380px' }}>
+      <div className="fixed top-20 md:top-4 right-4 z-[9999] space-y-3 pointer-events-none max-w-[calc(100vw-2rem)] md:w-[380px]" style={{ width: '380px' }}>
         {toasts.map((t) => {
           const config = TOAST_TYPES[t.type] || TOAST_TYPES.success;
           return (
