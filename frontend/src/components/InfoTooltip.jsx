@@ -2,11 +2,27 @@ import React, { useState, useEffect, useRef } from 'react';
 
 function InfoTooltip({ text }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [position, setPosition] = useState('left');
   const tooltipRef = useRef(null);
   const buttonRef = useRef(null);
 
   useEffect(() => {
     if (!isOpen) return;
+
+    // Calculate best position to avoid overflow
+    if (buttonRef.current && tooltipRef.current) {
+      const buttonRect = buttonRef.current.getBoundingClientRect();
+      const tooltipWidth = 256; // w-64 = 16rem = 256px
+      const viewportWidth = window.innerWidth;
+      const spaceOnRight = viewportWidth - buttonRect.right;
+      
+      // If tooltip would overflow on right, position it on the left side
+      if (spaceOnRight < tooltipWidth + 16) {
+        setPosition('right');
+      } else {
+        setPosition('left');
+      }
+    }
 
     const handleClickOutside = (e) => {
       if (
@@ -67,11 +83,13 @@ function InfoTooltip({ text }) {
       {isOpen && (
         <div
           ref={tooltipRef}
-          className="absolute left-0 top-full mt-2 w-64 rounded-lg p-3 shadow-lg z-50"
+          className="absolute top-full mt-2 w-64 rounded-lg p-3 shadow-lg z-50"
           style={{
             backgroundColor: 'var(--color-surface)',
             border: '1px solid var(--color-border)',
             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+            left: position === 'left' ? '0' : 'auto',
+            right: position === 'right' ? '0' : 'auto',
           }}
         >
           <p
