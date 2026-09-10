@@ -3,8 +3,10 @@
 > Smart labeling, scam detection, security scanning, and email rewriting — all powered by a multi-AI cascade system.
 
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)
-![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
-![Stack](https://img.shields.io/badge/stack-Electron%20%2B%20React%20%2B%20FastAPI-purple)
+![Stack](https://img.shields.io/badge/stack-React%20%2B%20FastAPI-purple)
+![Live](https://img.shields.io/badge/demo-live-success)
+
+**🌐 Live Demo**: [gmail-manager-gamma.vercel.app](https://gmail-manager-gamma.vercel.app)
 
 ---
 
@@ -18,7 +20,9 @@
 | **🔒 Quarantine** | Automatically isolates suspicious emails with one-click safe/delete actions |
 | **✏️ AI Rewriter** | Transform any email with presets (Professional, Shorten, Friendly) or custom instructions |
 | **📊 Smart Filters** | Filter by sender, label, scam score — all server-side with debounced search |
-| **🔄 AI Failover** | Cascade: NVIDIA → Gemini → Cohere — automatic fallback on rate limits |
+| **🔄 AI Failover** | Cascade: Groq (9 keys) → Gemini → Cohere — automatic fallback on rate limits |
+| **📧 Inline Reply** | Reply directly from the inbox — threaded replies sent via Gmail API |
+| **📱 Responsive UI** | Light/dark theme toggle, mobile-optimized design |
 
 ---
 
@@ -26,40 +30,41 @@
 
 ```
 gmail-manager/
-├── backend/                    # Python FastAPI (port 8000)
-│   ├── main.py                 # API entry point — 18 endpoints
+├── backend/                    # Python FastAPI (Railway deployment)
+│   ├── main.py                 # API entry point — 18+ endpoints
 │   ├── auth.py                 # Google OAuth 2.0 flow + token persistence
 │   ├── gmail.py                # Gmail API + bulk analysis pipeline
-│   ├── ai_router.py            # AI cascade: NVIDIA → Gemini → Cohere
+│   ├── ai_router.py            # AI cascade: Groq → Gemini → Cohere
 │   ├── security.py             # URL scanner + Safe Browsing API
-│   ├── database.py             # SQLite3 — analyzed emails + URL cache
+│   ├── database.py             # PostgreSQL + SQLite hybrid
+│   ├── ml_inference.py         # ML model inference
 │   ├── requirements.txt        # Python dependencies
 │   └── .env                    # API keys (never committed)
-├── frontend/                   # React + Vite (port 5173)
+├── frontend/                   # React + Vite (Vercel deployment)
 │   ├── src/
 │   │   ├── App.jsx             # Root routing + sidebar layout
 │   │   ├── main.jsx            # React entry point
-│   │   ├── index.css           # Design system tokens
+│   │   ├── index.css           # Light design system (modern minimalism + neumorphism)
 │   │   ├── pages/
 │   │   │   ├── Login.jsx       # Google OAuth login
-│   │   │   ├── Inbox.jsx       # Email list + bulk analysis
+│   │   │   ├── Inbox.jsx       # Email list + custom-count bulk analysis (1-500)
 │   │   │   ├── ScamAlerts.jsx  # Risk-filtered scam alerts
 │   │   │   ├── Quarantine.jsx  # Quarantined email management
-│   │   │   ├── Rewriter.jsx    # AI email rewriter
-│   │   │   └── Settings.jsx    # Provider status + account
-│   │   └── components/
-│   │       ├── Sidebar.jsx
-│   │       ├── EmailCard.jsx
-│   │       ├── ScamBadge.jsx
-│   │       ├── ProgressBar.jsx
-│   │       ├── ToastNotification.jsx
-│   │       └── ConfirmModal.jsx
+│   │   │   ├── Rewriter.jsx    # AI email rewriter (supports 10k+ words)
+│   │   │   ├── Settings.jsx    # Provider status + labels + account
+│   │   │   └── LandingPage.jsx # Marketing landing page
+│   │   ├── components/
+│   │   │   ├── Sidebar.jsx
+│   │   │   ├── EmailCard.jsx
+│   │   │   ├── ScamBadge.jsx
+│   │   │   ├── ProgressBar.jsx
+│   │   │   ├── ToastNotification.jsx
+│   │   │   └── ConfirmModal.jsx
+│   │   └── context/
+│   │       ├── ThemeContext.jsx      # Light/dark theme
+│   │       └── AnalysisContext.jsx   # SSE progress state
 │   └── index.html
-├── electron/                   # Desktop wrapper
-│   ├── main.js                 # Dev/prod detection + backend lifecycle
-│   ├── preload.js              # Context bridge
-│   └── resources/              # PyInstaller output (production)
-└── package.json                # Electron + build config
+└── package.json
 ```
 
 ---
@@ -82,17 +87,19 @@ gmail-manager/
 4. Navigate to **APIs & Services** → **Credentials**
 5. Click **Create Credentials** → **OAuth client ID**
 6. Application type: **Web application**
-7. Add authorized redirect URI: `http://localhost:8000/auth/callback`
+7. Add authorized redirect URIs:
+   - Development: `http://localhost:8000/auth/callback`
+   - Production: `https://your-backend-domain.com/auth/callback`
 8. Copy the **Client ID** and **Client Secret**
 
 ### Step 2: Get AI Provider API Keys
 
-| Provider | Where to get it | Model used |
-|----------|----------------|------------|
-| **NVIDIA NIM** (Primary) | [build.nvidia.com](https://build.nvidia.com/) → Get API Key | minimaxai/minimax-m2.7 |
-| **Google Gemini** (Secondary) | [aistudio.google.com](https://aistudio.google.com/) → Get API Key | gemini-2.0-flash |
-| **Cohere** (Tertiary) | [cohere.com](https://dashboard.cohere.com/api-keys) → Sign up → API Keys | command-r |
-| **Groq** (Future) | [groq.com](https://console.groq.com/keys) → Sign up → API Keys | llama3-8b-8192 |
+| Provider | Where to get it | Model used | Notes |
+|----------|----------------|------------|-------|
+| **Groq** (Primary) | [console.groq.com](https://console.groq.com/keys) | openai/gpt-oss-20b | 9 rotating keys for high throughput |
+| **Google Gemini** (Secondary) | [aistudio.google.com](https://aistudio.google.com/) | gemini-2.0-flash | Up to 17 keys supported |
+| **Cohere** (Tertiary) | [dashboard.cohere.com](https://dashboard.cohere.com/api-keys) | command-r | Fallback provider |
+| **NVIDIA** (Reserved) | [build.nvidia.com](https://build.nvidia.com/) | llama-3.1-8b-instruct | Future use |
 
 ### Step 3: Get Google Safe Browsing Key (Optional)
 
@@ -103,7 +110,7 @@ gmail-manager/
 
 ### Step 4: Configure Environment
 
-Create/edit `backend/.env`:
+Create `backend/.env`:
 
 ```env
 # Google OAuth
@@ -111,14 +118,41 @@ GOOGLE_CLIENT_ID=your_client_id_here
 GOOGLE_CLIENT_SECRET=your_client_secret_here
 GOOGLE_REDIRECT_URI=http://localhost:8000/auth/callback
 
-# AI Providers (at least one required)
-NVIDIA_API_KEY=nvapi-...
+# Groq API Keys (Primary - 9 keys for rotation)
+GROQ_API_KEY_1=gsk_...
+GROQ_API_KEY_2=gsk_...
+GROQ_API_KEY_3=gsk_...
+GROQ_API_KEY_4=gsk_...
+GROQ_API_KEY_5=gsk_...
+GROQ_API_KEY_6=gsk_...
+GROQ_API_KEY_7=gsk_...
+GROQ_API_KEY_8=gsk_...
+GROQ_API_KEY_9=gsk_...
+
+# Gemini API Keys (Secondary - up to 17 keys)
 GEMINI_API_KEY=AIzaSy...
+GEMINI_API_KEY_1=AIzaSy...
+# ... up to GEMINI_API_KEY_17
+
+# Cohere API (Tertiary)
 COHERE_API_KEY=...
-GROQ_API_KEY=gsk_...
+
+# NVIDIA API (Reserved, future use)
+NVIDIA_API_KEY=nvapi-...
 
 # Security (optional)
 GOOGLE_SAFE_BROWSING_KEY=AIzaSy...
+
+# ML Model Configuration (optional)
+ML_CONFIDENCE_THRESHOLD=0.85
+ML_AUDIT_SAMPLE_RATE=0.10
+ML_MIN_RECALL_HIGH_RISK=0.90
+```
+
+Create `frontend/.env`:
+
+```env
+VITE_API_BASE_URL=http://localhost:8000
 ```
 
 ### Step 5: Install Dependencies
@@ -131,75 +165,45 @@ pip install -r requirements.txt
 # Frontend (Node.js)
 cd ../frontend
 npm install
-
-# Electron (root)
-cd ..
-npm install
 ```
 
 ### Step 6: Run in Development
 
-Open **3 terminals**:
+Open **2 terminals**:
 
 ```bash
 # Terminal 1 — Backend
 cd backend
-python main.py
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 # → Runs on http://localhost:8000
 
 # Terminal 2 — Frontend
 cd frontend
 npm run dev
 # → Runs on http://localhost:5173
-
-# Terminal 3 — Electron (optional)
-cd gmail-manager
-npm start
-# → Opens desktop window
-```
-
-Or use the combined command from the root:
-```bash
-npm run dev
 ```
 
 Then open **http://localhost:5173** in your browser.
 
 ---
 
-## 📦 Building for Production
+## 🌐 Deployment
 
-### Full Build Pipeline
+### Backend (Railway)
 
-```bash
-# Step 1: Build the frontend (Vite → frontend/dist/)
-cd frontend
-npm run build
+1. Connect your GitHub repo to [Railway](https://railway.app/)
+2. Add a PostgreSQL database service
+3. Set environment variables in Railway dashboard
+4. Configure build command: `pip install -r requirements.txt`
+5. Configure start command: `uvicorn main:app --host 0.0.0.0 --port $PORT --workers 1`
+6. Add predeploy command: `python ml_data_audit.py`
 
-# Step 2: Bundle the backend (PyInstaller → electron/resources/)
-cd ../backend
-pip install pyinstaller
-pyinstaller --onefile --name gmail-manager-backend --distpath ../electron/resources main.py
+### Frontend (Vercel)
 
-# Step 3: Build the Electron installer
-cd ..
-npm run build:electron
-
-# → Installer is in dist/ folder
-```
-
-Or run the full pipeline:
-```bash
-npm run build
-```
-
-### Output
-
-| File | Location |
-|------|----------|
-| Frontend build | `frontend/dist/` |
-| Backend executable | `electron/resources/gmail-manager-backend.exe` |
-| Windows installer | `dist/Gmail Manager Setup 1.0.0.exe` |
+1. Connect your GitHub repo to [Vercel](https://vercel.com/)
+2. Set root directory: `frontend`
+3. Set environment variable: `VITE_API_BASE_URL=https://your-railway-backend.railway.app`
+4. Deploy
 
 ---
 
@@ -211,56 +215,88 @@ npm run build
 | GET | `/auth/login` | Trigger Google OAuth |
 | GET | `/auth/callback` | OAuth callback |
 | GET | `/auth/status` | Login status + user email |
-| POST | `/auth/logout` | Logout |
-| GET | `/emails/fetch` | Fetch emails from Gmail |
-| GET | `/emails/analyzed` | Get cached analyzed emails |
+| POST | `/auth/logout` | Logout + delete tokens |
+| GET | `/emails` | Get analyzed emails |
 | GET | `/emails/stats` | Analysis statistics |
-| GET | `/emails/filter` | Filter/sort emails |
-| POST | `/ai/analyze-email` | Single email AI analysis |
-| POST | `/ai/rewrite` | AI email rewrite |
+| POST | `/emails/analyze-bulk?count=N` | Bulk analysis with custom count (1-500, streams SSE) |
+| POST | `/emails/{id}/label` | Update email label |
+| POST | `/emails/apply-all-pending` | Batch-apply pending labels to Gmail |
+| GET | `/emails/pending-count` | Count unapplied label changes |
+| POST | `/emails/batch-delete` | Batch delete by label or sender |
+| POST | `/emails/{id}/reply` | Send threaded reply |
+| POST | `/emails/retry-failed` | Retry failed AI analysis |
+| POST | `/ai/rewrite` | AI email rewrite (supports 10k+ words) |
 | GET | `/ai/status` | AI provider status |
-| POST | `/emails/analyze-bulk` | Bulk analysis (SSE) |
 | POST | `/security/scan-email` | Security URL scan |
-| GET | `/quarantine` | List quarantined |
+| GET | `/quarantine` | List quarantined emails |
 | POST | `/quarantine/{id}/safe` | Mark as safe |
 | DELETE | `/quarantine/{id}` | Move to trash |
 | GET | `/scam/alerts` | Get scam alerts |
 | POST | `/scam/reanalyze/{id}` | Re-analyze scam score |
+| GET | `/settings/labels` | Get custom labels |
+| POST | `/settings/labels` | Create custom label |
+| PUT | `/settings/labels/{id}` | Update label |
+| DELETE | `/settings/labels/{id}` | Delete label |
 
 ---
 
 ## 🎨 Design System
 
-| Token | Value |
-|-------|-------|
-| Primary | `#2563EB` |
-| Background | `#0F172A` |
-| Surface | `#1E293B` |
-| Border | `#334155` |
-| Text Primary | `#F1F5F9` |
-| Text Secondary | `#94A3B8` |
-| Success | `#22C55E` |
-| Warning | `#F59E0B` |
-| Danger | `#EF4444` |
+**Theme**: Light Modern Minimalism + Soft Neumorphism
+
+| Token | Light Mode | Dark Mode |
+|-------|-----------|-----------|
+| Background | `#F1F3F6` | `#1A1D24` |
+| Surface | `#F8F9FB` | `#22262E` |
+| Text Primary | `#20242C` | `#F5F6FA` |
+| Text Secondary | `#687386` | `#C5C9D6` (WCAG AA) |
+| Text Muted | `#9AA3B2` | `#9099AB` (WCAG AA) |
+| Primary | `#5B5CE2` | `#8B8CFF` |
+| Success | `#27AE72` | `#4ADE80` |
+| Warning | `#E5A23C` | `#FBBF24` |
+| Danger | `#E05A67` | `#FB7185` |
+| Border | `#E1E5EB` | `#3A3F4B` |
 | Font | Inter (Google Fonts) |
-| Card Radius | 12px |
-| Button Radius | 8px |
+| Card Radius | 14px |
+| Button Radius | 10px |
 | Badge Radius | 999px (pill) |
+
+**Neumorphic Shadows**: Soft dual-tone shadows (light/dark outset, inset) for depth without harsh borders.
 
 ---
 
 ## 🔐 Security
 
-- All credentials stored locally in `backend/.env` — never transmitted
+- All credentials stored locally in `backend/.env` — never transmitted to third parties
 - OAuth tokens saved to `backend/token.json` — auto-refreshed
-- URL safety results cached in SQLite (24-hour expiry)
-- Emails never leave your machine — all AI analysis uses your own API keys
-- Electron runs with `contextIsolation: true` and `nodeIntegration: false`
+- URL safety results cached 24 hours in database
+- Emails never leave your control — all AI analysis uses your own API keys
+- PostgreSQL for production (Railway), SQLite fallback for local development
+- WCAG AA compliant contrast ratios for accessibility
+
+---
+
+## 🧪 Recent Updates (2026-09-10)
+
+### Critical QA Fixes
+1. **WCAG AA Contrast**: Improved text-secondary and text-muted contrast ratios for dark mode
+2. **Privacy**: Removed public GitHub links from deployed app
+3. **Custom Batch Size**: Replaced fixed dropdown with 1-500 numeric input for email analysis
+4. **Rewriter Capacity**: Increased max_tokens from 1200 to 8192 — supports 10,000+ word emails
+5. **Visual Consistency**: Added neumorphic bounding box to rewritten email output
 
 ---
 
 ## 📄 License
 
-MIT License — see [LICENSE](LICENSE) for details.
-#   F o r c e   R a i l w a y   d e p l o y m e n t   -   M L   m o d e l   v 2 0 2 6 0 8 2 0 _ 0 0 1 7 5 8  
- 
+MIT License
+
+---
+
+## 🤝 Contributing
+
+This is a live production deployment. For bug reports or feature requests, please open an issue.
+
+---
+
+**Built with ❤️ using React, FastAPI, and a multi-AI cascade architecture**
