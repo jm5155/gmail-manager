@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import ScamBadge from './ScamBadge';
 import { apiPost } from '../lib/api';
 import { useToast } from './ToastNotification';
-import { stripHTML } from '../utils/htmlDecode';
+import { stripHTML, sanitizeEmailHTML } from '../utils/htmlDecode';
 
 function EmailDetailModal({ email, senderName, senderEmail, decodedSubject, indicators, onClose }) {
   const [replyBody, setReplyBody] = useState('');
@@ -174,12 +174,11 @@ function EmailDetailModal({ email, senderName, senderEmail, decodedSubject, indi
               className="text-sm leading-relaxed"
               style={{
                 color: 'var(--color-text-primary)',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
               }}
-            >
-              {stripHTML(email.body || email.snippet) || 'No content available'}
-            </p>
+              dangerouslySetInnerHTML={{ 
+                __html: sanitizeEmailHTML(email.body || email.snippet) || 'No content available' 
+              }}
+            />
           </div>
 
           {/* Reply Section */}
