@@ -42,193 +42,194 @@ function EmailDetailModal({ email, senderName, senderEmail, decodedSubject, indi
   const formatDate = (dateStr) => {
     if (!dateStr) return 'Unknown';
     const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'short',
-      year: 'numeric', 
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    let timeAgo = '';
+    if (diffMins < 60) timeAgo = `${diffMins} min ago`;
+    else if (diffHours < 24) timeAgo = `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    else if (diffDays < 7) timeAgo = `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    
+    const formatted = date.toLocaleDateString('en-US', { 
       month: 'short', 
       day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      year: 'numeric'
     });
+    
+    return timeAgo ? `${timeAgo}, ${formatted}` : formatted;
   };
 
-  const labelName = email.label_name || email.label || 'Uncategorized';
-
-  // Rendered via portal directly into document.body so this overlay is never
-  // nested inside a per-row wrapper that has its own z-index (see Inbox.jsx,
-  // where each email row gets `position: relative; zIndex: ...`). Any
-  // positioned ancestor with an explicit z-index creates a NEW stacking
-  // context, which traps this modal's z-50 inside that row instead of
-  // comparing it against the whole page (header, toolbar, other cards) —
-  // that's what caused the toolbar/header to visually overlap the modal.
   return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{
-        backgroundColor: 'rgba(0, 0, 0, 0.4)',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
       }}
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-xl"
+        className="relative w-full max-w-5xl max-h-[90vh] overflow-hidden rounded-2xl"
         style={{
           backgroundColor: 'var(--color-surface)',
-          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
+        {/* Header with sender info and close button */}
         <div
-          className="sticky top-0 z-10 px-6 py-4 flex items-start justify-between gap-4"
+          className="px-6 py-4 flex items-center justify-between"
           style={{
             backgroundColor: 'var(--color-surface)',
             borderBottom: '1px solid var(--color-border)',
           }}
         >
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            {/* Avatar */}
+            <div
+              className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0"
+              style={{
+                backgroundColor: 'var(--color-text-muted)',
+              }}
+            >
+              {senderName?.charAt(0)?.toUpperCase() || '?'}
+            </div>
+            
+            <div>
               <h3 
-                className="text-base font-semibold truncate"
+                className="text-base font-semibold"
                 style={{ color: 'var(--color-text-primary)' }}
               >
                 {senderName}
               </h3>
+              <p 
+                className="text-xs"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
+                {senderEmail}
+              </p>
             </div>
-            <p 
-              className="text-sm truncate mt-0.5"
-              style={{ color: 'var(--color-text-secondary)' }}
-            >
-              {senderEmail}
-            </p>
           </div>
-          <button
-            onClick={onClose}
-            className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg transition-all"
-            style={{
-              color: 'var(--color-text-secondary)',
-              backgroundColor: 'transparent',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--color-border)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }}
-          >
-            ×
-          </button>
+
+          <div className="flex items-center gap-3">
+            <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+              {formatDate(email.date)}
+            </span>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-full flex items-center justify-center transition-colors"
+              style={{
+                color: 'var(--color-text-secondary)',
+                backgroundColor: 'transparent',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-surface-hover)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
 
-        {/* Content */}
-        <div className="px-6 py-4 space-y-4">
-          {/* Subject */}
-          <div>
-            <h2 
-              className="text-xl font-semibold"
-              style={{ color: 'var(--color-text-primary)' }}
-            >
-              {decodedSubject}
-            </h2>
-          </div>
-
-          {/* Meta row */}
-          <div className="flex items-center gap-3 flex-wrap">
-            <span 
-              className="text-sm"
-              style={{ color: 'var(--color-text-secondary)' }}
-            >
-              {formatDate(email.analyzed_at || email.date)}
-            </span>
-            <span
-              className="text-xs px-2.5 py-1 rounded-full"
-              style={{
-                backgroundColor: 'var(--color-surface-light)',
-                color: 'var(--color-text-primary)',
-                border: '1px solid var(--color-border)',
-              }}
-            >
-              {labelName}
-            </span>
-          </div>
-
-          {/* Scam Badge */}
-          {email.scam_score != null && (
-            <ScamBadge
-              score={email.scam_score}
-              reason={email.scam_reason || ''}
-              indicators={indicators}
-              expanded={true}
-              onToggle={() => {}}
-            />
-          )}
-
-          {/* Body */}
+        {/* Two-column layout */}
+        <div className="flex h-[calc(90vh-80px)]">
+          {/* Left: Reply section */}
           <div
-            className="rounded-lg p-4"
+            className="w-2/5 flex flex-col p-6"
             style={{
-              backgroundColor: 'var(--color-surface-light)',
-              border: '1px solid var(--color-border)',
+              backgroundColor: 'var(--color-background)',
+              borderRight: '1px solid var(--color-border)',
             }}
           >
-            <EmailBodyFrame 
-              body={email.body || email.snippet} 
-              className="text-sm leading-relaxed" 
-              textStyle={{ color: 'var(--color-text-primary)' }} 
-            />
-          </div>
-
-          {/* Reply Section */}
-          <div
-            className="rounded-lg p-4"
-            style={{
-              backgroundColor: 'var(--color-surface-light)',
-              border: '1px solid var(--color-border)',
-            }}
-          >
-            <div className="text-xs mb-3 space-y-1" style={{ color: 'var(--color-text-secondary)' }}>
-              <p><span className="font-medium">To:</span> {senderName}</p>
-              <p><span className="font-medium">Subject:</span> Re: {decodedSubject}</p>
+            <div className="mb-3">
+              <p className="text-xs mb-1" style={{ color: 'var(--color-text-muted)' }}>
+                <span className="font-medium">To:</span> {senderName}
+              </p>
+              <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                <span className="font-medium">Subject:</span> {decodedSubject}
+              </p>
             </div>
+
             <textarea
               value={replyBody}
               onChange={(e) => setReplyBody(e.target.value)}
               placeholder="Write your reply..."
-              rows={4}
-              className="w-full text-sm rounded-lg p-3 resize-y transition-all"
+              className="flex-1 text-sm rounded-lg p-3 resize-none mb-4"
               style={{
                 backgroundColor: 'var(--color-surface)',
                 border: '1px solid var(--color-border)',
                 color: 'var(--color-text-primary)',
                 outline: 'none',
               }}
-              onFocus={(e) => { e.target.style.borderColor = 'var(--color-primary)'; }}
-              onBlur={(e) => { e.target.style.borderColor = 'var(--color-border)'; }}
+              onFocus={(e) => e.target.style.borderColor = 'var(--color-primary)'}
+              onBlur={(e) => e.target.style.borderColor = 'var(--color-border)'}
             />
-            <div className="flex gap-2 mt-3">
+
+            <div className="flex items-center gap-2">
               <button
                 onClick={handleSendReply}
-                disabled={sending || !replyBody.trim()}
-                className="text-sm font-medium px-5 py-2 rounded-lg transition-all"
+                disabled={!replyBody.trim() || sending}
+                className="px-4 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-50"
                 style={{
-                  backgroundColor: (sending || !replyBody.trim()) ? 'var(--color-border)' : 'var(--color-primary)',
-                  color: (sending || !replyBody.trim()) ? 'var(--color-text-muted)' : '#fff',
-                  cursor: (sending || !replyBody.trim()) ? 'not-allowed' : 'pointer',
+                  backgroundColor: replyBody.trim() && !sending ? 'var(--color-primary)' : 'var(--color-border)',
+                  color: '#ffffff',
                 }}
               >
-                {sending ? 'Sending...' : 'Send Reply'}
+                {sending ? 'Sending...' : 'Send'}
               </button>
               <button
-                onClick={() => setReplyBody('')}
-                className="text-sm font-medium px-5 py-2 rounded-lg transition-all"
+                className="p-2 rounded-lg transition-colors"
                 style={{
-                  backgroundColor: 'transparent',
                   color: 'var(--color-text-secondary)',
-                  border: '1px solid var(--color-border)',
                 }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-surface-hover)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                title="Attach file"
               >
-                Clear
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13" />
+                </svg>
+              </button>
+              <button
+                className="p-2 rounded-lg transition-colors"
+                style={{
+                  color: 'var(--color-text-secondary)',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-surface-hover)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                title="More options"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" />
+                </svg>
               </button>
             </div>
+          </div>
+
+          {/* Right: Email content */}
+          <div className="flex-1 overflow-y-auto p-6">
+            {/* Scam badge if applicable */}
+            {email.scam_score !== null && email.scam_score !== undefined && (
+              <div className="mb-4">
+                <ScamBadge
+                  score={email.scam_score}
+                  reason={email.scam_reason}
+                  indicators={indicators}
+                  expanded={false}
+                  onToggle={() => {}}
+                />
+              </div>
+            )}
+
+            {/* Email body */}
+            <EmailBodyFrame 
+              body={email.body || email.snippet} 
+              className="text-sm" 
+              textStyle={{ color: 'var(--color-text-primary)' }} 
+            />
           </div>
         </div>
       </div>
