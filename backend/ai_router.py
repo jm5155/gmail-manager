@@ -230,7 +230,7 @@ class AIRouter:
                 "role": "user",
                 "content": prompt,
             }],
-            "max_tokens": 500,
+            "max_tokens": 8192,  # FIX #5 - Raised from 500 to prevent truncation
             "temperature": 0.2,
             "stream": False,
         }
@@ -280,7 +280,7 @@ class AIRouter:
         body = {
             "model": "openai/gpt-oss-20b",
             "messages": [{"role": "user", "content": prompt}],
-            "max_tokens": 8192,
+            "max_tokens": 8192,  # FIX #5 - Raised from 1200 to prevent truncation
             "temperature": 0.2,
             "response_format": {"type": "json_object"},
             "reasoning_effort": "low",
@@ -366,7 +366,7 @@ class AIRouter:
             "contents": [{"parts": [{"text": prompt}]}],
             "generationConfig": {
                 "temperature": 0.2,
-                "maxOutputTokens": 1200,
+                "maxOutputTokens": 8192,  # FIX #5 - Raised from 1200 to prevent truncation
                 "thinkingConfig": {"thinkingBudget": 0},
                 "responseMimeType": "application/json",
             }
@@ -426,7 +426,7 @@ class AIRouter:
         body = {
             "model": "command-a-03-2025",
             "messages": [{"role": "user", "content": prompt}],
-            "max_tokens": 500,
+            "max_tokens": 8192,  # FIX #5 - Raised from 500 to prevent truncation
             "temperature": 0.2,
         }
 
@@ -486,7 +486,7 @@ class AIRouter:
                 "role": "user",
                 "content": prompt,
             }],
-            "max_tokens": 1200,
+            "max_tokens": 8192,  # FIX #5 - Raised from 1200 to prevent truncation
             "temperature": 0.2,
             "response_format": {"type": "json_object"},
         }

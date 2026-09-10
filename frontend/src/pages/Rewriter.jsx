@@ -196,6 +196,7 @@ function Rewriter() {
               background: 'var(--color-surface)',
               border: '1px solid var(--color-border)',
               minHeight: '200px',
+              maxHeight: '600px',
               boxShadow: 'var(--shadow-neumorphic-sm)',
             }}
           >
@@ -233,7 +234,7 @@ function Rewriter() {
 
       {/* MOBILE LAYOUT — Chat-Style */}
       <div className="md:hidden flex flex-col" style={{ height: 'calc(100vh - 90px)' }}>
-        {/* Output Area - Takes remaining space */}
+          {/* Output Area - Takes remaining space (FIX #6 - Neumorphic box styling) */}
         <div className="flex-1 p-4 overflow-y-auto" style={{ paddingBottom: '100px' }}>
           <div
             className="h-full p-4 rounded-xl text-sm relative"
@@ -241,7 +242,9 @@ function Rewriter() {
               background: 'var(--color-surface)',
               border: '1px solid var(--color-border)',
               minHeight: '300px',
+              maxHeight: 'calc(100vh - 250px)',
               boxShadow: 'var(--shadow-neumorphic-sm)',
+              overflow: 'auto',
             }}
           >
             {loading ? (

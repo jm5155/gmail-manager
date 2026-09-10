@@ -21,42 +21,46 @@
   :root {
     /* === LIGHT MODERN MINIMALIST + SOFT NEUMORPHISM === */
     
-    /* BASE BACKGROUNDS - Light Neutral */
-    --color-background: #F1F3F6;   /* Primary application canvas */
-    --color-surface: #F8F9FB;      /* Cards, panels, sidebar, modals, elevated surfaces */
-    --color-surface-hover: #ECEEF2; /* Hover state for interactive surfaces */
+    /* BASE BACKGROUNDS - Light Neutral (FIX #2 - Light mode contrast) */
+    --color-background: #F8FAFC;   /* Primary application canvas */
+    --color-surface: #FFFFFF;      /* Cards, panels, sidebar, modals, elevated surfaces */
+    --color-surface-hover: #F1F5F9; /* Hover state for interactive surfaces */
     
-    /* TEXT HIERARCHY - Dark on Light */
-    --color-text-primary: #20242C;   /* Headings, important labels, email subjects */
-    --color-text-secondary: #687386; /* Body text, descriptions, metadata */
-    --color-text-muted: #9AA3B2;     /* Placeholders, disabled text, tertiary info */
+    /* TEXT HIERARCHY - Dark on Light (FIX #2 - Improved contrast) */
+    --color-text-primary: #0F172A;   /* Headings, important labels - AAA 17.9:1 */
+    --color-text-secondary: #334155; /* Body text, descriptions - AAA 9.9:1 */
+    --color-text-muted: #64748B;     /* Placeholders, tertiary info - AA 4.9:1 */
     
-    /* BORDERS */
-    --color-border: #E1E5EB;         /* Subtle borders throughout */
-    --color-border-light: #EBEEF3;   /* Even lighter borders */
+    /* BORDERS (FIX #2 - Better separation) */
+    --color-border: #CBD5E1;         /* Subtle borders throughout */
+    --color-border-light: #E2E8F0;   /* Even lighter borders */
     
-    /* PRIMARY ACCENT - Indigo */
-    --color-primary: #5B5CE2;        /* Primary buttons, links, active states */
-    --color-primary-hover: #4F50CC;  /* Hover state */
-    --color-primary-active: #4142B5; /* Active/pressed state */
-    --color-primary-light: #7A7BEC;  /* Lighter variant for backgrounds */
+    /* PRIMARY ACCENT - Indigo (FIX #2 - Optimized for white text) */
+    --color-primary: #2563EB;        /* Primary buttons - AA 4.6:1 with white */
+    --color-primary-hover: #2354C7;  /* Hover state - AA 5.9:1 with white */
+    --color-primary-active: #1E3A8A; /* Active/pressed - AAA 9.8:1 with white */
+    --color-primary-light: #E0ECFF;  /* Lighter variant - AAA 16:1 with dark text */
     
-    /* SEMANTIC COLORS - Status Indicators */
+    /* SEMANTIC COLORS - Status Indicators (FIX #2 - Badge text contrast) */
     --color-success: #27AE72;        /* Success states, connected status */
     --color-success-bg: #ECFDF3;     /* Success background */
     --color-success-border: #B8E6CF; /* Success border */
+    --color-text-on-success: #166534; /* Dark text on success bg - AAA 7.6:1 */
     
     --color-warning: #E5A23C;        /* Warning states */
     --color-warning-bg: #FFFAEB;     /* Warning background */
     --color-warning-border: #F5D8A0; /* Warning border */
+    --color-text-on-warning: #92400E; /* Dark text on warning bg - AAA 7.2:1 */
     
     --color-danger: #E05A67;         /* Error/danger states */
     --color-danger-bg: #FFF1F2;      /* Danger background */
     --color-danger-border: #F5B8BE;  /* Danger border */
+    --color-text-on-danger: #991B1B;  /* Dark text on danger bg - AAA 7.9:1 */
     
     --color-info: #3B82F6;           /* Info states */
     --color-info-bg: #EFF6FF;        /* Info background */
     --color-info-border: #BFDBFE;    /* Info border */
+    --color-text-on-info: #1E40AF;    /* Dark text on info bg - AA 4.5:1+ */
     
     /* BORDERS & DIVIDERS */
     /* SOFT NEUMORPHIC SHADOWS - Light Mode */
@@ -147,6 +151,18 @@
     --shadow-sm: var(--shadow-flat-sm);
     --shadow-md: var(--shadow-flat-md);
     --shadow-lg: var(--shadow-flat-lg);
+    
+    /* TAILWIND CONFIG ALIASES (FIX #1 - CSS variable wiring) */
+    --surface: var(--color-surface);
+    --surface-light: var(--color-surface-hover);
+    --border-default: var(--color-border);
+    --border-subtle: var(--color-border-light);
+    --radius-pill: 999px;
+    --space-xs: var(--spacing-xs);
+    --space-sm: var(--spacing-sm);
+    --space-md: var(--spacing-md);
+    --space-lg: var(--spacing-lg);
+    --space-xl: var(--spacing-xl);
   }
 
   /* ---------- DARK MODE TOKENS ---------- */
@@ -258,6 +274,18 @@
     --shadow-sm: var(--shadow-flat-sm);
     --shadow-md: var(--shadow-flat-md);
     --shadow-lg: var(--shadow-flat-lg);
+    
+    /* TAILWIND CONFIG ALIASES (FIX #1 - CSS variable wiring) */
+    --surface: var(--color-surface);
+    --surface-light: var(--color-surface-hover);
+    --border-default: var(--color-border);
+    --border-subtle: var(--color-border-light);
+    --radius-pill: 999px;
+    --space-xs: var(--spacing-xs);
+    --space-sm: var(--spacing-sm);
+    --space-md: var(--spacing-md);
+    --space-lg: var(--spacing-lg);
+    --space-xl: var(--spacing-xl);
   }
   
   /* Base styles */
@@ -493,7 +521,7 @@
     color: var(--color-text-primary);
   }
 
-  /* BADGES / PILLS — flat tags, fit-content width (fixes text-overflow bug) */
+  /* BADGES / PILLS — flat tags, fit-content width (FIX #2 - Badge text contrast) */
   .badge {
     display: inline-flex;
     align-items: center;
@@ -510,22 +538,22 @@
   }
   .badge-success { 
     background: var(--success-bg); 
-    color: var(--success); 
+    color: var(--color-text-on-success); 
     border: 1px solid var(--success-border); 
   }
   .badge-warning { 
     background: var(--warning-bg); 
-    color: var(--warning); 
+    color: var(--color-text-on-warning); 
     border: 1px solid var(--warning-border); 
   }
   .badge-danger { 
     background: var(--danger-bg); 
-    color: var(--danger); 
+    color: var(--color-text-on-danger); 
     border: 1px solid var(--danger-border); 
   }
   .badge-info { 
     background: var(--info-bg); 
-    color: var(--info); 
+    color: var(--color-text-on-info); 
     border: 1px solid var(--info-border); 
   }
   .badge-neutral { 
@@ -549,7 +577,7 @@
   }
 
   /* SIDEBAR NAV ITEM */
-  /* NAVIGATION ITEMS - Sidebar */
+  /* NAVIGATION ITEMS - Sidebar (FIX #2 - Active state uses primary-light) */
   .nav-item {
     color: var(--color-text-primary);
     border-radius: var(--radius-md);
@@ -570,7 +598,7 @@
     transform: translateX(2px);
   }
   .nav-item.active {
-    background: rgba(91, 92, 226, 0.08);
+    background: var(--color-primary-light);
     color: var(--color-text-primary);
     font-weight: 600;
   }
