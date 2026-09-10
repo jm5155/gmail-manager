@@ -9,6 +9,7 @@
 
 import React, { useState } from 'react';
 import ScamBadge from './ScamBadge';
+import EmailDetailModal from './EmailDetailModal';
 import { decodeHTMLEntities } from '../utils/htmlDecode';
 import { apiPost } from '../lib/api';
 import { useToast } from './ToastNotification';
@@ -22,18 +23,17 @@ function EmailCard({
   pendingLabel = null, 
   availableLabels = [] 
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
   const [scamExpanded, setScamExpanded] = useState(false);
-  const [replyOpen, setReplyOpen] = useState(false);
-  const [replyBody, setReplyBody] = useState('');
-  const [sending, setSending] = useState(false);
   const toast = useToast();
 
   // Get the label display name from API field
   const labelName = email.label_name || email.label || 'Uncategorized';
 
-  // Get sender name
+  // Get sender name and email
   const senderName = email.sender?.split('<')[0]?.trim()?.replace(/"/g, '') || 'Unknown';
+  const senderEmailMatch = email.sender?.match(/<(.+)>/);
+  const senderEmail = senderEmailMatch ? senderEmailMatch[1] : email.sender || 'Unknown';
   
   // Deterministic avatar color selection
   const getAvatarColor = (name) => {
@@ -93,29 +93,19 @@ function EmailCard({
     ? (typeof email.scam_indicators === 'string' ? JSON.parse(email.scam_indicators) : email.scam_indicators)
     : [];
 
-  const handleSendReply = async () => {
-    if (!replyBody.trim() || sending) return;
-    setSending(true);
-    try {
-      const result = await apiPost(`/emails/${email.email_id || email.id}/reply`, {
-        body: replyBody,
-      });
-      if (result && result.error) {
-        toast.error('Failed to send reply', result.error);
-      } else {
-        toast.success('Reply sent', 'Your reply was sent successfully.');
-        setReplyBody('');
-        setReplyOpen(false);
-      }
-    } catch (err) {
-      toast.error('Failed to send reply', err.message || 'Please try again.');
-    } finally {
-      setSending(false);
-    }
-  };
-
   return (
-    <div 
+    <>
+      {modalOpen && (
+        <EmailDetailModal
+          email={email}
+          senderName={senderName}
+          senderEmail={senderEmail}
+          decodedSubject={decodedSubject}
+          indicators={indicators}
+          onClose={() => setModalOpen(false)}
+        />
+      )}
+      <div
       className="bg-surface rounded-xl overflow-visible transition-all duration-200"
       style={{
         backgroundColor: 'var(--color-surface)',
@@ -133,7 +123,7 @@ function EmailCard({
     >
       {/* Main Card Content */}
       <div
-        onClick={() => setExpanded(!expanded)}
+        onClick={() => setModalOpen(true)}
         className="cursor-pointer p-5"
       >
         {/* DESKTOP LAYOUT (≥768px) */}
@@ -171,14 +161,12 @@ function EmailCard({
             >
               {decodedSubject}
             </p>
-            {!expanded && (
-              <p 
-                className="text-xs truncate mt-0.5"
-                style={{ color: 'var(--color-text-secondary, #687386)' }}
-              >
-                {decodedSnippet}
-              </p>
-            )}
+            <p 
+              className="text-xs truncate mt-0.5"
+              style={{ color: 'var(--color-text-secondary, #687386)' }}
+            >
+              {decodedSnippet}
+            </p>
           </div>
 
           {/* Label Dropdown */}
@@ -275,14 +263,12 @@ function EmailCard({
           </p>
 
           {/* Row 3: Snippet */}
-          {!expanded && (
-            <p 
-              className="text-xs truncate leading-relaxed"
-              style={{ color: 'var(--color-text-secondary, #687386)' }}
-            >
-              {decodedSnippet}
-            </p>
-          )}
+          <p 
+            className="text-xs truncate leading-relaxed"
+            style={{ color: 'var(--color-text-secondary, #687386)' }}
+          >
+            {decodedSnippet}
+          </p>
 
           {/* Row 4: Label + Status */}
           <div className="flex items-center justify-between gap-3 pt-1">
@@ -358,96 +344,6 @@ function EmailCard({
         </div>
       )}
 
-      {/* Expanded Content (Full Email Snippet) */}
-      {expanded && (
-        <div 
-          className="px-5 pb-5 pt-2"
-          style={{
-            borderTop: '1px solid var(--color-border, #E1E5EB)',
-          }}
-        >
-          <p 
-            className="text-sm leading-relaxed"
-            style={{
-              color: 'var(--color-text-secondary, #687386)',
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
-              overflowWrap: 'anywhere',
-            }}
-          >
-            {decodedSnippet || 'No preview available'}
-          </p>
-
-          <div className="mt-3" onClick={(e) => e.stopPropagation()}>
-            <button
-              onClick={() => setReplyOpen(!replyOpen)}
-              className="text-xs font-medium px-4 py-1.5 rounded-lg transition-all"
-              style={{
-                backgroundColor: replyOpen ? 'var(--color-border, #E1E5EB)' : 'var(--color-primary)',
-                color: replyOpen ? 'var(--color-text-primary, #20242C)' : '#fff',
-              }}
-            >
-              {replyOpen ? 'Close Reply' : 'Reply'}
-            </button>
-
-            {replyOpen && (
-              <div
-                className="mt-3 rounded-lg p-4"
-                style={{
-                  backgroundColor: 'var(--color-surface, #F8F9FB)',
-                  border: '1px solid var(--color-border, #E1E5EB)',
-                }}
-              >
-                <div className="text-xs mb-2 space-y-1" style={{ color: 'var(--color-text-secondary, #687386)' }}>
-                  <p><span className="font-medium">To:</span> {senderName}</p>
-                  <p><span className="font-medium">Subject:</span> Re: {decodedSubject}</p>
-                </div>
-                <textarea
-                  value={replyBody}
-                  onChange={(e) => setReplyBody(e.target.value)}
-                  placeholder="Write your reply..."
-                  rows={4}
-                  className="w-full text-sm rounded-lg p-3 resize-y transition-all"
-                  style={{
-                    backgroundColor: 'var(--color-background, #fff)',
-                    border: '1px solid var(--color-border, #E1E5EB)',
-                    color: 'var(--color-text-primary, #20242C)',
-                    outline: 'none',
-                  }}
-                  onFocus={(e) => { e.target.style.borderColor = 'var(--color-primary)'; }}
-                  onBlur={(e) => { e.target.style.borderColor = 'var(--color-border, #E1E5EB)'; }}
-                />
-                <div className="flex gap-2 mt-3">
-                  <button
-                    onClick={handleSendReply}
-                    disabled={sending || !replyBody.trim()}
-                    className="text-xs font-medium px-4 py-1.5 rounded-lg transition-all"
-                    style={{
-                      backgroundColor: (sending || !replyBody.trim()) ? 'var(--color-border, #E1E5EB)' : 'var(--color-primary)',
-                      color: (sending || !replyBody.trim()) ? 'var(--color-text-muted, #9AA3B2)' : '#fff',
-                      cursor: (sending || !replyBody.trim()) ? 'not-allowed' : 'pointer',
-                    }}
-                  >
-                    {sending ? 'Sending...' : 'Send'}
-                  </button>
-                  <button
-                    onClick={() => { setReplyBody(''); setReplyOpen(false); }}
-                    className="text-xs font-medium px-4 py-1.5 rounded-lg transition-all"
-                    style={{
-                      backgroundColor: 'transparent',
-                      color: 'var(--color-text-secondary, #687386)',
-                      border: '1px solid var(--color-border, #E1E5EB)',
-                    }}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
       {/* Custom Actions (e.g., delete, move) */}
       {actions && (
         <div 
@@ -459,7 +355,8 @@ function EmailCard({
           {actions}
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }
 
