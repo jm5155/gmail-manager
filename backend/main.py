@@ -1359,23 +1359,69 @@ async def emails_batch_delete(request: Request, user: dict = Depends(require_aut
 
 # ---------- INLINE REPLY ENDPOINT ----------
 
-class ReplyRequest(BaseModel):
-    body: str
+from fastapi import File, UploadFile, Form
 
 @app.post("/emails/{email_id}/reply")
-async def send_reply_endpoint(email_id: str, reply: ReplyRequest, user: dict = Depends(require_auth)):
-    """POST /emails/{email_id}/reply — Sends a threaded reply to an email via Gmail."""
-    if not reply.body or not reply.body.strip():
+async def send_reply_endpoint(
+    email_id: str, 
+    body: str = Form(...),
+    attachments: list[UploadFile] = File(default=[]),
+    user: dict = Depends(require_auth)
+):
+    """
+    POST /emails/{email_id}/reply — Sends a threaded reply with optional attachments.
+    
+    Args:
+        email_id: Email ID to reply to
+        body: Reply message text (form field)
+        attachments: List of file uploads (optional, max 10 files, 25MB each)
+        user: Authenticated user from JWT/session
+    """
+    if not body or not body.strip():
         return JSONResponse(status_code=400, content={"error": "Reply body cannot be empty."})
 
     user_id = user["user_id"]
     user_email = get_user_email_by_id(user_id)
 
+    # Validate attachments
+    if len(attachments) > 10:
+        return JSONResponse(status_code=400, content={"error": "Maximum 10 attachments allowed."})
+
+    # Process attachments
+    attachment_data = []
+    max_file_size = 25 * 1024 * 1024  # 25MB (Gmail limit)
+
+    for upload_file in attachments:
+        # Read file content
+        content = await upload_file.read()
+        
+        # Check file size
+        if len(content) > max_file_size:
+            return JSONResponse(
+                status_code=400, 
+                content={"error": f"File {upload_file.filename} exceeds 25MB limit."}
+            )
+        
+        attachment_data.append({
+            "filename": upload_file.filename,
+            "content": content,
+            "mime_type": upload_file.content_type or "application/octet-stream"
+        })
+
     try:
-        sent = send_reply(email_id, reply.body, user_email)
+        sent = send_reply(email_id, body, user_email, attachments=attachment_data if attachment_data else None)
         if not sent:
             return JSONResponse(status_code=502, content={"error": "Failed to send reply. Please try again."})
-        return {"message": "Reply sent successfully.", "sent_message_id": sent.get("id")}
+        
+        response_message = "Reply sent successfully."
+        if attachment_data:
+            response_message += f" ({len(attachment_data)} attachment{'s' if len(attachment_data) > 1 else ''} included)"
+        
+        return {
+            "message": response_message, 
+            "sent_message_id": sent.get("id"),
+            "attachments_count": len(attachment_data)
+        }
     except Exception as e:
         logger.error(f"[REPLY ERROR] {type(e).__name__}: {e}", exc_info=True)
         return JSONResponse(status_code=500, content={"error": "Failed to send reply. Please try again."})

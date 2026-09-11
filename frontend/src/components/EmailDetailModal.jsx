@@ -8,9 +8,10 @@
  * - Collapsible reply section to reduce clutter
  * - Better mobile responsiveness
  * - Improved scam badge positioning and visibility
+ * - File attachment support (NEW 2026-09-11)
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import ScamBadge from './ScamBadge';
 import { apiPost } from '../lib/api';
@@ -22,6 +23,8 @@ function EmailDetailModal({ email, senderName, senderEmail, decodedSubject, indi
   const [sending, setSending] = useState(false);
   const [showReply, setShowReply] = useState(false);
   const [scamExpanded, setScamExpanded] = useState(false);
+  const [attachments, setAttachments] = useState([]);
+  const fileInputRef = useRef(null);
   const toast = useToast();
 
   useEffect(() => {
@@ -32,18 +35,71 @@ function EmailDetailModal({ email, senderName, senderEmail, decodedSubject, indi
     return () => document.removeEventListener('keydown', handleEscape);
   }, [onClose]);
 
+  const handleFileSelect = (e) => {
+    const files = Array.from(e.target.files);
+    
+    // Check file size (max 25MB per file, Gmail limit)
+    const maxSize = 25 * 1024 * 1024; // 25MB
+    const oversizedFiles = files.filter(f => f.size > maxSize);
+    
+    if (oversizedFiles.length > 0) {
+      toast.error('File too large', `Maximum file size is 25MB. ${oversizedFiles[0].name} is too large.`);
+      return;
+    }
+    
+    // Check total attachment count (max 10 files)
+    if (attachments.length + files.length > 10) {
+      toast.error('Too many files', 'Maximum 10 attachments allowed per email.');
+      return;
+    }
+    
+    setAttachments(prev => [...prev, ...files]);
+    e.target.value = ''; // Reset input
+  };
+
+  const handleRemoveAttachment = (index) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  };
+
   const handleSendReply = async () => {
     if (!replyBody.trim() || sending) return;
     setSending(true);
+    
     try {
-      const result = await apiPost(`/emails/${email.email_id || email.id}/reply`, {
-        body: replyBody,
+      // Create FormData for multipart upload
+      const formData = new FormData();
+      formData.append('body', replyBody);
+      
+      // Add attachments
+      attachments.forEach((file, index) => {
+        formData.append('attachments', file);
       });
-      if (result && result.error) {
-        toast.error('Failed to send reply', result.error);
+
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/emails/${email.email_id || email.id}/reply`, {
+        method: 'POST',
+        credentials: 'include',
+        body: formData, // FormData automatically sets correct Content-Type
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || result.error) {
+        toast.error('Failed to send reply', result.error || result.message || 'Please try again.');
       } else {
-        toast.success('Reply sent', 'Your reply was sent successfully.');
+        toast.success('Reply sent', attachments.length > 0 
+          ? `Your reply with ${attachments.length} attachment${attachments.length > 1 ? 's' : ''} was sent successfully.`
+          : 'Your reply was sent successfully.'
+        );
         setReplyBody('');
+        setAttachments([]);
         setShowReply(false);
         onClose();
       }
@@ -321,7 +377,8 @@ function EmailDetailModal({ email, senderName, senderEmail, decodedSubject, indi
             style={{
               backgroundColor: 'var(--color-surface)',
               borderTop: '1px solid var(--color-border)',
-              maxHeight: '300px',
+              maxHeight: '400px',
+              overflowY: 'auto',
             }}
           >
             <div className="mb-3">
@@ -349,6 +406,52 @@ function EmailDetailModal({ email, senderName, senderEmail, decodedSubject, indi
               onBlur={(e) => e.target.style.borderColor = 'var(--color-border)'}
             />
 
+            {/* Attachments display */}
+            {attachments.length > 0 && (
+              <div className="mb-3 space-y-2">
+                {attachments.map((file, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-2 p-2 rounded-lg"
+                    style={{
+                      backgroundColor: 'var(--color-background)',
+                      border: '1px solid var(--color-border)',
+                    }}
+                  >
+                    <svg className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--color-text-secondary)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium truncate" style={{ color: 'var(--color-text-primary)' }}>
+                        {file.name}
+                      </p>
+                      <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                        {formatFileSize(file.size)}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleRemoveAttachment(index)}
+                      className="p-1 rounded transition-colors flex-shrink-0"
+                      style={{ color: 'var(--color-text-secondary)' }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'var(--color-danger-bg)';
+                        e.currentTarget.style.color = 'var(--color-danger)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                        e.currentTarget.style.color = 'var(--color-text-secondary)';
+                      }}
+                      title="Remove attachment"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div className="flex items-center gap-2">
               <button
                 onClick={handleSendReply}
@@ -361,10 +464,23 @@ function EmailDetailModal({ email, senderName, senderEmail, decodedSubject, indi
               >
                 {sending ? 'Sending...' : 'Send Reply'}
               </button>
+              
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                onChange={handleFileSelect}
+                style={{ display: 'none' }}
+                accept="*/*"
+              />
+              
               <button
-                className="p-2 rounded-lg transition-colors"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={sending}
+                className="p-2 rounded-lg transition-colors disabled:opacity-50"
                 style={{ color: 'var(--color-text-secondary)' }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-border)'}
+                onMouseEnter={(e) => !sending && (e.currentTarget.style.backgroundColor = 'var(--color-border)')}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                 title="Attach file"
               >

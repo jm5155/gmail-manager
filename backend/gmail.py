@@ -638,10 +638,17 @@ def permanently_delete_email(email_id: str, user_email: str = None) -> bool:
         return False
 
 
-def send_reply(email_id: str, reply_body: str, user_email: str = None) -> dict | None:
+def send_reply(email_id: str, reply_body: str, user_email: str = None, attachments: list = None) -> dict | None:
     """
-    Send a reply to an existing email, correctly threaded via Message-ID/References
-    so Gmail displays it as a reply, not a new email.
+    Send a reply to an existing email with optional attachments.
+    Correctly threaded via Message-ID/References so Gmail displays it as a reply.
+    
+    Args:
+        email_id: Original email ID to reply to
+        reply_body: Reply message text
+        user_email: User's Gmail address
+        attachments: List of dicts with 'filename', 'content' (bytes), and 'mime_type'
+    
     Returns the sent message's Gmail ID dict on success, None on failure.
     """
     service = get_gmail_service(user_email)
@@ -671,8 +678,31 @@ def send_reply(email_id: str, reply_body: str, user_email: str = None) -> dict |
 
         import base64
         from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
+        from email.mime.base import MIMEBase
+        from email import encoders
 
-        mime_message = MIMEText(reply_body)
+        # Create message with attachments if present
+        if attachments and len(attachments) > 0:
+            mime_message = MIMEMultipart()
+            mime_message.attach(MIMEText(reply_body, 'plain'))
+            
+            # Add each attachment
+            for attachment in attachments:
+                part = MIMEBase('application', 'octet-stream')
+                part.set_payload(attachment['content'])
+                encoders.encode_base64(part)
+                part.add_header(
+                    'Content-Disposition',
+                    f'attachment; filename={attachment["filename"]}'
+                )
+                if 'mime_type' in attachment:
+                    part.set_type(attachment['mime_type'])
+                mime_message.attach(part)
+        else:
+            mime_message = MIMEText(reply_body, 'plain')
+
+        # Set headers
         mime_message["To"] = original_from
         mime_message["Subject"] = reply_subject
         if original_message_id:
@@ -688,7 +718,8 @@ def send_reply(email_id: str, reply_body: str, user_email: str = None) -> dict |
             body={"raw": raw, "threadId": thread_id} if thread_id else {"raw": raw},
         ).execute()
 
-        logger.info(f"[GMAIL] Reply sent for {email_id[:12]}... -> new message {sent.get('id', '')[:12]}...")
+        attachment_info = f" with {len(attachments)} attachment(s)" if attachments else ""
+        logger.info(f"[GMAIL] Reply sent{attachment_info} for {email_id[:12]}... -> new message {sent.get('id', '')[:12]}...")
         return sent
 
     except Exception as e:
