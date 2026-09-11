@@ -262,7 +262,7 @@ def _get_email_body(service, email_id: str) -> str:
     """
     Fetch only the body text of a single email by its ID.
     Use this after _get_email_details() when body content is needed for AI analysis.
-    IMPROVED (2026-09-11): Better HTML extraction with multipart/related support.
+    IMPROVED (2026-09-11): Enhanced with inline image embedding support.
     """
     try:
         msg = service.users().messages().get(
@@ -271,26 +271,25 @@ def _get_email_body(service, email_id: str) -> str:
             format="full",
         ).execute()
 
-        return _extract_body(msg.get("payload", {}))
+        return _extract_body_with_images(msg.get("payload", {}))
 
     except Exception as e:
         logger.info(f"[GMAIL] Error fetching body for email {email_id}: {e}")
         return ""
 
 
-def _extract_body(payload: dict) -> str:
+def _extract_body_with_images(payload: dict) -> str:
     """
-    Recursively extract the email body from a Gmail message payload.
-    IMPROVED (2026-09-11): Enhanced HTML extraction to preserve rich formatting.
+    Extract email body with inline images embedded as data URIs.
+    IMPROVED (2026-09-11): Converts cid: references to base64 data URIs.
     
-    Gmail email structure:
-    - multipart/alternative: contains both text/plain and text/html versions
-    - multipart/related: contains HTML + embedded images (inline attachments)
-    - multipart/mixed: contains message parts + file attachments
-    
-    Priority: text/html > text/plain (to get rich formatting, images, styles)
+    Gmail structure:
+    - multipart/related: HTML body + inline images (with Content-ID)
+    - Images referenced as <img src="cid:image_id"> in HTML
+    - We convert these to data URIs for display
     """
     import base64
+    import re
 
     def decode_part(data_str: str) -> str:
         """Decode base64url-encoded Gmail payload data."""
@@ -302,24 +301,60 @@ def _extract_body(payload: dict) -> str:
             logger.debug(f"[GMAIL] Failed to decode part: {e}")
             return ""
 
+    def decode_image_data(data_str: str) -> bytes:
+        """Decode base64url-encoded image data as bytes."""
+        if not data_str:
+            return b""
+        try:
+            return base64.urlsafe_b64decode(data_str)
+        except Exception as e:
+            logger.debug(f"[GMAIL] Failed to decode image: {e}")
+            return b""
+
+    # Collect inline images with their Content-IDs
+    inline_images = {}  # {content_id: {"mime": "image/png", "data": bytes}}
+
+    def collect_inline_images(payload: dict):
+        """Recursively collect all inline images from the payload."""
+        parts = payload.get("parts", [])
+        for part in parts:
+            mime_type = part.get("mimeType", "")
+            
+            # Inline image attachment
+            if mime_type.startswith("image/"):
+                headers = {h["name"].lower(): h["value"] for h in part.get("headers", [])}
+                content_id = headers.get("content-id", "").strip("<>")
+                
+                if content_id:
+                    image_data = part.get("body", {}).get("data", "")
+                    if image_data:
+                        inline_images[content_id] = {
+                            "mime": mime_type,
+                            "data": decode_image_data(image_data)
+                        }
+            
+            # Recurse into nested parts
+            if part.get("parts"):
+                collect_inline_images(part)
+
     def find_html_part(payload: dict, depth: int = 0) -> str:
-        """Recursively search for text/html parts in multipart structures."""
-        if depth > 10:  # Prevent infinite recursion
+        """Recursively search for text/html parts."""
+        if depth > 10:
             return ""
         
         mime_type = payload.get("mimeType", "")
         
-        # Direct HTML part - return immediately
+        # Direct HTML part
         if mime_type == "text/html":
             body_data = payload.get("body", {}).get("data", "")
             if body_data:
                 return decode_part(body_data)
         
-        # Multipart container - recurse into parts
+        # Multipart container
         if mime_type.startswith("multipart/"):
             parts = payload.get("parts", [])
             
-            # For multipart/alternative, prefer HTML over plain text
+            # For multipart/alternative, prefer HTML
             if mime_type == "multipart/alternative":
                 html_content = ""
                 plain_content = ""
@@ -335,15 +370,13 @@ def _extract_body(payload: dict) -> str:
                         if body_data:
                             plain_content = decode_part(body_data)
                     elif part_mime.startswith("multipart/"):
-                        # Nested multipart (e.g., multipart/related inside multipart/alternative)
                         result = find_html_part(part, depth + 1)
                         if result:
                             return result
                 
-                # Return HTML if found, otherwise plain text
                 return html_content or plain_content
             
-            # For other multipart types, recursively search all parts
+            # For other multipart types, search recursively
             for part in parts:
                 result = find_html_part(part, depth + 1)
                 if result:
@@ -352,7 +385,7 @@ def _extract_body(payload: dict) -> str:
         return ""
 
     def find_plain_part(payload: dict, depth: int = 0) -> str:
-        """Fallback: search for text/plain parts if no HTML found."""
+        """Fallback: search for text/plain parts."""
         if depth > 10:
             return ""
         
@@ -371,21 +404,38 @@ def _extract_body(payload: dict) -> str:
         
         return ""
 
+    # Step 1: Collect all inline images
+    collect_inline_images(payload)
+
+    # Step 2: Extract HTML body
+    html_body = ""
+    
     # Try direct body data first (simple emails)
     if "body" in payload and payload["body"].get("data"):
-        return decode_part(payload["body"]["data"])
+        html_body = decode_part(payload["body"]["data"])
+    else:
+        # Try HTML extraction
+        html_body = find_html_part(payload)
+        
+        # Fallback to plain text
+        if not html_body:
+            html_body = find_plain_part(payload)
 
-    # Try HTML extraction (preserves formatting, images, links)
-    html_body = find_html_part(payload)
-    if html_body:
-        return html_body
+    # Step 3: Replace cid: references with data URIs
+    if html_body and inline_images:
+        def replace_cid(match):
+            cid = match.group(1)
+            if cid in inline_images:
+                img_data = inline_images[cid]
+                # Convert bytes to base64
+                b64_data = base64.b64encode(img_data["data"]).decode("ascii")
+                return f'src="data:{img_data["mime"]};base64,{b64_data}"'
+            return match.group(0)  # Return original if no match
+        
+        # Replace all cid: references
+        html_body = re.sub(r'src=["\']cid:([^"\']+)["\']', replace_cid, html_body, flags=re.IGNORECASE)
 
-    # Fallback to plain text
-    plain_body = find_plain_part(payload)
-    if plain_body:
-        return plain_body
-
-    return ""
+    return html_body
 
 
 # ---------- GMAIL LABEL MANAGEMENT ----------
