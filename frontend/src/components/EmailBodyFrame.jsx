@@ -7,7 +7,7 @@
  * - Auto-sizes iframe height from content (max 2000px)
  * - All links open in new tab via <base target="_blank">
  * - Sender CSS/markup fully isolated from app
- * - White background for readability on dark theme
+ * - Theme-aware: respects light/dark mode (FIXED 2026-09-11)
  */
 
 import React, { useRef, useEffect } from 'react';
@@ -22,6 +22,19 @@ function EmailBodyFrame({ body, className = '', textStyle = {} }) {
   };
 
   const isHTML = looksLikeHTML(body);
+
+  // Get current theme colors from CSS variables
+  const getThemeColors = () => {
+    const root = document.documentElement;
+    const computed = getComputedStyle(root);
+    
+    return {
+      background: computed.getPropertyValue('--color-surface').trim() || '#ffffff',
+      text: computed.getPropertyValue('--color-text-primary').trim() || '#1a1a1a',
+      border: computed.getPropertyValue('--color-border').trim() || '#e5e7eb',
+      link: computed.getPropertyValue('--color-primary').trim() || '#2563eb',
+    };
+  };
 
   // Auto-resize iframe to fit content
   useEffect(() => {
@@ -57,7 +70,9 @@ function EmailBodyFrame({ body, className = '', textStyle = {} }) {
 
   // HTML body - render in sandboxed iframe
   if (isHTML) {
-    // Inject base target, white background, and basic styles
+    const colors = getThemeColors();
+    
+    // Inject base target, theme colors, and basic styles
     const iframeContent = `
       <!DOCTYPE html>
       <html>
@@ -68,8 +83,8 @@ function EmailBodyFrame({ body, className = '', textStyle = {} }) {
             html, body {
               margin: 0;
               padding: 0;
-              background: #ffffff;
-              color: #1a1a1a;
+              background: ${colors.background};
+              color: ${colors.text};
             }
             body {
               padding: 16px;
@@ -87,11 +102,25 @@ function EmailBodyFrame({ body, className = '', textStyle = {} }) {
               max-width: 100%;
             }
             a {
-              color: #2563eb;
+              color: ${colors.link};
               text-decoration: underline;
             }
             * {
               max-width: 100%;
+            }
+            /* Override any sender-provided background colors in dark mode */
+            [style*="background-color: rgb(255, 255, 255)"],
+            [style*="background-color: #ffffff"],
+            [style*="background-color: white"],
+            [bgcolor="white"],
+            [bgcolor="#ffffff"] {
+              background-color: ${colors.background} !important;
+            }
+            /* Override black text in dark mode */
+            [style*="color: rgb(0, 0, 0)"],
+            [style*="color: #000000"],
+            [style*="color: black"] {
+              color: ${colors.text} !important;
             }
           </style>
         </head>
@@ -104,9 +133,10 @@ function EmailBodyFrame({ body, className = '', textStyle = {} }) {
     return (
       <div
         style={{
-          background: '#ffffff',
+          background: 'var(--color-surface)',
           borderRadius: '8px',
           overflow: 'hidden',
+          border: '1px solid var(--color-border)',
         }}
       >
         <iframe
@@ -120,7 +150,7 @@ function EmailBodyFrame({ body, className = '', textStyle = {} }) {
             border: 'none',
             display: 'block',
             minHeight: '360px',
-            backgroundColor: '#ffffff',
+            backgroundColor: 'var(--color-surface)',
           }}
           title="Email content"
         />
