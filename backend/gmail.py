@@ -228,31 +228,18 @@ def _get_email_details_threadsafe(creds, email_id: str) -> dict | None:
     """
     Thread-safe wrapper: builds its own Gmail service instance per call
     to avoid httplib2 shared-connection deadlocks.
-    """
-    try:
-        svc = build("gmail", "v1", credentials=creds, cache_discovery=False)
-        return _get_email_details(svc, email_id)
-    except Exception as e:
-        logger.info(f"[GMAIL] Thread-safe fetch failed for {email_id}: {e}")
-        return None
-
-
-def _get_email_details(service, email_id: str) -> dict | None:
-    """
-    Fetch lightweight metadata for a single email by its ID.
     Extracts subject, sender, snippet, date, and labels (no body - use _get_email_body for that).
     Body is deferred to on-demand fetch via _get_email_body() to reduce initial fetch payload size.
     """
     try:
-        msg = service.users().messages().get(
+        svc = build("gmail", "v1", credentials=creds, cache_discovery=False)
+        msg = svc.users().messages().get(
             userId="me",
             id=email_id,
             format="metadata",
             metadataHeaders=["Subject", "From", "Date"],
         ).execute()
-
         return _parse_email_metadata(email_id, msg)
-
     except Exception as e:
         logger.info(f"[GMAIL] Error fetching email {email_id}: {e}")
         return None
@@ -262,6 +249,7 @@ def _get_email_body(service, email_id: str) -> str:
     """
     Fetch only the body text of a single email by its ID.
     Use this after _get_email_details() when body content is needed for AI analysis.
+    IMPROVED (2026-09-11): Better HTML extraction with multipart/related support.
     """
     try:
         msg = service.users().messages().get(
@@ -280,40 +268,109 @@ def _get_email_body(service, email_id: str) -> str:
 def _extract_body(payload: dict) -> str:
     """
     Recursively extract the email body from a Gmail message payload.
-    Prioritizes text/html over text/plain to match Gmail's rendering.
-    Walks through multipart/alternative and multipart/related structures.
+    IMPROVED (2026-09-11): Enhanced HTML extraction to preserve rich formatting.
+    
+    Gmail email structure:
+    - multipart/alternative: contains both text/plain and text/html versions
+    - multipart/related: contains HTML + embedded images (inline attachments)
+    - multipart/mixed: contains message parts + file attachments
+    
+    Priority: text/html > text/plain (to get rich formatting, images, styles)
     """
     import base64
 
-    # If this payload has direct body data, decode it
-    if "body" in payload and payload["body"].get("data"):
-        data = payload["body"]["data"]
-        return base64.urlsafe_b64decode(data).decode("utf-8", errors="replace")
+    def decode_part(data_str: str) -> str:
+        """Decode base64url-encoded Gmail payload data."""
+        if not data_str:
+            return ""
+        try:
+            return base64.urlsafe_b64decode(data_str).decode("utf-8", errors="replace")
+        except Exception as e:
+            logger.debug(f"[GMAIL] Failed to decode part: {e}")
+            return ""
 
-    # If this payload has parts, search recursively
-    if "parts" in payload:
-        # First pass: look for text/html parts (prioritized)
-        for part in payload["parts"]:
-            mime_type = part.get("mimeType", "")
+    def find_html_part(payload: dict, depth: int = 0) -> str:
+        """Recursively search for text/html parts in multipart structures."""
+        if depth > 10:  # Prevent infinite recursion
+            return ""
+        
+        mime_type = payload.get("mimeType", "")
+        
+        # Direct HTML part - return immediately
+        if mime_type == "text/html":
+            body_data = payload.get("body", {}).get("data", "")
+            if body_data:
+                return decode_part(body_data)
+        
+        # Multipart container - recurse into parts
+        if mime_type.startswith("multipart/"):
+            parts = payload.get("parts", [])
             
-            # Direct HTML part found
-            if mime_type == "text/html" and part.get("body", {}).get("data"):
-                data = part["body"]["data"]
-                return base64.urlsafe_b64decode(data).decode("utf-8", errors="replace")
+            # For multipart/alternative, prefer HTML over plain text
+            if mime_type == "multipart/alternative":
+                html_content = ""
+                plain_content = ""
+                
+                for part in parts:
+                    part_mime = part.get("mimeType", "")
+                    if part_mime == "text/html":
+                        body_data = part.get("body", {}).get("data", "")
+                        if body_data:
+                            html_content = decode_part(body_data)
+                    elif part_mime == "text/plain":
+                        body_data = part.get("body", {}).get("data", "")
+                        if body_data:
+                            plain_content = decode_part(body_data)
+                    elif part_mime.startswith("multipart/"):
+                        # Nested multipart (e.g., multipart/related inside multipart/alternative)
+                        result = find_html_part(part, depth + 1)
+                        if result:
+                            return result
+                
+                # Return HTML if found, otherwise plain text
+                return html_content or plain_content
             
-            # Recurse into multipart containers
-            if mime_type.startswith("multipart/"):
-                result = _extract_body(part)
+            # For other multipart types, recursively search all parts
+            for part in parts:
+                result = find_html_part(part, depth + 1)
                 if result:
                     return result
         
-        # Second pass: fall back to text/plain if no HTML found
-        for part in payload["parts"]:
-            mime_type = part.get("mimeType", "")
-            
-            if mime_type == "text/plain" and part.get("body", {}).get("data"):
-                data = part["body"]["data"]
-                return base64.urlsafe_b64decode(data).decode("utf-8", errors="replace")
+        return ""
+
+    def find_plain_part(payload: dict, depth: int = 0) -> str:
+        """Fallback: search for text/plain parts if no HTML found."""
+        if depth > 10:
+            return ""
+        
+        mime_type = payload.get("mimeType", "")
+        
+        if mime_type == "text/plain":
+            body_data = payload.get("body", {}).get("data", "")
+            if body_data:
+                return decode_part(body_data)
+        
+        if mime_type.startswith("multipart/"):
+            for part in payload.get("parts", []):
+                result = find_plain_part(part, depth + 1)
+                if result:
+                    return result
+        
+        return ""
+
+    # Try direct body data first (simple emails)
+    if "body" in payload and payload["body"].get("data"):
+        return decode_part(payload["body"]["data"])
+
+    # Try HTML extraction (preserves formatting, images, links)
+    html_body = find_html_part(payload)
+    if html_body:
+        return html_body
+
+    # Fallback to plain text
+    plain_body = find_plain_part(payload)
+    if plain_body:
+        return plain_body
 
     return ""
 
@@ -357,937 +414,3 @@ def _hex_to_rgb(hex_color: str) -> tuple:
 def _color_distance(c1: tuple, c2: tuple) -> float:
     """Euclidean distance between two RGB tuples."""
     return sum((a - b) ** 2 for a, b in zip(c1, c2)) ** 0.5
-
-
-def _nearest_gmail_color(hex_bg: str, hex_text: str) -> tuple:
-    """
-    Map an arbitrary hex color pair to the nearest Gmail-approved label color.
-    Returns (backgroundColor, textColor) from the Gmail palette.
-    """
-    target_rgb = _hex_to_rgb(hex_bg)
-    best = GMAIL_LABEL_COLORS[0]
-    best_dist = float("inf")
-
-    for gmail_bg, gmail_text in GMAIL_LABEL_COLORS:
-        dist = _color_distance(target_rgb, _hex_to_rgb(gmail_bg))
-        if dist < best_dist:
-            best_dist = dist
-            best = (gmail_bg, gmail_text)
-
-    return best
-
-
-def get_or_create_label(user_email: str, label_name: str, user_id: int, gmail_labels_cache: dict[str, str]) -> str | None:
-    """
-    Get an existing Gmail label by name, or create it if it doesn't exist.
-    Maps database colors to Gmail-approved palette colors.
-    
-    Builds a thread-local Gmail service object to ensure thread safety.
-
-    Args:
-        user_email: Gmail address for authentication (builds fresh service per call)
-        label_name: The label name (e.g., "Work", "Finance")
-        user_id: The user ID for fetching label colors
-        gmail_labels_cache: Cache mapping label names to IDs (shared across batch)
-
-    Returns:
-        The label ID string, or None on failure
-    """
-    # Build fresh service per call for thread safety (httplib2.Http is not thread-safe)
-    service = get_gmail_service(user_email)
-    if not service:
-        return None
-        
-    try:
-        labels_db = get_labels(user_id)
-        label_info = next(
-            (l for l in labels_db if l["label_name"].casefold() == label_name.casefold()),
-            None,
-        )
-
-        db_bg = label_info["bg_color"] if label_info else "#999999"
-        db_text = label_info["text_color"] if label_info else "#FFFFFF"
-
-        # Map to Gmail-approved colors (arbitrary hex causes 400 errors)
-        gmail_bg, gmail_text = _nearest_gmail_color(db_bg, db_text)
-
-        # Check the batch-scoped Gmail label cache before making an API call.
-        prefix = f"GM/{label_name}"
-        cached_label_id = gmail_labels_cache.get(prefix)
-        if cached_label_id:
-            return cached_label_id
-
-        # Create new label with Gmail-approved colors
-        label_body = {
-            "name": prefix,
-            "labelListVisibility": "labelShow",
-            "messageListVisibility": "show",
-            "color": {"backgroundColor": gmail_bg, "textColor": gmail_text},
-        }
-
-        created = service.users().labels().create(userId="me", body=label_body).execute()
-        gmail_labels_cache[prefix] = created["id"]
-        logger.info(f"[GMAIL] Created new label '{prefix}' (ID: {created['id']}, color: {gmail_bg}).")
-        return created["id"]
-
-    except Exception as e:
-        # Surface the full error so label sync issues are visible
-        logger.info(f"[GMAIL] ERROR creating/getting label '{label_name}': {type(e).__name__}: {e}")
-        return None
-
-
-def apply_label(user_email: str, email_id: str, label_id: str):
-    """
-    Apply a Gmail label to a specific email.
-    Builds a thread-local Gmail service object to ensure thread safety.
-    """
-    # Build fresh service per call for thread safety (httplib2.Http is not thread-safe)
-    service = get_gmail_service(user_email)
-    if not service:
-        logger.info(f"[GMAIL] Cannot apply label: service unavailable for {user_email}")
-        return
-        
-    try:
-        service.users().messages().modify(
-            userId="me",
-            id=email_id,
-            body={"addLabelIds": [label_id]},
-        ).execute()
-        logger.info(f"[GMAIL] Applied label {label_id} to email {email_id[:12]}...")
-    except Exception as e:
-        logger.info(f"[GMAIL] Error applying label to {email_id}: {e}")
-
-
-def change_label(user_email: str, email_id: str, old_label_id: str | None, new_label_id: str):
-    """
-    Replace one Gmail label with another on an email.
-    Removes old_label_id (if provided) and adds new_label_id in a single modify() call.
-    Builds a thread-local Gmail service object to ensure thread safety.
-    """
-    # Build fresh service per call for thread safety (httplib2.Http is not thread-safe)
-    service = get_gmail_service(user_email)
-    if not service:
-        logger.info(f"[GMAIL] Cannot change label: service unavailable for {user_email}")
-        return
-        
-    try:
-        body = {}
-        if old_label_id:
-            body["removeLabelIds"] = [old_label_id]
-        if new_label_id:
-            body["addLabelIds"] = [new_label_id]
-
-        service.users().messages().modify(
-            userId="me",
-            id=email_id,
-            body=body,
-        ).execute()
-        logger.info(f"[GMAIL] Changed label on {email_id[:12]}... (removed: {old_label_id or 'none'}, added: {new_label_id})")
-    except Exception as e:
-        logger.info(f"[GMAIL] Error changing label on {email_id}: {e}")
-        raise
-
-
-def trash_email(email_id: str, user_email: str = None) -> bool:
-    """Move an email to Gmail trash (NOT permanent delete)."""
-    service = get_gmail_service(user_email)
-    if not service:
-        return False
-
-    try:
-        service.users().messages().trash(userId="me", id=email_id).execute()
-        logger.info(f"[GMAIL] Trashed email {email_id[:12]}...")
-        return True
-    except Exception as e:
-        logger.info(f"[GMAIL] Error trashing email {email_id}: {e}")
-        return False
-
-
-def permanently_delete_email(email_id: str, user_email: str = None) -> bool:
-    """Permanently delete an email from Gmail (IRREVERSIBLE)."""
-    service = get_gmail_service(user_email)
-    if not service:
-        return False
-
-    try:
-        service.users().messages().delete(userId="me", id=email_id).execute()
-        logger.info(f"[GMAIL] PERMANENTLY DELETED email {email_id[:12]}...")
-        return True
-    except Exception as e:
-        logger.info(f"[GMAIL] Error permanently deleting email {email_id}: {e}")
-        return False
-
-
-def send_reply(email_id: str, reply_body: str, user_email: str = None) -> dict | None:
-    """
-    Send a reply to an existing email, correctly threaded via Message-ID/References
-    so Gmail displays it as a reply, not a new email.
-    Returns the sent message's Gmail ID dict on success, None on failure.
-    """
-    service = get_gmail_service(user_email)
-    if not service:
-        return None
-
-    try:
-        original = service.users().messages().get(
-            userId="me",
-            id=email_id,
-            format="metadata",
-            metadataHeaders=["Subject", "From", "Message-ID", "References"],
-        ).execute()
-
-        headers = {h["name"]: h["value"] for h in original.get("payload", {}).get("headers", [])}
-        original_subject = headers.get("Subject", "")
-        original_from = headers.get("From", "")
-        original_message_id = headers.get("Message-ID", "")
-        original_references = headers.get("References", "")
-
-        if not original_from:
-            logger.info(f"[GMAIL] Cannot reply to {email_id}: no From header found")
-            return None
-
-        reply_subject = original_subject if original_subject.lower().startswith("re:") else f"Re: {original_subject}"
-        references = f"{original_references} {original_message_id}".strip() if original_references else original_message_id
-
-        import base64
-        from email.mime.text import MIMEText
-
-        mime_message = MIMEText(reply_body)
-        mime_message["To"] = original_from
-        mime_message["Subject"] = reply_subject
-        if original_message_id:
-            mime_message["In-Reply-To"] = original_message_id
-        if references:
-            mime_message["References"] = references
-
-        raw = base64.urlsafe_b64encode(mime_message.as_bytes()).decode()
-        thread_id = original.get("threadId")
-
-        sent = service.users().messages().send(
-            userId="me",
-            body={"raw": raw, "threadId": thread_id} if thread_id else {"raw": raw},
-        ).execute()
-
-        logger.info(f"[GMAIL] Reply sent for {email_id[:12]}... -> new message {sent.get('id', '')[:12]}...")
-        return sent
-
-    except Exception as e:
-        logger.info(f"[GMAIL] Error sending reply for {email_id}: {e}")
-        return None
-
-
-def delete_email(email_id: str, user_id: int, user_email: str = None) -> bool:
-    """
-    Delete an email using the user's preferred mode (trash or permanent).
-    Reads delete_mode from the database.
-    """
-    from database import get_delete_mode
-
-    if user_email is None and user_id is not None:
-        user_email = get_user_email_by_id(user_id)
-
-    mode = get_delete_mode(user_id)
-    if mode == "permanent":
-        return permanently_delete_email(email_id, user_email)
-    else:
-        return trash_email(email_id, user_email)
-
-
-# ---------- BULK AI ANALYSIS PIPELINE (Steps A through I) ----------
-
-async def analyze_bulk_ordered(limit: int = 50, user_id: int = None, user_email: str = None):
-    """
-    AI-only bulk analysis engine with semaphore-controlled concurrency.
-    Yields progress events via SSE as emails finish processing.
-    Processes exactly `limit` emails per scan in reverse chronological order.
-    Every email passes through the AI cascade — no rule-based shortcuts.
-
-    Args:
-        limit: Maximum number of emails to process
-        user_id: The authenticated user's ID
-        user_email: The authenticated user's gmail_address (used to load their token)
-    """
-    from ai_router import ai_router, CLASSIFICATION_PROMPT
-    from security import extract_urls, scan_url
-    import httpx
-    import time
-
-    t_bulk_start = time.perf_counter()
-
-    if user_email is None and user_id is not None:
-        user_email = get_user_email_by_id(user_id)
-
-    semaphore = asyncio.Semaphore(2)
-    url_semaphore = asyncio.Semaphore(8)
-    service = get_gmail_service(user_email)
-    if not service or user_id is None:
-        yield {
-            "type": "complete",
-            "analyzed": 0,
-            "skipped": 0,
-            "failed": 0,
-            "results": [],
-        }
-        return
-
-    gmail_labels_result = await asyncio.to_thread(
-        lambda: service.users().labels().list(userId="me").execute()
-    )
-    gmail_labels_cache = {
-        lbl["name"]: lbl["id"] for lbl in gmail_labels_result.get("labels", [])
-    }
-
-    # Cache labels once per bulk run (instead of per-email DB query)
-    available_labels_list = await asyncio.to_thread(get_labels, user_id)
-    available_label_names = [lbl["label_name"] for lbl in available_labels_list]
-
-    async with httpx.AsyncClient(timeout=10.0, limits=httpx.Limits(max_connections=50)) as url_client:
-        # Emit initializing event immediately so the frontend gets instant feedback
-        yield {
-            "type": "initializing",
-            "message": "Fetching emails from Gmail...",
-        }
-
-        # Fetch emails with cursor-based pagination
-        # IMPORTANT: Run synchronous Gmail API calls in a thread to avoid blocking the async event loop
-        cursor = get_scan_cursor(user_id)
-        try:
-            fetch_result = await asyncio.wait_for(
-                asyncio.to_thread(fetch_emails, limit=limit, page_token=cursor, user_email=user_email),
-                timeout=60,
-            )
-        except asyncio.TimeoutError:
-            yield {
-                "type": "complete",
-                "analyzed": 0,
-                "skipped": 0,
-                "failed": 0,
-                "results": [],
-                "error": "Gmail fetch timed out after 60 seconds. Check network connectivity.",
-            }
-            return
-        fetched_emails = fetch_result["emails"]
-        next_token = fetch_result["next_page_token"]
-
-        # Save cursor for next scan
-        if next_token:
-            save_scan_cursor(user_id, next_token)
-
-        # Filter out already analyzed emails (Step A — dedup at batch level)
-        def _dedup_emails():
-            new = []
-            skipped = 0
-            for email in fetched_emails:
-                if is_already_analyzed(email["id"], user_id):
-                    skipped += 1
-                else:
-                    new.append(email)
-            return new, skipped
-
-        new_emails, skipped_count = await asyncio.to_thread(_dedup_emails)
-
-        logger.info(f"[PIPELINE] {len(new_emails)} new emails to analyze, {skipped_count} already cached.")
-
-        total = len(new_emails)
-        if total == 0:
-            yield {
-                "type": "complete",
-                "analyzed": 0,
-                "skipped": skipped_count,
-                "failed": 0,
-                "results": [],
-            }
-            return
-
-        # Create parallel analysis tasks
-        tasks = []
-        try:
-            tasks = [
-                asyncio.create_task(_analyze_one(
-                    email=email,
-                    semaphore=semaphore,
-                    ai_router=ai_router,
-                    classification_prompt=CLASSIFICATION_PROMPT,
-                    user_id=user_id,
-                    user_email=user_email,
-                    service=service,
-                    url_client=url_client,
-                    url_semaphore=url_semaphore,
-                    available_label_names=available_label_names,
-                    gmail_labels_cache=gmail_labels_cache,
-                ))
-                for email in new_emails
-            ]
-
-            # Yield progress as tasks complete
-            completed = 0
-            failed_count = 0
-            all_results = []
-
-            for task in asyncio.as_completed(tasks):
-                res = await task
-                completed += 1
-
-                if res["status"] == "failed":
-                    failed_count += 1
-
-                all_results.append(res)
-
-                # Step I — Send SSE progress event
-                yield {
-                    "type": "email_done",
-                    "email_id": res.get("email_id", ""),
-                    "sender": res.get("sender", ""),
-                    "subject": res.get("subject", ""),
-                    "label": res.get("label", ""),
-                    "scam_score": res.get("scam_score", 0),
-                    "is_quarantined": res.get("is_quarantined", 0),
-                    "progress": completed,
-                    "total": total,
-                }
-
-            # Final summary
-            analyzed_count = sum(1 for r in all_results if r["status"] == "success")
-
-            t_bulk_total = time.perf_counter() - t_bulk_start
-            logger.info(f"[TIMING] BULK COMPLETE: total_time={t_bulk_total:.2f}s analyzed={analyzed_count} "
-                  f"skipped={skipped_count} failed={failed_count} "
-                  f"(fetched {len(fetched_emails)} emails, {len(new_emails)} were new)")
-
-            yield {
-                "type": "complete",
-                "analyzed": analyzed_count,
-                "skipped": skipped_count,
-                "failed": failed_count,
-                "results": all_results,
-            }
-        finally:
-            # Cancel any tasks still in flight (e.g. SSE disconnect injected GeneratorExit)
-            # before url_client closes, so they never call client.post() on a closed client.
-            for task in tasks:
-                if not task.done():
-                    task.cancel()
-            await asyncio.gather(*tasks, return_exceptions=True)
-
-
-async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
-                       ai_router, classification_prompt: str,
-                       user_id: int, user_email: str, service,
-                       url_client: httpx.AsyncClient,
-                       url_semaphore: asyncio.Semaphore,
-                       available_label_names: list[str],
-                       gmail_labels_cache: dict[str, str],
-                       update_mode: bool = False) -> dict:
-    """
-    Analyze a single email through the hybrid ML + AI cascade pipeline (Steps A through I).
-    Phase 6: ML model handles high-confidence cases; escalates uncertain/risky cases to AI.
-
-    Args:
-        email: Email dict with keys: id, subject, sender, body, snippet
-        semaphore: asyncio.Semaphore to limit concurrency
-        ai_router: The AIRouter instance
-        classification_prompt: The CLASSIFICATION_PROMPT template
-        user_id: The authenticated user's ID
-        service: Gmail API service instance
-        available_label_names: Cached list of label names for this user
-    """
-    from security import extract_urls, scan_url
-    import time
-
-    async with semaphore:
-        t_start = time.perf_counter()
-        email_id = email["id"]
-        subject = email.get("subject", "(No Subject)")
-        sender = email.get("sender", "(Unknown)")
-        body = email.get("body", "")
-        snippet = email.get("snippet", "")
-
-        # Timing accumulators
-        t_body_fetch = 0.0
-        t_url_scan = 0.0
-        t_ai_call = 0.0
-        t_label_apply = 0.0
-        t_db_write = 0.0
-
-        try:
-            # Step A — Deduplication check (per-email level)
-            # Skip this check in update_mode (emails already exist with status='fetched' by design)
-            if not update_mode and is_already_analyzed(email_id, user_id):
-                return {
-                    "email_id": email_id,
-                    "subject": subject,
-                    "sender": sender,
-                    "status": "skipped",
-                    "label": "",
-                    "scam_score": 0,
-                    "is_quarantined": 0,
-                }
-
-            # Fetch full email body for AI analysis (if not already present)
-            # Safety fallback - body should already be populated from format="full" fetch
-            if not body:
-                t0 = time.perf_counter()
-                body = await asyncio.to_thread(_get_email_body, service, email_id)
-                t_body_fetch = time.perf_counter() - t0
-
-            # Use cached label names passed from analyze_bulk_ordered()
-            default_label = available_label_names[0] if available_label_names else "Unknown"
-
-            # Insert placeholder to satisfy FK constraints (skip if updating existing row)
-            if not update_mode:
-                t0 = time.perf_counter()
-                placeholder_label_id = get_label_id_by_name(user_id, default_label)
-                save_analyzed_email(
-                    email_id=email_id,
-                    user_id=user_id,
-                    label_id=placeholder_label_id,
-                    scam_score=0,
-                    scam_indicators="[]",
-                    is_quarantined=0,
-                    snippet=snippet,
-                    sender=sender,
-                    subject=subject,
-                    status='labeled',
-                    body=body,
-                )
-                t_db_write += time.perf_counter() - t0
-
-            # Step B — URL extraction and Google Safe Browsing scan
-            t0 = time.perf_counter()
-            urls = extract_urls(body)
-            # Cap at 10 URLs per email to prevent 3+ minute scan delays on emails with 79-88 URLs
-            if len(urls) > 10:
-                logger.info(f"[SECURITY] Capping URL scan from {len(urls)} to 10 URLs for email {email_id[:12]}...")
-                urls = urls[:10]
-            
-            # Three-state signal: confirmed_threat (verdict_unsafe), scan_unavailable (scan_failed), or no threat
-            url_threat_confirmed = False
-            url_scan_unavailable = False
-            
-            if urls:
-                scan_tasks = [scan_url(url, email_id, url_client, url_semaphore) for url in urls]
-                results = await asyncio.gather(*scan_tasks)
-                
-                # Separate real threats (is_safe=0, threat_type set) from scan failures (is_safe=None or scan_failed=True)
-                for r in results:
-                    if r.get("is_safe") == 0 and r.get("threat_type") is not None:
-                        url_threat_confirmed = True  # API confirmed real threat
-                    elif r.get("scan_failed") or r.get("is_safe") is None:
-                        url_scan_unavailable = True  # API call failed, no verdict obtained
-                
-                if url_threat_confirmed:
-                    logger.info(f"[SECURITY] Confirmed URL threat for email {email_id[:12]}...")
-                if url_scan_unavailable:
-                    logger.info(f"[SECURITY] URL scan unavailable for some URLs in email {email_id[:12]}...")
-            
-            t_url_scan = time.perf_counter() - t0
-
-            # Step C — ML model pre-filter (Phase 6: hybrid routing)
-            ml_prediction = None
-            ml_confidence = 0.0
-            should_use_ai = True
-            source = 'ai'
-            
-            if is_model_available() and not update_mode:
-                ml_result = await predict_async(
-                    email_id=email_id,
-                    subject=subject,
-                    sender=sender,
-                    body=body,
-                    snippet=snippet,
-                    user_id=user_id
-                )
-                
-                if ml_result:
-                    ml_prediction = ml_result['prediction']
-                    ml_confidence = ml_result['confidence']
-                    should_use_ai = ml_result['should_escalate_to_ai']
-                    
-                    if not should_use_ai:
-                        source = 'ml'
-                        logger.info(f"[ML] Confident prediction for {email_id[:12]}... ({ml_prediction}, conf={ml_confidence:.3f})")
-
-            # Step D — AI cascade classification (if ML escalated or no model)
-            provider_used = None
-            if should_use_ai:
-                prompt = classification_prompt.format(
-                    sender=sender,
-                    subject=subject,
-                    body=body[:1500],  # First 1500 characters, truncated
-                    url_threat_confirmed=url_threat_confirmed,
-                    url_scan_unavailable=url_scan_unavailable,
-                    available_labels=", ".join(available_label_names),
-                )
-
-                t0 = time.perf_counter()
-                ai_result = await ai_router.analyze_json(prompt)
-                t_ai_call = time.perf_counter() - t0
-                provider_used = ai_result.get("provider_used", "unknown")
-            else:
-                ai_result = {"data": None}
-
-            # Defaults — use first available label as fallback (no hardcoded 'Spam')
-            label = default_label
-            scam_score = 0
-            scam_indicators = []
-            reasoning = ""
-
-            if should_use_ai:
-                if ai_result.get("data"):
-                    data = ai_result["data"]
-                    label = data.get("label", default_label)
-                    scam_score = data.get("scam_score", 0)
-                    scam_indicators = data.get("scam_indicators", [])
-                    reasoning = data.get("reasoning", "")
-                    
-                    if ml_prediction and is_model_available():
-                        ai_risk = 'high_risk' if scam_score >= 60 else 'low_risk'
-                        await log_disagreement(email_id, ml_prediction, ml_confidence, ai_risk)
-                        
-                elif ai_result.get("error"):
-                    raise Exception(ai_result["error"])
-            else:
-                # ML-only prediction (no AI cascade)
-                # Design decision: ML predicts risk only, not category label
-                # High-risk → Spam, Low-risk → first available label (typically "Safe")
-                # Tradeoff: ML-routed emails get generic labels instead of rich categorization
-                # (Marketing, Personal, etc.). This is intentional to keep the model simple
-                # and focused on scam detection. Category labeling requires AI cascade.
-                if ml_prediction == 'high_risk':
-                    label = "Spam"
-                    scam_score = 75
-                    scam_indicators = ["ML model classified as high-risk"]
-                else:
-                    label = default_label
-                    scam_score = 15
-                    scam_indicators = []
-
-            # Step E — Validate AI/ML output
-            # label must match one of available_labels (case-insensitive, whitespace-trimmed)
-            label_normalized = label.strip()
-            label_match = None
-            
-            # Try exact match first
-            if label_normalized in available_label_names:
-                label_match = label_normalized
-            else:
-                # Try case-insensitive match
-                label_lower = label_normalized.lower()
-                for available_label in available_label_names:
-                    if available_label.lower() == label_lower:
-                        label_match = available_label
-                        break
-            
-            if label_match:
-                label = label_match
-            else:
-                # No match found - log the mismatch and fall back to default
-                logger.info(f"[AI LABEL MISMATCH] email={email_id[:12]}... AI returned label='{label}' but not in available_labels={available_label_names}, falling back to '{default_label}'")
-                label = default_label
-
-            # scam_score must be 0-100
-            if not isinstance(scam_score, int):
-                try:
-                    scam_score = int(scam_score)
-                except (ValueError, TypeError):
-                    scam_score = 0
-            scam_score = max(0, min(100, scam_score))
-
-            # scam_indicators must be a list of strings
-            if scam_indicators is None or not isinstance(scam_indicators, list):
-                scam_indicators = []
-
-            # Step F — Determine quarantine flag
-            # is_quarantined = 1 if ALL THREE conditions are true
-            is_quarantined = 0
-            label_is_spam_like = label == "Spam" or "scam" in label.lower()
-            if scam_score >= 70 and url_threat_confirmed and label_is_spam_like:
-                is_quarantined = 1
-
-            # Step G — Resolve label_id
-            label_id = get_label_id_by_name(user_id, label)
-
-            # Step H — Save to database (UPDATE if update_mode, INSERT if new)
-            t0 = time.perf_counter()
-            if update_mode:
-                # Updating existing row from label_only_pipeline
-                from database import update_analyzed_email
-                update_analyzed_email(
-                    email_id=email_id,
-                    label_id=label_id,
-                    scam_score=scam_score,
-                    scam_indicators=json.dumps(scam_indicators),
-                    is_quarantined=is_quarantined,
-                    status='labeled',
-                    source=source,
-                    ml_confidence=ml_confidence if source == 'ml' else None,
-                    provider_used=provider_used,
-                )
-            else:
-                # New email from analyze_bulk_ordered (overwrites placeholder)
-                save_analyzed_email(
-                    email_id=email_id,
-                    user_id=user_id,
-                    label_id=label_id,
-                    scam_score=scam_score,
-                    scam_indicators=json.dumps(scam_indicators),
-                    is_quarantined=is_quarantined,
-                    snippet=snippet,
-                    sender=sender,
-                    subject=subject,
-                    status='labeled',
-                    body=body,
-                    source=source,
-                    ml_confidence=ml_confidence if source == 'ml' else None,
-                    provider_used=provider_used,
-                )
-            t_db_write += time.perf_counter() - t0
-
-            # Step H — Apply Gmail label
-            t0 = time.perf_counter()
-            try:
-                gmail_label_id = await asyncio.to_thread(
-                    get_or_create_label, user_email, label, user_id, gmail_labels_cache
-                )
-                if gmail_label_id:
-                    await asyncio.to_thread(apply_label, user_email, email_id, gmail_label_id)
-            except Exception as e:
-                logger.info(f"[PIPELINE] Failed to apply Gmail label for {email_id[:12]}...: {e}")
-                # Do not crash — continue to next email
-            t_label_apply = time.perf_counter() - t0
-
-            t_total = time.perf_counter() - t_start
-            logger.info(f"[TIMING] email={email_id[:12]} body={t_body_fetch:.2f}s url_scan={t_url_scan:.2f}s "
-                  f"ai_call={t_ai_call:.2f}s(provider={provider_used}) label={t_label_apply:.2f}s "
-                  f"db={t_db_write:.2f}s total={t_total:.2f}s")
-
-            return {
-                "email_id": email_id,
-                "subject": subject,
-                "sender": sender,
-                "label": label,
-                "scam_score": scam_score,
-                "is_quarantined": is_quarantined,
-                "status": "success",
-            }
-
-        except Exception as e:
-            logger.error(f"[PIPELINE] FAIL: Analysis failed for {email_id[:12]}...: {e}")
-
-            # Add to retry queue — need a placeholder analyzed_emails row first
-            # since retry_queue has FK to analyzed_emails
-            try:
-                if update_mode:
-                    # UPDATE existing row to status='failed' with sentinel values
-                    from database import update_analyzed_email
-                    update_analyzed_email(
-                        email_id=email_id,
-                        label_id=None,        # NULL sentinel for failed analysis
-                        scam_score=0,         # Default to 0 when analysis fails
-                        scam_indicators='[]',
-                        is_quarantined=0,
-                        status='failed',      # Marks as failed, not fetched
-                        source='ai',          # Default to ai since analysis was attempted
-                        ml_confidence=None,
-                        provider_used=None,   # NULL for failed analysis (no provider succeeded)
-                    )
-                else:
-                    # INSERT placeholder for new emails (original behavior)
-                    fallback_label_id = get_label_id_by_name(user_id, label if 'label' in locals() and label else "Unknown")
-                    save_analyzed_email(
-                        email_id=email_id,
-                        user_id=user_id,
-                        label_id=fallback_label_id,
-                        scam_score=0,
-                        scam_indicators="[]",
-                        is_quarantined=0,
-                        snippet=snippet,
-                        sender=sender,
-                        subject=subject,
-                        status='failed',      # Also mark as failed (not labeled)
-                        body=body,
-                    )
-
-                # Route to retry_queue (same path for both update_mode=True/False)
-                add_to_retry_queue(email_id, str(e))
-
-            except Exception as retry_err:
-                logger.error(f"[PIPELINE] FAIL: Failed to add {email_id[:12]}... to retry queue: {retry_err}")
-
-            return {
-                "email_id": email_id,
-                "subject": subject,
-                "sender": sender,
-                "label": "",
-                "scam_score": 0,
-                "is_quarantined": 0,
-                "status": "failed",
-                "error": "An internal error occurred during analysis.",
-            }
-
-
-# ---------- LEGACY BULK ANALYSIS (kept for backward compat) ----------
-
-async def analyze_bulk(limit: int = 50, user_id: int = None):
-    async for event in analyze_bulk_ordered(limit=limit, user_id=user_id):
-        yield event
-
-
-# ---------- DECOUPLED FETCH/LABEL PIPELINES (Phase 24) ----------
-
-async def fetch_only_pipeline(limit: int = 50, user_id: int = None, user_email: str = None):
-    """
-    Fetch emails from Gmail and save as status='fetched' placeholders.
-    No URL scanning, no AI analysis. Yields SSE progress events.
-    """
-    if user_email is None and user_id is not None:
-        user_email = get_user_email_by_id(user_id)
-
-    service = get_gmail_service(user_email)
-    if not service or user_id is None:
-        yield {"type": "complete", "fetched": 0, "skipped": 0, "error": "Not authenticated"}
-        return
-
-    yield {"type": "initializing", "message": "Fetching emails from Gmail..."}
-
-    cursor = get_scan_cursor(user_id)
-    try:
-        fetch_result = await asyncio.to_thread(fetch_emails, limit=limit, page_token=cursor, user_email=user_email)
-    except Exception as e:
-        yield {"type": "complete", "fetched": 0, "error": "An internal error occurred during analysis."}
-        return
-
-    fetched_emails = fetch_result["emails"]
-    next_token = fetch_result["next_page_token"]
-
-    if next_token:
-        save_scan_cursor(user_id, next_token)
-
-    new_emails = [e for e in fetched_emails if not is_already_analyzed(e["id"], user_id)]
-
-    saved_count = 0
-    for email in new_emails:
-        try:
-            # Fetch full body before saving (metadata fetch returns body="")
-            body = email.get("body", "")
-            if not body:
-                body = await asyncio.to_thread(_get_email_body, service, email["id"])
-            
-            save_analyzed_email(
-                email_id=email["id"],
-                user_id=user_id,
-                label_id=None,
-                scam_score=None,
-                scam_indicators='[]',
-                is_quarantined=0,
-                snippet=email.get("snippet", ""),
-                sender=email.get("sender", ""),
-                subject=email.get("subject", ""),
-                status='fetched',
-                body=body,
-            )
-            saved_count += 1
-            yield {"type": "progress", "current": saved_count, "total": len(new_emails)}
-        except Exception as e:
-            logger.info(f"[FETCH-ONLY] Failed to save {email['id']}: {e}")
-            continue
-
-    yield {"type": "complete", "fetched": saved_count, "skipped": len(fetched_emails) - len(new_emails)}
-
-
-async def label_only_pipeline(limit: int = None, user_id: int = None, user_email: str = None):
-    """
-    Read status='fetched' emails from DB and run AI analysis.
-    Updates rows to status='labeled'. Yields SSE progress events.
-    """
-    from ai_router import ai_router, CLASSIFICATION_PROMPT
-    from database import get_emails_by_status
-    import httpx
-
-    if user_email is None and user_id is not None:
-        user_email = get_user_email_by_id(user_id)
-
-    semaphore = asyncio.Semaphore(2)
-    url_semaphore = asyncio.Semaphore(8)
-    service = get_gmail_service(user_email)
-
-    if not service or user_id is None:
-        yield {"type": "complete", "analyzed": 0, "failed": 0, "error": "Not authenticated"}
-        return
-
-    gmail_labels_result = await asyncio.to_thread(
-        lambda: service.users().labels().list(userId="me").execute()
-    )
-    gmail_labels_cache = {
-        lbl["name"]: lbl["id"] for lbl in gmail_labels_result.get("labels", [])
-    }
-
-    # Cache labels once per bulk run (instead of per-email DB query)
-    available_labels_list = await asyncio.to_thread(get_labels, user_id)
-    available_label_names = [lbl["label_name"] for lbl in available_labels_list]
-
-    async with httpx.AsyncClient(timeout=10.0, limits=httpx.Limits(max_connections=50)) as url_client:
-        yield {"type": "initializing", "message": "Starting AI analysis..."}
-
-        fetched_emails = get_emails_by_status(user_id, status='fetched', limit=limit)
-
-        if not fetched_emails:
-            yield {"type": "complete", "analyzed": 0, "failed": 0}
-            return
-
-        total = len(fetched_emails)
-        yield {"type": "progress", "current": 0, "total": total}
-
-        tasks = [
-            asyncio.create_task(_analyze_one(
-                email=email,
-                semaphore=semaphore,
-                ai_router=ai_router,
-                classification_prompt=CLASSIFICATION_PROMPT,
-                user_id=user_id,
-                user_email=user_email,
-                service=service,
-                url_client=url_client,
-                url_semaphore=url_semaphore,
-                available_label_names=available_label_names,
-                gmail_labels_cache=gmail_labels_cache,
-                update_mode=True,
-            ))
-            for email in fetched_emails
-        ]
-
-        done_queue = asyncio.Queue()
-        
-        async def track_completion(task, idx):
-            result = await task
-            await done_queue.put((idx, result))
-        
-        tracking_tasks = [asyncio.create_task(track_completion(t, i)) for i, t in enumerate(tasks)]
-        
-        analyzed_count = 0
-        failed_count = 0
-        results = []
-        
-        for _ in range(len(tasks)):
-            idx, result = await done_queue.get()
-            
-            if result.get("status") == "failed":
-                failed_count += 1
-            elif result.get("status") == "success":
-                analyzed_count += 1
-                results.append(result)
-            
-            yield {
-                "type": "email_done",
-                "current": analyzed_count + failed_count,
-                "total": total,
-                "email_id": result.get("email_id"),
-                "subject": result.get("subject"),
-                "label": result.get("label", ""),
-                "scam_score": result.get("scam_score", 0),
-            }
-        
-        await asyncio.gather(*tracking_tasks)
-        
-        yield {"type": "complete", "analyzed": analyzed_count, "failed": failed_count, "results": results}
-
