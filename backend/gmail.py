@@ -1033,85 +1033,55 @@ async def _analyze_one(email: dict, semaphore: asyncio.Semaphore,
             
             t_url_scan = time.perf_counter() - t0
 
-            # Step C — ML model pre-filter (Phase 6: hybrid routing)
-            ml_prediction = None
-            ml_confidence = 0.0
-            should_use_ai = True
-            source = 'ai'
+            # Step C — V2 ML Confidence-Band Routing (Phase 7)
+            from v2_routing import route_email_with_v2
             
-            if is_model_available() and not update_mode:
-                ml_result = await predict_async(
-                    email_id=email_id,
-                    subject=subject,
-                    sender=sender,
-                    body=body,
-                    snippet=snippet,
-                    user_id=user_id
-                )
-                
-                if ml_result:
-                    ml_prediction = ml_result['prediction']
-                    ml_confidence = ml_result['confidence']
-                    should_use_ai = ml_result['should_escalate_to_ai']
-                    
-                    if not should_use_ai:
-                        source = 'ml'
-                        logger.info(f"[ML] Confident prediction for {email_id[:12]}... ({ml_prediction}, conf={ml_confidence:.3f})")
-
-            # Step D — AI cascade classification (if ML escalated or no model)
-            provider_used = None
-            if should_use_ai:
+            # AI cascade closure for v2_routing
+            async def run_ai_cascade():
                 prompt = classification_prompt.format(
                     sender=sender,
                     subject=subject,
-                    body=body[:1500],  # First 1500 characters, truncated
+                    body=body[:1500],
                     url_threat_confirmed=url_threat_confirmed,
                     url_scan_unavailable=url_scan_unavailable,
                     available_labels=", ".join(available_label_names),
                 )
-
+                
+                nonlocal t_ai_call
                 t0 = time.perf_counter()
                 ai_result = await ai_router.analyze_json(prompt)
                 t_ai_call = time.perf_counter() - t0
-                provider_used = ai_result.get("provider_used", "unknown")
-            else:
-                ai_result = {"data": None}
-
-            # Defaults — use first available label as fallback (no hardcoded 'Spam')
-            label = default_label
-            scam_score = 0
-            scam_indicators = []
-            reasoning = ""
-
-            if should_use_ai:
-                if ai_result.get("data"):
-                    data = ai_result["data"]
-                    label = data.get("label", default_label)
-                    scam_score = data.get("scam_score", 0)
-                    scam_indicators = data.get("scam_indicators", [])
-                    reasoning = data.get("reasoning", "")
-                    
-                    if ml_prediction and is_model_available():
-                        ai_risk = 'high_risk' if scam_score >= 60 else 'low_risk'
-                        await log_disagreement(email_id, ml_prediction, ml_confidence, ai_risk)
-                        
-                elif ai_result.get("error"):
-                    raise Exception(ai_result["error"])
-            else:
-                # ML-only prediction (no AI cascade)
-                # Design decision: ML predicts risk only, not category label
-                # High-risk → Spam, Low-risk → first available label (typically "Safe")
-                # Tradeoff: ML-routed emails get generic labels instead of rich categorization
-                # (Marketing, Personal, etc.). This is intentional to keep the model simple
-                # and focused on scam detection. Category labeling requires AI cascade.
-                if ml_prediction == 'high_risk':
-                    label = "Spam"
-                    scam_score = 75
-                    scam_indicators = ["ML model classified as high-risk"]
-                else:
-                    label = default_label
-                    scam_score = 15
-                    scam_indicators = []
+                
+                return ai_result
+            
+            # Route through V2 confidence bands
+            routing_result = await route_email_with_v2(
+                email_id=email_id,
+                subject=subject,
+                sender=sender,
+                body=body,
+                snippet=snippet,
+                ai_cascade_func=run_ai_cascade,
+                classification_prompt=classification_prompt,
+                url_threat_confirmed=url_threat_confirmed,
+                url_scan_unavailable=url_scan_unavailable,
+                available_label_names=available_label_names
+            )
+            
+            # Extract results
+            label = routing_result['label']
+            scam_score = routing_result['scam_score']
+            scam_indicators = routing_result['scam_indicators']
+            reasoning = routing_result.get('reasoning', '')
+            provider_used = routing_result.get('provider_used')
+            source = 'v2' if routing_result['routing_decision'].startswith('v2_') else 'ai'
+            
+            # CRITICAL: Preserve ml_confidence for database writes
+            # For V2 paths: store V2 phishing probability (0-1 scale)
+            # For AI paths: None (no ML confidence available)
+            ml_confidence = routing_result.get('v2_score') if source == 'v2' else None
+            
+            logger.info(f"[ROUTING] {email_id[:12]}... decision={routing_result['routing_decision']}, label={label}, score={scam_score}, v2_score={ml_confidence}")
 
             # Step E — Validate AI/ML output
             # label must match one of available_labels (case-insensitive, whitespace-trimmed)
