@@ -28,12 +28,32 @@ function EmailBodyFrame({ body, className = '', textStyle = {} }) {
     const root = document.documentElement;
     const computed = getComputedStyle(root);
     
+    const background = computed.getPropertyValue('--color-surface').trim() || '#ffffff';
+    const text = computed.getPropertyValue('--color-text-primary').trim() || '#1a1a1a';
+    
+    // Detect if we're in dark mode by checking background luminance
+    const isDark = isColorDark(background);
+    
     return {
-      background: computed.getPropertyValue('--color-surface').trim() || '#ffffff',
-      text: computed.getPropertyValue('--color-text-primary').trim() || '#1a1a1a',
+      background,
+      text,
       border: computed.getPropertyValue('--color-border').trim() || '#e5e7eb',
       link: computed.getPropertyValue('--color-primary').trim() || '#2563eb',
+      isDark,
     };
+  };
+  
+  // Helper to detect if a color is dark
+  const isColorDark = (color) => {
+    // Convert hex to RGB
+    const hex = color.replace('#', '');
+    const r = parseInt(hex.substr(0, 2), 16);
+    const g = parseInt(hex.substr(2, 2), 16);
+    const b = parseInt(hex.substr(4, 2), 16);
+    
+    // Calculate relative luminance
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return luminance < 0.5;
   };
 
   // Auto-resize iframe to fit content
@@ -108,20 +128,61 @@ function EmailBodyFrame({ body, className = '', textStyle = {} }) {
             * {
               max-width: 100%;
             }
-            /* Override any sender-provided background colors in dark mode */
-            [style*="background-color: rgb(255, 255, 255)"],
-            [style*="background-color: #ffffff"],
+            ${colors.isDark ? `
+            /* DARK MODE EMAIL TRANSFORMATION */
+            
+            /* Force all light backgrounds to dark */
+            [style*="background-color: #fff"],
+            [style*="background-color: #FFF"],
             [style*="background-color: white"],
+            [style*="background-color: rgb(255"],
+            [style*="background: #fff"],
+            [style*="background: white"],
             [bgcolor="white"],
-            [bgcolor="#ffffff"] {
+            [bgcolor="#ffffff"],
+            [bgcolor="#FFFFFF"],
+            table[style*="background"],
+            td[style*="background"],
+            div[style*="background-color"] {
               background-color: ${colors.background} !important;
+              background: ${colors.background} !important;
             }
-            /* Override black text in dark mode */
-            [style*="color: rgb(0, 0, 0)"],
-            [style*="color: #000000"],
-            [style*="color: black"] {
+            
+            /* Force all dark text to light */
+            [style*="color: #000"],
+            [style*="color: black"],
+            [style*="color: rgb(0"],
+            [style*="color:#000"],
+            font[color],
+            span[style*="color"],
+            p[style*="color"],
+            div[style*="color"],
+            td[style*="color"],
+            h1, h2, h3, h4, h5, h6 {
               color: ${colors.text} !important;
             }
+            
+            /* Ensure body and all containers are dark */
+            body, body > div, body > table, body > center {
+              background-color: ${colors.background} !important;
+              color: ${colors.text} !important;
+            }
+            
+            /* Fix tables (common in email HTML) */
+            table {
+              background-color: transparent !important;
+              color: ${colors.text} !important;
+            }
+            
+            td, th {
+              color: ${colors.text} !important;
+            }
+            
+            /* Invert images that look like logos/graphics on light backgrounds */
+            img[style*="background"] {
+              background-color: transparent !important;
+            }
+            ` : ''}
           </style>
         </head>
         <body>
