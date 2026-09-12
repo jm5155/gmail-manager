@@ -188,7 +188,7 @@ function Sidebar({ userEmail, mobileMenuOpen = false, onCloseMobileMenu = () => 
       {/* Mobile Drawer - slide-in from left on mobile */}
       <div
         className={`
-          md:hidden fixed left-0 top-0 h-screen flex flex-col z-50
+          md:hidden fixed left-0 top-0 h-screen flex flex-col
           transition-transform duration-300 ease-out
           ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
@@ -196,6 +196,7 @@ function Sidebar({ userEmail, mobileMenuOpen = false, onCloseMobileMenu = () => 
           width: '280px',
           background: 'var(--color-surface)',
           borderRight: '1px solid var(--color-border)',
+          zIndex: 10000,
         }}
       >
         {/* Close button - mobile only */}
@@ -220,8 +221,12 @@ function Sidebar({ userEmail, mobileMenuOpen = false, onCloseMobileMenu = () => 
       {/* Mobile Overlay */}
       {mobileMenuOpen && (
         <div
-          className="md:hidden fixed inset-0 z-40"
-          style={{ backgroundColor: 'rgba(32, 36, 44, 0.4)' }}
+          className="md:hidden fixed inset-0"
+          style={{ 
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            zIndex: 9998,
+            backdropFilter: 'blur(2px)',
+          }}
           onClick={onCloseMobileMenu}
         />
       )}

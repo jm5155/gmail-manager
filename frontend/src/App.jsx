@@ -115,14 +115,7 @@ function AppContent() {
         />
       )}
 
-      {/* Mobile Overlay - dark backdrop when drawer is open */}
-      {mobileMenuOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
-          onClick={() => setMobileMenuOpen(false)}
-          aria-hidden="true"
-        />
-      )}
+
 
       {/* Page Content with fade transition */}
       <div
