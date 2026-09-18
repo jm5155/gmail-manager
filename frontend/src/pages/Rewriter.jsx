@@ -235,7 +235,7 @@ function Rewriter() {
       {/* MOBILE LAYOUT — Chat-Style */}
       <div className="md:hidden flex flex-col" style={{ height: 'calc(100vh - 140px)' }}>
         {/* Chat Messages Area */}
-        <div className="flex-1 px-4 pt-4 pb-2 overflow-y-auto" style={{ paddingBottom: '160px' }}>
+        <div className="flex-1 px-4 pt-4 pb-2 overflow-y-auto" style={{ paddingBottom: 'calc(180px + env(safe-area-inset-bottom, 0px))' }}>
           {/* Original Email Bubble (User) */}
           {originalText && (
             <div className="mb-4 flex justify-end">
@@ -321,30 +321,36 @@ function Rewriter() {
         </div>
 
         {/* Bottom Input Bar - Fixed */}
-        <div className="fixed bottom-0 left-0 right-0 px-4 pb-4 pt-3 md:hidden" 
+        <div className="fixed bottom-0 left-0 right-0 px-4 pt-3 md:hidden" 
              style={{ 
                background: 'linear-gradient(to top, var(--color-background) 90%, transparent)',
-               borderTop: '1px solid var(--color-border)'
+               borderTop: '1px solid var(--color-border)',
+               paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))',
              }}>
           {/* Char Counter - Above input bar */}
           <div className="text-center text-xs mb-2" style={{ color: 'var(--color-text-muted)' }}>
             {originalText.length} / 5000 chars
           </div>
 
-          {/* Pill-shaped input bar */}
-          <div className="flex items-center gap-3 px-4 py-3 rounded-full shadow-lg" 
+          {/* Multi-line input area */}
+          <div className="flex items-end gap-3 px-4 py-3 rounded-2xl shadow-lg" 
                style={{ 
                  background: 'var(--color-surface)', 
                  border: '1px solid var(--color-border)',
                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                }}>
-            {/* Input field */}
-            <input
-              type="text"
+            {/* Textarea for multi-line pasting */}
+            <textarea
               value={originalText}
               onChange={(e) => setOriginalText(e.target.value.slice(0, 5000))}
               placeholder="Paste your email..."
-              className="flex-1 bg-transparent text-sm placeholder-text-gray outline-none" style={{ color: 'var(--color-text-primary)' }}
+              className="flex-1 bg-transparent text-sm placeholder-text-gray outline-none resize-none"
+              style={{ color: 'var(--color-text-primary)', fontSize: '16px', maxHeight: '120px', minHeight: '24px' }}
+              rows={1}
+              onInput={(e) => {
+                e.target.style.height = 'auto';
+                e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+              }}
             />
 
             {/* Submit button (up-arrow in circle) */}

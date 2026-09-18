@@ -107,11 +107,12 @@ function EmailCard({
         />
       )}
       <div
-      className="bg-surface rounded-xl overflow-visible transition-all duration-200"
+      className="bg-surface rounded-xl overflow-visible transition-all duration-200 active:scale-[0.98] active:opacity-90"
       style={{
         backgroundColor: 'var(--color-surface)',
         border: '1px solid var(--color-border)',
         boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02)',
+        WebkitTapHighlightColor: 'transparent',
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.transform = 'translateY(-1px)';
@@ -174,19 +175,20 @@ function EmailCard({
           {availableLabels.length > 0 && (
             <div className="flex items-center gap-2 flex-shrink-0">
               <select
-                value={pendingLabel || labelName || ''}
-                onChange={(e) => {
-                  e.stopPropagation();
-                  if (onLabelChange) onLabelChange(email.email_id, e.target.value);
-                }}
-                onClick={(e) => e.stopPropagation()}
-                className="text-xs px-3 py-1.5 cursor-pointer rounded-lg transition-all"
-                style={{
-                  backgroundColor: 'var(--color-surface, #F8F9FB)',
-                  border: '1px solid var(--color-border, #E1E5EB)',
-                  color: 'var(--color-text-primary, #20242C)',
-                  boxShadow: 'inset 0 1px 2px rgba(0, 0, 0, 0.04)',
-                }}
+              value={pendingLabel || labelName || ''}
+              onChange={(e) => {
+                e.stopPropagation();
+                if (onLabelChange) onLabelChange(email.email_id, e.target.value);
+              }}
+              onClick={(e) => e.stopPropagation()}
+              className="text-xs px-3 py-2 cursor-pointer rounded-lg transition-all"
+              style={{
+                backgroundColor: 'var(--color-surface, #F8F9FB)',
+                border: '1px solid var(--color-border, #E1E5EB)',
+                color: 'var(--color-text-primary, #20242C)',
+                boxShadow: 'inset 0 1px 2px rgba(0, 0, 0, 0.04)',
+                minHeight: '44px',
+              }}
               >
                 {combinedLabels.map(label => (
                   <option key={label.label_id} value={label.label_name}>
@@ -283,12 +285,13 @@ function EmailCard({
                       if (onLabelChange) onLabelChange(email.email_id, e.target.value);
                     }}
                     onClick={(e) => e.stopPropagation()}
-                    className="text-xs px-2.5 py-1 cursor-pointer rounded-lg transition-all"
+                    className="text-xs px-2.5 py-2 cursor-pointer rounded-lg transition-all"
                     style={{
                       backgroundColor: 'var(--color-surface, #F8F9FB)',
                       border: '1px solid var(--color-border, #E1E5EB)',
                       color: 'var(--color-text-primary, #20242C)',
                       boxShadow: 'inset 0 1px 2px rgba(0, 0, 0, 0.04)',
+                      minHeight: '44px',
                     }}
                   >
                     {combinedLabels.map(label => (

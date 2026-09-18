@@ -91,11 +91,12 @@ function AppContent() {
       {showSidebar && (
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="fixed top-4 left-4 z-40 w-10 h-10 flex items-center justify-center rounded-lg md:hidden transition-colors"
+          className="fixed top-4 left-4 z-[100] w-10 h-10 flex items-center justify-center rounded-lg md:hidden transition-colors safe-top"
           style={{
             backgroundColor: 'var(--color-surface)',
             border: '1px solid var(--color-border)',
-            boxShadow: 'var(--shadow-flat-sm)'
+            boxShadow: 'var(--shadow-flat-sm)',
+            top: 'max(1rem, env(safe-area-inset-top, 1rem))',
           }}
           aria-label="Open menu"
         >

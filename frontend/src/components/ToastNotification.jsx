@@ -93,7 +93,7 @@ export function ToastProvider({ children }) {
       {children}
 
       {/* Toast Container */}
-      <div className="fixed top-20 md:top-4 right-4 z-[9999] space-y-3 pointer-events-none max-w-[calc(100vw-2rem)] md:w-[380px]" style={{ width: '380px' }}>
+      <div className="fixed top-20 md:top-4 right-4 z-[500] space-y-3 pointer-events-none" style={{ width: 'min(380px, calc(100vw - 2rem))' }}>
         {toasts.map((t) => {
           const config = TOAST_TYPES[t.type] || TOAST_TYPES.success;
           return (
@@ -122,10 +122,8 @@ export function ToastProvider({ children }) {
               </div>
               <button
                 onClick={() => removeToast(t.id)}
-                className="flex-shrink-0 transition-colors"
-                style={{ color: 'var(--color-text-muted)' }}
-                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-text-secondary)'}
-                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-text-muted)'}
+                className="flex-shrink-0 transition-colors p-1 rounded active:opacity-50"
+                style={{ color: 'var(--color-text-muted)', minWidth: '32px', minHeight: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />

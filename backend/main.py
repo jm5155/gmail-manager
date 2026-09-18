@@ -42,6 +42,8 @@ from ml_inference import load_active_model
 from ai_router import ai_router, REWRITE_PROMPT, CLASSIFICATION_PROMPT
 from dependencies import require_auth
 from jwt_auth import create_access_token, get_user_from_token
+from cache_manager import get_cache_stats, invalidate_user_cache
+from compression import GZipMiddleware
 
 # ---------- APP INITIALIZATION ----------
 
@@ -110,6 +112,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add GZip compression middleware
+app.add_middleware(GZipMiddleware, minimum_size=1024, compression_level=6)
 
 
 # ---------- HELPER: Get user_id from session ----------
@@ -219,6 +224,14 @@ async def startup_event():
         migrate_legacy_tokens()
     except Exception as e:
         logger.info(f"[SERVER] Token migration skipped: {e}")
+    
+    # Apply database indices for performance
+    logger.info("[STARTUP] Applying database indices...")
+    try:
+        from apply_indices import apply_indices
+        apply_indices()
+    except Exception as e:
+        logger.warning(f"[STARTUP] Index application skipped: {e}")
     
     logger.info("[STARTUP] COMPLETE - Gmail Manager API ready on port 8000")
 

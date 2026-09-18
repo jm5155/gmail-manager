@@ -424,12 +424,20 @@ function LandingPage() {
                 maxWidth: '280px',
                 whiteSpace: 'nowrap',
                 boxShadow: 'var(--shadow-neumorphic-sm)',
-                transition: 'transform var(--transition-fast)'
-              }}
-              onMouseEnter={(e) => e.target.style.transform = 'translateY(-1px)'}
-              onMouseLeave={(e) => e.target.style.transform = 'none'}
-            >
-              Launch Live App →
+                                transition: 'transform var(--transition-fast)',
+                                WebkitTapHighlightColor: 'transparent',
+                              }}
+                              onMouseEnter={(e) => e.target.style.transform = 'translateY(-1px)'}
+                              onMouseLeave={(e) => e.target.style.transform = 'none'}
+                              css={{
+                                '@media (hover: none)': {
+                                  '&:active': {
+                                    transform: 'translateY(-1px) scale(0.98)',
+                                  },
+                                },
+                              }}
+                            >
+                              Launch Live App →
             </Link>
             </div>
 

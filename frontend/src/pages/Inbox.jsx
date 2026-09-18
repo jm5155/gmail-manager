@@ -372,7 +372,7 @@ function Inbox() {
 
   // ---------- RENDER ----------
   return (
-    <div className="h-screen overflow-hidden">
+    <div className="h-screen flex flex-col overflow-hidden">
       <style>{`
         @keyframes indeterminate {
           0%   { transform: translateX(-100%); width: 40%; }
@@ -381,7 +381,7 @@ function Inbox() {
         }
       `}</style>
       {/* Page Header */}
-      <div className="px-4 md:px-6 py-4 pt-16 md:pt-4" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+      <div className="px-4 md:px-6 py-4 pt-16 md:pt-4 flex-shrink-0" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
           <div>
             <h1 className="text-xl font-bold" style={{ color: 'var(--color-text-primary)' }}>Inbox</h1>
@@ -652,12 +652,15 @@ function Inbox() {
             {/* Cancel */}
             <button
               onClick={() => { setShowBatchDelete(false); setBatchValue(''); }}
-              className="text-lg leading-none transition-colors"
+              className="text-lg leading-none transition-all p-2 rounded active:opacity-50"
               style={{ 
-                color: 'var(--color-text-secondary)'
+                color: 'var(--color-text-secondary)',
+                minWidth: '44px',
+                minHeight: '44px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
-              onMouseEnter={(e) => e.target.style.color = 'var(--color-text-primary)'}
-              onMouseLeave={(e) => e.target.style.color = 'var(--color-text-secondary)'}
             >×</button>
           </div>
         )}
@@ -812,7 +815,7 @@ function Inbox() {
       </div>
 
       {/* Email List */}
-      <div className="px-4 py-6 md:px-6 overflow-y-auto" style={{ height: 'calc(100vh - 200px)' }}>
+      <div className="px-4 py-6 md:px-6 flex-1 overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
         {/* Loading */}
         {loading && (
           <div className="flex flex-col items-center justify-center h-64 gap-4">

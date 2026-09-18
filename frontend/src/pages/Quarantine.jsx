@@ -3,10 +3,13 @@
  * Lists quarantined emails with red warning badges.
  * Actions: "Mark Safe" (removes flag) and "Delete" (moves to Gmail trash).
  * Confirmation modal before any delete action.
+ * 
+ * Updated: 2026-09-14 — Uses EmailCard for visual consistency with Inbox/ScamAlerts
  */
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import EmailCard from '../components/EmailCard';
 import ConfirmModal from '../components/ConfirmModal';
 import { useToast } from '../components/ToastNotification';
 import { apiGet, apiRequest, apiDelete } from '../lib/api';
@@ -17,7 +20,7 @@ function Quarantine() {
 
   const [emails, setEmails] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [deleteTarget, setDeleteTarget] = useState(null); // email to confirm delete
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   useEffect(() => {
     fetchQuarantined();
@@ -69,16 +72,10 @@ function Quarantine() {
     }
   }
 
-  // Parse scam indicators
-  function parseIndicators(str) {
-    try { return typeof str === 'string' ? JSON.parse(str) : (str || []); }
-    catch { return []; }
-  }
-
   return (
-    <div className="h-screen overflow-hidden">
+    <div className="h-screen flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="px-4 md:px-6 py-4 pt-16 md:pt-4" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+      <div className="px-4 md:px-6 py-4 pt-16 md:pt-4 flex-shrink-0" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg flex items-center justify-center"
                style={{ background: 'rgba(239, 68, 68, 0.15)' }}>
@@ -95,8 +92,8 @@ function Quarantine() {
         </div>
       </div>
 
-      {/* Email List */}
-      <div className="px-4 py-6 md:px-6 overflow-y-auto" style={{ height: 'calc(100vh - 100px)' }}>
+      {/* Email List — flex-1 instead of calc() */}
+      <div className="flex-1 px-4 py-6 md:px-6 overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
         {loading && (
           <div className="flex flex-col items-center justify-center h-64 gap-4">
             <div className="w-10 h-10 rounded-full animate-spin" style={{ borderWidth: '3px', borderStyle: 'solid', borderColor: 'var(--color-danger)', borderTopColor: 'transparent' }}></div>
@@ -112,78 +109,42 @@ function Quarantine() {
           </div>
         )}
 
-        <div className="space-y-3">
-          {emails.map((email) => {
-            const indicators = parseIndicators(email.scam_indicators);
-            return (
-              <div
-                key={email.email_id}
-                className="rounded-xl p-5"
-                style={{
-                  background: 'var(--color-surface)',
-                  border: '1px solid rgba(239, 68, 68, 0.2)',
-                }}
-              >
-                {/* Red Warning Badge */}
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="px-2 py-0.5 rounded-full text-xs font-semibold"
-                        style={{ background: 'var(--color-danger-bg)', color: 'var(--color-danger)', border: '1px solid var(--color-danger-border)' }}>
-                    ⚠️ Quarantined
-                  </span>
-                  <span className="px-2 py-0.5 rounded-full text-xs font-semibold"
-                        style={{ background: 'var(--color-danger-bg)', color: 'var(--color-danger)' }}>
-                    Score: {email.scam_score}
-                  </span>
-                </div>
-
-                {/* Email Info */}
-                <h3 className="text-sm font-semibold mb-1" style={{ color: 'var(--color-text-primary)' }}>{email.subject || '(No Subject)'}</h3>
-                <p className="text-xs text-gray mb-2">From: {email.sender}</p>
-
-                {/* Threat Reason */}
-                {email.scam_reason && (
-                  <p className="text-xs text-gray mb-2 p-2 rounded-lg"
-                     style={{ background: 'var(--color-surface)' }}>
-                    💡 {email.scam_reason}
-                  </p>
-                )}
-
-                {/* Indicators */}
-                {indicators.length > 0 && (
-                  <div className="mb-3">
-                    <p className="text-xs text-gray font-semibold mb-1">Suspicious indicators:</p>
-                    <ul className="space-y-0.5">
-                      {indicators.map((ind, idx) => (
-                        <li key={idx} className="text-xs text-gray flex items-start gap-1.5">
-                          <span className="text-danger mt-0.5">•</span> {ind}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* Action Buttons */}
-                <div className="flex gap-2 mt-3">
+        <div className="space-y-2">
+          {emails.map((email) => (
+            <EmailCard
+              key={email.email_id}
+              email={email}
+              showScamBadge={true}
+              actions={
+                <div className="flex gap-2">
                   <button
                     onClick={() => handleMarkSafe(email.email_id)}
-                    className="px-4 py-2 rounded-lg text-xs font-medium text-success transition-all duration-200
-                               hover:bg-surface"
-                    style={{ border: '1px solid rgba(34, 197, 94, 0.3)', background: 'rgba(34, 197, 94, 0.08)' }}
+                    className="px-4 py-2.5 rounded-lg text-xs font-medium transition-all duration-200 active:scale-95"
+                    style={{
+                      border: '1px solid rgba(34, 197, 94, 0.3)',
+                      background: 'rgba(34, 197, 94, 0.08)',
+                      color: 'var(--color-success)',
+                      minHeight: '44px',
+                    }}
                   >
                     ✓ Mark Safe
                   </button>
                   <button
                     onClick={() => setDeleteTarget(email)}
-                    className="px-4 py-2 rounded-lg text-xs font-medium text-danger transition-all duration-200
-                               hover:bg-surface"
-                    style={{ border: '1px solid rgba(239, 68, 68, 0.3)', background: 'rgba(239, 68, 68, 0.08)' }}
+                    className="px-4 py-2.5 rounded-lg text-xs font-medium transition-all duration-200 active:scale-95"
+                    style={{
+                      border: '1px solid rgba(239, 68, 68, 0.3)',
+                      background: 'rgba(239, 68, 68, 0.08)',
+                      color: 'var(--color-danger)',
+                      minHeight: '44px',
+                    }}
                   >
                     🗑 Delete
                   </button>
                 </div>
-              </div>
-            );
-          })}
+              }
+            />
+          ))}
         </div>
       </div>
 

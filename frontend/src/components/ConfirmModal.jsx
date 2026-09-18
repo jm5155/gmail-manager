@@ -26,11 +26,11 @@ function ConfirmModal({
 }) {
   return (
 <div
-        className="modal-overlay fixed inset-0 z-[200] flex items-center justify-center"
-        style={{
-          background: 'rgba(0, 0, 0, 0.4)',
-          backdropFilter: 'blur(4px)',
-        }}
+  className="modal-overlay fixed inset-0 z-[400] flex items-center justify-center"
+  style={{
+    background: 'rgba(0, 0, 0, 0.4)',
+    backdropFilter: 'blur(4px)',
+  }}
         onClick={onCancel}
       >
       <div

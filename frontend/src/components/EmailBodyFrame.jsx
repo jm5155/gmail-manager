@@ -8,6 +8,7 @@
  * - All links open in new tab via <base target="_blank">
  * - Sender CSS/markup fully isolated from app
  * - Theme-aware: respects light/dark mode (FIXED 2026-09-11)
+ * - Mobile: horizontal scroll for wide table-based emails (FIXED 2026-09-14)
  */
 
 import React, { useRef, useEffect } from 'react';
@@ -31,7 +32,6 @@ function EmailBodyFrame({ body, className = '', textStyle = {} }) {
     const background = computed.getPropertyValue('--color-surface').trim() || '#ffffff';
     const text = computed.getPropertyValue('--color-text-primary').trim() || '#1a1a1a';
     
-    // Detect if we're in dark mode by checking background luminance
     const isDark = isColorDark(background);
     
     return {
@@ -45,13 +45,10 @@ function EmailBodyFrame({ body, className = '', textStyle = {} }) {
   
   // Helper to detect if a color is dark
   const isColorDark = (color) => {
-    // Convert hex to RGB
     const hex = color.replace('#', '');
     const r = parseInt(hex.substr(0, 2), 16);
     const g = parseInt(hex.substr(2, 2), 16);
     const b = parseInt(hex.substr(4, 2), 16);
-    
-    // Calculate relative luminance
     const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
     return luminance < 0.5;
   };
@@ -66,10 +63,8 @@ function EmailBodyFrame({ body, className = '', textStyle = {} }) {
         if (!iframe || !iframe.contentDocument) return;
 
         const contentHeight = iframe.contentDocument.body?.scrollHeight || 0;
-        // Cap at 2000px to prevent excessive heights
         iframe.style.height = `${Math.min(contentHeight + 20, 2000)}px`;
       } catch (err) {
-        // Cross-origin or blocked access - fail silently
         console.debug('[EmailBodyFrame] Could not measure iframe height:', err);
       }
     };
@@ -77,8 +72,6 @@ function EmailBodyFrame({ body, className = '', textStyle = {} }) {
     const iframe = iframeRef.current;
     if (iframe) {
       iframe.addEventListener('load', measure);
-      
-      // Also check periodically for dynamic content
       const resizeInterval = setInterval(measure, 500);
       
       return () => {
@@ -92,12 +85,12 @@ function EmailBodyFrame({ body, className = '', textStyle = {} }) {
   if (isHTML) {
     const colors = getThemeColors();
     
-    // Inject base target, theme colors, and basic styles
     const iframeContent = `
       <!DOCTYPE html>
       <html>
         <head>
           <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <base target="_blank">
           <style>
             html, body {
@@ -113,6 +106,7 @@ function EmailBodyFrame({ body, className = '', textStyle = {} }) {
               line-height: 1.6;
               word-wrap: break-word;
               overflow-wrap: anywhere;
+              -webkit-text-size-adjust: 100%;
             }
             img {
               max-width: 100%;
@@ -127,11 +121,15 @@ function EmailBodyFrame({ body, className = '', textStyle = {} }) {
             }
             * {
               max-width: 100%;
+              box-sizing: border-box;
+            }
+            /* Allow tables with explicit widths to scroll horizontally */
+            table[width], table[style*="width"] {
+              max-width: none;
             }
             ${colors.isDark ? `
             /* DARK MODE EMAIL TRANSFORMATION */
             
-            /* Force all light backgrounds to dark */
             [style*="background-color: #fff"],
             [style*="background-color: #FFF"],
             [style*="background-color: white"],
@@ -148,7 +146,6 @@ function EmailBodyFrame({ body, className = '', textStyle = {} }) {
               background: ${colors.background} !important;
             }
             
-            /* Force all dark text to light */
             [style*="color: #000"],
             [style*="color: black"],
             [style*="color: rgb(0"],
@@ -162,13 +159,11 @@ function EmailBodyFrame({ body, className = '', textStyle = {} }) {
               color: ${colors.text} !important;
             }
             
-            /* Ensure body and all containers are dark */
             body, body > div, body > table, body > center {
               background-color: ${colors.background} !important;
               color: ${colors.text} !important;
             }
             
-            /* Fix tables (common in email HTML) */
             table {
               background-color: transparent !important;
               color: ${colors.text} !important;
@@ -178,7 +173,6 @@ function EmailBodyFrame({ body, className = '', textStyle = {} }) {
               color: ${colors.text} !important;
             }
             
-            /* Invert images that look like logos/graphics on light backgrounds */
             img[style*="background"] {
               background-color: transparent !important;
             }
@@ -200,21 +194,29 @@ function EmailBodyFrame({ body, className = '', textStyle = {} }) {
           border: '1px solid var(--color-border)',
         }}
       >
-        <iframe
-          ref={iframeRef}
-          srcDoc={iframeContent}
-          sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"
-          referrerPolicy="no-referrer"
-          className={className}
+        {/* Horizontal scroll wrapper for wide HTML emails on mobile */}
+        <div
           style={{
-            width: '100%',
-            border: 'none',
-            display: 'block',
-            minHeight: '360px',
-            backgroundColor: 'var(--color-surface)',
+            overflowX: 'auto',
+            WebkitOverflowScrolling: 'touch',
           }}
-          title="Email content"
-        />
+        >
+          <iframe
+            ref={iframeRef}
+            srcDoc={iframeContent}
+            sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+            referrerPolicy="no-referrer"
+            className={className}
+            style={{
+              width: '100%',
+              border: 'none',
+              display: 'block',
+              minHeight: '200px',
+              backgroundColor: 'var(--color-surface)',
+            }}
+            title="Email content"
+          />
+        </div>
       </div>
     );
   }

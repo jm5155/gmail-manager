@@ -196,7 +196,8 @@ function Sidebar({ userEmail, mobileMenuOpen = false, onCloseMobileMenu = () => 
           width: '280px',
           background: 'var(--color-surface)',
           borderRight: '1px solid var(--color-border)',
-          zIndex: 10000,
+          zIndex: 200,
+          paddingTop: 'env(safe-area-inset-top, 0px)',
         }}
       >
         {/* Close button - mobile only */}
@@ -224,7 +225,7 @@ function Sidebar({ userEmail, mobileMenuOpen = false, onCloseMobileMenu = () => 
           className="md:hidden fixed inset-0"
           style={{ 
             backgroundColor: 'rgba(0, 0, 0, 0.6)',
-            zIndex: 9998,
+            zIndex: 199,
             backdropFilter: 'blur(2px)',
           }}
           onClick={onCloseMobileMenu}
