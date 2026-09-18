@@ -15,6 +15,8 @@ import ProgressBar from '../components/ProgressBar';
 import { useToast } from '../components/ToastNotification';
 import { useAnalysis } from '../context/AnalysisContext';
 import { apiGet, apiPost, apiDelete, apiRequest } from '../lib/api';
+import { usePagination } from '../hooks/usePagination';
+import Pagination from '../components/Pagination';
 
 const SORT_OPTIONS = [
   { value: 'newest', label: 'Newest First' },
@@ -35,6 +37,23 @@ function Inbox() {
   const [error, setError] = useState('');
   const [availableLabels, setAvailableLabels] = useState(['All']);
   const [labelObjects, setLabelObjects] = useState([]);
+
+  // Pagination with usePagination hook (50 emails per page)
+  const {
+    currentData: paginatedEmails,
+    currentPage,
+    totalPages,
+    hasNextPage,
+    hasPrevPage,
+    goToPage,
+    nextPage,
+    prevPage,
+    goToFirstPage,
+    goToLastPage,
+    totalItems,
+    itemsPerPage,
+    resetPagination,
+  } = usePagination(emails, 50);
 
   // Pending label changes (Phase 36/38/43)
   const [pendingLabelChanges, setPendingLabelChanges] = useState({});
@@ -165,6 +184,7 @@ function Inbox() {
 
         setEmails(filtered);
         setTotalCount(data.count || 0);
+        resetPagination(); // Reset to page 1 when filters change
       }
     } catch (err) {
       console.error('[INBOX] Filter fetch failed:', err);
@@ -847,18 +867,20 @@ function Inbox() {
           </div>
         )}
 
-        {/* Result Count */}
+        {/* Result Count & Pagination Info */}
         {!loading && emails.length > 0 && (
-          <p className="text-xs mb-3" style={{ color: 'var(--color-text-secondary)' }}>
-            Showing {emails.length} of {totalCount} emails
-          </p>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+              Showing {(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, emails.length)} of {emails.length} emails
+            </p>
+          </div>
         )}
 
         {/* Email Cards */}
         {!loading && !error && (
           <div className="space-y-2" style={{ isolation: 'auto' }}>
-            {emails.map((email, index) => (
-              <div key={email.email_id} style={{ position: 'relative', zIndex: emails.length - index }}>
+            {paginatedEmails.map((email, index) => (
+              <div key={email.email_id} style={{ position: 'relative', zIndex: paginatedEmails.length - index }}>
                 <EmailCard
                   email={email}
                   showScamBadge={true}
@@ -869,6 +891,25 @@ function Inbox() {
                 />
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {!loading && !error && emails.length > 0 && totalPages > 1 && (
+          <div className="mt-6">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              hasNextPage={hasNextPage}
+              hasPrevPage={hasPrevPage}
+              onPageChange={goToPage}
+              onNextPage={nextPage}
+              onPrevPage={prevPage}
+              onFirstPage={goToFirstPage}
+              onLastPage={goToLastPage}
+              totalItems={emails.length}
+              itemsPerPage={itemsPerPage}
+            />
           </div>
         )}
       </div>
