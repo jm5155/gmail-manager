@@ -928,7 +928,7 @@ Everything Your Inbox Needs
         }}
       >
           <div className="container mx-auto px-4 sm:px-6 py-12 max-w-7xl" style={{ width: '100%', maxWidth: '100%' }}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 mb-12">
             {/* Brand */}
             <div className="min-w-0" style={{ width: '100%' }}>
               <div className="flex items-center gap-2 mb-4">
@@ -976,39 +976,6 @@ Everything Your Inbox Needs
                 <li style={{ marginBottom: '0.5rem' }}>
                   <a href="#architecture" style={{ color: 'var(--color-text-secondary)', textDecoration: 'none', fontSize: '0.8125rem' }} className="hover:text-primary">
                     Architecture
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            {/* Resources */}
-            <div className="min-w-0" style={{ width: '100%' }}>
-              <h4
-                style={{
-                  fontSize: '0.8125rem',
-                  fontWeight: 700,
-                  color: 'var(--color-text-primary)',
-                  marginBottom: '1rem',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em'
-                }}
-              >
-                Resources
-              </h4>
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                <li style={{ marginBottom: '0.5rem' }}>
-                  <a href="https://github.com/jm5155/gmail-manager#readme" style={{ color: 'var(--color-text-secondary)', textDecoration: 'none', fontSize: '0.8125rem' }}>
-                    Documentation
-                  </a>
-                </li>
-                <li style={{ marginBottom: '0.5rem' }}>
-                  <a href="https://github.com/jm5155/gmail-manager#api" style={{ color: 'var(--color-text-secondary)', textDecoration: 'none', fontSize: '0.8125rem' }}>
-                    API Reference
-                  </a>
-                </li>
-                <li style={{ marginBottom: '0.5rem' }}>
-                  <a href="https://github.com/jm5155/gmail-manager/blob/main/LICENSE" style={{ color: 'var(--color-text-secondary)', textDecoration: 'none', fontSize: '0.8125rem' }}>
-                    License (MIT)
                   </a>
                 </li>
               </ul>
